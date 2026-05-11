@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BadCount — บันทึกก๊วนแบดมินตัน</title>
+  <meta name="description" content="แอปบันทึกสมาชิกและคำนวณค่าใช้จ่ายก๊วนแบดมินตัน" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏸%3C/text%3E%3C/svg%3E" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Sarabun", "Noto Sans Thai", sans-serif; }
+    .view { display: none; }
+    .view.active { display: block; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-20">
+
+  <!-- HEADER -->
+  <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a id="logoLink" href="#/" class="flex items-center gap-2 font-bold text-lg">
+        <span class="text-2xl">🏸</span>
+        <span>BadCount</span>
+      </a>
+      <nav id="mainNav" class="flex gap-1 text-sm">
+        <a href="#/" class="px-3 py-1.5 rounded-md hover:bg-emerald-700">หน้าหลัก</a>
+        <a href="#/history" class="px-3 py-1.5 rounded-md hover:bg-emerald-700">ย้อนหลัง</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+
+    <!-- ===== HOME VIEW ===== -->
+    <section id="view-home" class="view active">
+      <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <h1 class="text-2xl font-bold mb-2">สวัสดี! 👋</h1>
+        <p class="text-slate-600 mb-5">เริ่มก๊วนแบดวันนี้ หรือดูประวัติย้อนหลังก็ได้นะ</p>
+
+        <button id="btnCreateSession"
+          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-lg">
+          <span class="text-xl">+</span> Open Court
+        </button>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Recent</h2>
+          <a href="#/history" class="text-sm text-emerald-600 hover:underline">ดูทั้งหมด →</a>
+        </div>
+        <div id="recentSessions" class="space-y-2">
+          <p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีก๊วน เริ่มก๊วนแรกได้เลย</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SESSION VIEW ===== -->
+    <section id="view-session" class="view">
+      <!-- Header card -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 mb-4">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div class="flex-1">
+            <input id="fldLocation" type="text" placeholder="ชื่อสถานที่ / สนาม"
+              class="w-full text-lg font-semibold bg-transparent border-b border-slate-200 focus:border-emerald-500 focus:outline-none pb-1" />
+            <div class="text-sm text-slate-500 mt-2 flex items-center gap-2">
+              <span>📅</span>
+              <input id="fldDate" type="date"
+                class="bg-transparent focus:outline-none" />
+            </div>
+          </div>
+          <span id="sessionStatusBadge"
+            class="text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap">เปิดอยู่</span>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2 text-xs sm:text-sm mt-3">
+          <button id="btnShareJoin"
+            class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 flex flex-col items-center justify-center gap-1">
+            <span class="text-base">✉️</span> ชวนเพื่อน
+          </button>
+          <button id="btnShare"
+            class="bg-slate-50 hover:bg-slate-100 text-slate-600 py-2.5 rounded-lg font-medium border border-slate-200 flex flex-col items-center justify-center gap-1">
+            <span class="text-base">📋</span> Manager Link
+          </button>
+          <button id="btnExport"
+            class="bg-slate-50 hover:bg-slate-100 text-slate-600 py-2.5 rounded-lg font-medium border border-slate-200 flex flex-col items-center justify-center gap-1">
+            <span class="text-base">📥</span> Export
+          </button>
+          <button id="btnQR"
+            class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 flex flex-col items-center justify-center gap-1">
+            <span class="text-base">💰</span> QR เงิน
+          </button>
+        </div>
+      </div>
+
+      <!-- Settings card -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 mb-4">
+        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">ตั้งค่าค่าใช้จ่าย</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-500">ค่าคอร์ด</span>
+              <select id="fldCourtFeeType" class="text-xs text-emerald-600 bg-transparent focus:outline-none cursor-pointer">
+                <option value="perPerson">คิดต่อคน</option>
+                <option value="total">รวม (หารเท่า)</option>
+              </select>
+            </div>
+            <input id="fldCourtFee" type="number" min="0" step="any" placeholder="0"
+              class="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none" />
+          </label>
+          <label class="block">
+            <span class="text-xs text-slate-500">ราคาลูก/ลูก (บาท)</span>
+            <input id="fldShuttlePrice" type="number" min="0" step="any" placeholder="0"
+              class="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none" />
+          </label>
+          <label class="block col-span-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-500">ค่าใช้จ่ายอื่นๆ (น้ำ/อาหาร)</span>
+              <select id="fldOtherCostType" class="text-xs text-emerald-600 bg-transparent focus:outline-none cursor-pointer">
+                <option value="perPerson">คิดต่อคน</option>
+                <option value="total">รวม (หารเท่า)</option>
+              </select>
+            </div>
+            <input id="fldOtherCost" type="number" min="0" step="any" placeholder="0"
+              class="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Members card -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide">สมาชิก (<span id="memberCount">0</span>)</h3>
+        </div>
+
+        <!-- Add member -->
+        <div class="flex gap-2 mb-3">
+          <input id="fldNewMember" type="text" placeholder="ใส่ชื่อสมาชิก..."
+            class="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none" />
+          <button id="btnAddMember"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg font-medium">+ เพิ่ม</button>
+        </div>
+
+        <!-- Members list -->
+        <div id="membersList" class="divide-y divide-slate-100">
+          <p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีสมาชิก เพิ่มคนแรกได้เลย</p>
+        </div>
+      </div>
+
+      <!-- Matches card -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide">ตารางจัดเกม (<span id="matchCount">0</span>)</h3>
+          <button id="btnViewStats" class="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-1"><span>📊</span> สถิติ</button>
+        </div>
+        
+        <div id="matchesList" class="space-y-2 mb-3">
+          <p class="text-slate-400 text-center py-4 text-sm">ยังไม่มีเกม กดจัดเกมด้านล่าง</p>
+        </div>
+        
+        <button id="btnAddMatch" class="w-full bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-300 text-slate-600 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2">
+          <span>+ จัดเกมใหม่</span>
+        </button>
+      </div>
+
+      <!-- Summary card -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 mb-4">
+        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">สรุปยอด</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-600">ค่าคอร์ด</span>
+            <span id="sumCourt" class="font-medium">0.00 ฿</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">ค่าลูก (<span id="sumShuttleQty">0</span> ลูก)</span>
+            <span id="sumShuttle" class="font-medium">0.00 ฿</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">ค่าอื่นๆ</span>
+            <span id="sumOther" class="font-medium">0.00 ฿</span>
+          </div>
+          <div class="border-t border-slate-200 pt-2 mt-2 flex justify-between items-center">
+            <span class="font-semibold">รวมทั้งหมด</span>
+            <span id="sumTotal" class="text-xl font-bold text-emerald-600">0.00 ฿</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Reminder Card (auto-show when unpaid > 0) -->
+      <div id="paymentReminderCard" class="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-4 hidden">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-rose-700 flex items-center gap-1.5">
+              <span>⏳</span>
+              <span>ยังไม่ได้จ่าย <span id="unpaidCount">0</span> คน</span>
+            </div>
+            <div class="text-xs text-rose-600 mt-1">
+              ยอดค้าง <span class="font-bold" id="unpaidTotal">0.00</span> ฿
+            </div>
+          </div>
+          <button id="btnCopyDueList"
+            class="bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 shrink-0 shadow-sm">
+            <span>💬</span>
+            <span>คัดลอกทวง</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-2">
+        <button id="btnCloseSession"
+          class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg font-medium">
+          ✅ ปิดก๊วน
+        </button>
+        <button id="btnDeleteSession"
+          class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-3 rounded-lg font-medium">
+          🗑️
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== HISTORY VIEW ===== -->
+    <section id="view-history" class="view">
+      <div class="bg-white rounded-2xl shadow-sm p-6">
+        <h2 class="text-xl font-bold mb-4">ประวัติก๊วน</h2>
+        <div id="historyList" class="space-y-2">
+          <p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>
+        </div>
+      </div>
+    </section>
+    <!-- ===== JOIN VIEW ===== -->
+    <section id="view-join" class="view">
+      <div class="bg-white rounded-2xl shadow-sm p-6 max-w-sm mx-auto mt-8 border border-slate-100">
+        <div class="text-center mb-6">
+          <span class="text-5xl">🏸</span>
+          <h2 class="text-2xl font-bold mt-4 mb-1">เข้าร่วมก๊วน</h2>
+          <p id="joinSessionName" class="text-emerald-600 font-semibold text-lg">กำลังโหลด...</p>
+          <p id="joinSessionDate" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+
+        <div id="joinSuccessSection" class="hidden text-center mb-6 bg-emerald-50 py-5 rounded-xl border border-emerald-100">
+          <span class="text-4xl block mb-2">✅</span>
+          <h3 class="text-lg font-bold text-emerald-800">ลงชื่อสำเร็จ!</h3>
+          <p id="joinSuccessName" class="text-sm text-emerald-700 mt-1">ยินดีต้อนรับ 🎉</p>
+          <button id="btnJoinAnother"
+            class="mt-4 inline-flex items-center gap-1.5 bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-4 py-2 rounded-lg text-sm font-semibold transition-transform active:scale-95">
+            <span class="text-lg leading-none">+</span>
+            <span>ลงชื่อให้คนอื่นเพิ่ม</span>
+          </button>
+        </div>
+
+        <div id="joinFormSection">
+          <label class="block mb-5">
+            <span class="text-sm font-semibold text-slate-600 block mb-2">ชื่อของคุณ</span>
+            <input id="fldJoinName" type="text" placeholder="พิมพ์ชื่อเล่น..."
+              class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none text-lg text-center" />
+          </label>
+          <button id="btnSubmitJoin"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-sm transition-transform active:scale-95 text-lg mb-6">
+            ลงชื่อเข้าร่วม
+          </button>
+        </div>
+
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+          <h4 class="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide border-b border-slate-200 pb-2">ผู้เล่นที่ลงทะเบียนแล้ว (<span id="joinCount">0</span> คน)</h4>
+          <ul id="joinMembersList" class="space-y-2 text-slate-800 font-medium max-h-60 overflow-y-auto pl-2"></ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity pointer-events-none z-50 text-sm"></div>
+
+  <!-- ===== QR MODAL ===== -->
+  <div id="qrModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-xs w-full">
+      <h3 class="text-lg font-semibold text-center mb-4">QR Code รับเงิน</h3>
+      
+      <!-- Upload Section -->
+      <div id="qrUploadSection" class="hidden flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-6 mb-4">
+        <span class="text-4xl mb-3">📥</span>
+        <p class="text-sm text-slate-500 mb-4 text-center">ยังไม่ได้ตั้งค่ารูป QR Code<br>อัปโหลดรูปจากแอปธนาคาร</p>
+        <label class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-medium cursor-pointer text-sm shadow-sm transition-colors">
+          เลือกรูป QR Code
+          <input type="file" id="fldBankQR" accept="image/*" class="hidden" />
+        </label>
+      </div>
+
+      <!-- Display Section -->
+      <div id="qrDisplaySection" class="hidden flex-col items-center mb-4">
+        <img id="bankQRImg" src="" class="w-full max-w-[220px] rounded-xl shadow-sm mb-3 border border-slate-100" />
+        <button id="btnRemoveQR" class="text-xs text-red-500 hover:text-red-700 underline font-medium">ลบ / เปลี่ยนรูปใหม่</button>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="btnCloseQR" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl font-medium text-slate-700">ปิด</button>
+        <button id="btnDownloadQR" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-medium">📥 บันทึกรูป</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MATCH MODAL ===== -->
+  <div id="matchModal" class="hidden fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
+    <div class="bg-white sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+      <h3 class="text-lg font-bold mb-4" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
+      
+      <!-- Selected Box -->
+      <div class="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-4 mb-4 min-h-[100px]" id="selectedPlayersBox">
+        <div class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">ผู้เล่นในสนาม (<span id="selPlayerCount">0</span>/4)</div>
+        <div id="selectedPlayers" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Shuttlecock Input -->
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-slate-500 mb-1">เบอร์ลูกแบดที่ใช้ในเกมนี้ (เช่น 1, 2 หรือ 1-3)</label>
+        <input type="text" id="fldMatchShuttles" placeholder="เว้นว่างได้ถ้าไม่ระบุ" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-emerald-500 text-sm" />
+      </div>
+
+      <!-- Available List -->
+      <div class="mb-5">
+        <div class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">แตะชื่อเพื่อดึงลงสนาม (บนมือถือแตะจะง่ายกว่าลากครับ)</div>
+        <div id="availablePlayers" class="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto p-1"></div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="btnCancelMatch" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-medium text-sm">ยกเลิก</button>
+        <button id="btnSaveMatch" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm disabled:opacity-50">บันทึกเกม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATS MODAL ===== -->
+  <div id="statsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 max-w-sm w-full max-h-[90vh] overflow-y-auto flex flex-col">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">📊 สถิติการลงสนาม</h3>
+        <button id="btnCloseStats" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      <div id="statsContent" class="space-y-3 flex-1"></div>
+    </div>
+  </div>
+
+  <!-- App scripts -->
+  <script type="module" src="./firebase-config.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
