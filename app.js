@@ -363,11 +363,11 @@ function renderCourts() {
         value="${escapeHtml(c.number || '')}"
         class="w-14 text-center px-1 py-1 border border-slate-200 rounded font-bold text-sm focus:outline-none focus:border-emerald-500" />
       <span class="text-slate-400 text-sm shrink-0">🕐</span>
-      <input type="time" data-court-id="${c.id}" data-field="startTime"
+      <input type="text" data-court-id="${c.id}" data-field="startTime"
         value="${c.startTime || ''}"
         class="text-xs px-1 py-1 border border-slate-200 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500" />
       <span class="text-slate-400 shrink-0 text-xs">–</span>
-      <input type="time" data-court-id="${c.id}" data-field="endTime"
+      <input type="text" data-court-id="${c.id}" data-field="endTime"
         value="${c.endTime || ''}"
         class="text-xs px-1 py-1 border border-slate-200 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500" />
       <button data-del-court="${c.id}" class="text-slate-300 hover:text-red-500 px-1 shrink-0 text-lg leading-none">×</button>
