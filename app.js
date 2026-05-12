@@ -1056,7 +1056,7 @@ $("qrModal").addEventListener("click", e => { if (e.target.id === "qrModal") $("
 $("btnCloseSession").addEventListener("click", () => {
   const newStatus = currentSession.status === "closed" ? "open" : "closed";
   saveSession({ status: newStatus });
-  toast(newStatus === "closed" ? "ปิดก๊วนแล้ว ✓" : "เปิดก๊วนอีกครั้ง ✓");
+  toast(newStatus === "closed" ? "ปิดแล้ว ✓" : "เปิดก๊วนอีกครั้ง ✓");
 });
 
 // Delete
@@ -1394,7 +1394,7 @@ async function setupJoinView(id) {
           qrWrap?.classList.add("hidden");
 
           if (closedBanner) {
-            closedBanner.textContent = "✅ ปิดแล้ว — ทุกคนจ่ายครบ 🎉";
+            closedBanner.textContent = "✅ ปิดก๊วนแล้ว — ทุกคนจ่ายครบ 🎉";
             closedBanner.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
           }
         } else {
@@ -1970,11 +1970,14 @@ $("btnDownloadQR").addEventListener("click", () => {
 // ============================================================
 // HISTORY VIEW
 // ============================================================
+// แสดงก๊วนล่าสุด 50 อัน — ก๊วนเก่ากว่านี้ยังอยู่ใน DB เข้าได้ผ่าน URL โดยตรง
+const HISTORY_LIMIT = 50;
+
 async function loadHistory() {
   const container = $("historyList");
   container.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>`;
   try {
-    const q = query(SESSIONS, orderBy("createdAt", "desc"));
+    const q = query(SESSIONS, orderBy("createdAt", "desc"), limit(HISTORY_LIMIT));
     const snap = await getDocs(q);
     renderSessionList(container, snap, false);
   } catch (err) {
