@@ -1385,11 +1385,11 @@ async function setupJoinView(id) {
         formSection?.classList.add("hidden");
         btnJoinAnother?.classList.add("hidden");
 
-        // แสดงยอดค้างรวม (ถ้ามีคนยังไม่จ่าย)
-        const unpaidTotal = totals.unpaidTotal || 0;
-        if (unpaidTotal > 0) {
+        // แสดงจำนวนคนค้างชำระ (ไม่บอกยอด เพื่อไม่ให้สับสนว่าเป็นยอดของตัวเอง)
+        const unpaidCount = mems.filter(m => !m.isPaid).length;
+        if (unpaidCount > 0) {
           totalDueBox?.classList.remove("hidden");
-          $("joinTotalDue").textContent = fmt(unpaidTotal);
+          $("joinUnpaidCount").textContent = unpaidCount;
         } else {
           totalDueBox?.classList.add("hidden");
         }

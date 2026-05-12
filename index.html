@@ -290,10 +290,12 @@
 
         <!-- Payment section (shown only when session is closed) -->
         <div id="joinPaymentSection" class="hidden mb-4">
-          <!-- Total due summary -->
+          <!-- Unpaid count summary -->
           <div id="joinTotalDueBox" class="hidden bg-rose-50 border border-rose-200 p-3 rounded-xl mb-3 text-center">
-            <div class="text-xs text-rose-600 mb-1 font-semibold uppercase tracking-wide">ยอดค้างชำระรวม</div>
-            <div class="text-2xl font-bold text-rose-700"><span id="joinTotalDue">0.00</span> ฿</div>
+            <div class="text-base font-bold text-rose-700">
+              ⏳ ยังไม่จ่าย <span id="joinUnpaidCount">0</span> คน
+            </div>
+            <div class="text-xs text-rose-600 mt-1">ตรวจชื่อของคุณด้านล่างเพื่อดูยอด</div>
           </div>
 
           <!-- Bank QR code -->
