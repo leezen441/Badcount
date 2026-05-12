@@ -921,6 +921,13 @@ function renderMatches() {
 // ---------- Save (debounced) ----------
 async function saveSession(patch) {
   if (!currentSessionId) return;
+
+// --- 1. เพิ่มบล็อกนี้เพื่อจดจำสนามล่าสุดลงในเครื่อง ---
+  if (patch.courts && patch.courts.length > 0) {
+    localStorage.setItem("lastUsedCourts", JSON.stringify(patch.courts));
+  }
+  // ------------------------------------------------
+  
   // Optimistic local update so UI feels snappy
   Object.assign(currentSession, patch);
   renderSession();
