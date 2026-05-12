@@ -1334,12 +1334,13 @@ async function setupJoinView(id) {
       $("joinSessionName").textContent = s.location || "ก๊วนแบดมินตัน";
       $("joinSessionDate").textContent = s.date ? formatDate(s.date) : "";
 
-      // Render courts info
+      // Render courts info — ซ่อนเมื่อก๊วนปิดแล้ว (ไม่จำเป็นต้องดูสนามอีก)
       const courtsSection = $("joinCourtsSection");
       const courtsListEl = $("joinCourtsList");
       const courts = (s.courts || []).filter(c => c.number || c.startTime || c.endTime);
+      const sessionClosed = s.status === "closed";
       if (courtsSection && courtsListEl) {
-        if (courts.length === 0) {
+        if (courts.length === 0 || sessionClosed) {
           courtsSection.classList.add("hidden");
         } else {
           courtsSection.classList.remove("hidden");
