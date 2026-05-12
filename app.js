@@ -435,6 +435,9 @@ $("courtsList").addEventListener("click", (e) => {
   if (!btn) return;
   const id = btn.dataset.delCourt;
   const newCourts = (currentSession.courts || []).filter(c => c.id !== id);
+  // --- เพิ่มบรรทัดนี้: เตะโฟกัสออกจากปุ่มลบ เพื่อให้ UI ยอมวาดหน้าจอใหม่ ---
+  if (document.activeElement) document.activeElement.blur();
+  // -----------------------------------------------------------
   saveSession({ courts: newCourts });
 });
 
