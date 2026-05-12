@@ -95,6 +95,18 @@
         </div>
       </div>
 
+      <!-- Courts card -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide">🏟️ สนาม (<span id="courtCount">0</span>)</h3>
+          <button id="btnAddCourt" class="text-xs text-emerald-600 font-medium hover:underline">+ เพิ่มสนาม</button>
+        </div>
+        <div id="courtSuggestions" class="flex flex-wrap items-center gap-1.5 mb-2"></div>
+        <div id="courtsList" class="space-y-2">
+          <p class="text-slate-400 text-center py-3 text-xs">ยังไม่ได้ระบุสนาม กดเพิ่มได้</p>
+        </div>
+      </div>
+
       <!-- Settings card -->
       <div class="bg-white rounded-2xl shadow-sm p-5 mb-4">
         <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">ตั้งค่าค่าใช้จ่าย</h3>
@@ -136,12 +148,15 @@
         </div>
 
         <!-- Add member -->
-        <div class="flex gap-2 mb-3">
+        <div class="flex gap-2 mb-2">
           <input id="fldNewMember" type="text" placeholder="ใส่ชื่อสมาชิก..."
             class="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none" />
           <button id="btnAddMember"
             class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg font-medium">+ เพิ่ม</button>
         </div>
+
+        <!-- Name suggestions (chips) -->
+        <div id="memberSuggestions" class="mb-3"></div>
 
         <!-- Members list -->
         <div id="membersList" class="divide-y divide-slate-100">
@@ -202,8 +217,8 @@
           </div>
           <button id="btnCopyDueList"
             class="bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 shrink-0 shadow-sm">
-            <span>💬</span>
-            <span>คัดลอกทวง</span>
+            <span>📥</span>
+            <span>บันทึกภาพทวง</span>
           </button>
         </div>
       </div>
@@ -230,6 +245,29 @@
         </div>
       </div>
     </section>
+    <!-- ===== LOGIN VIEW ===== -->
+    <section id="view-login" class="view">
+      <div class="bg-white rounded-2xl shadow-sm p-6 max-w-sm mx-auto mt-8 border border-slate-100">
+        <div class="text-center mb-6">
+          <span class="text-5xl">🔒</span>
+          <h2 class="text-2xl font-bold mt-4 mb-1">เข้าสู่ระบบ</h2>
+          <p class="text-sm text-slate-500">ใส่รหัสเพื่อใช้งาน BadCount</p>
+        </div>
+        <form id="loginForm">
+          <label class="block mb-4">
+            <span class="text-sm font-semibold text-slate-600 block mb-2">รหัสผ่าน</span>
+            <input id="fldPasscode" type="password" autocomplete="current-password"
+              class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none text-lg" />
+            <p id="loginError" class="text-sm text-rose-500 mt-2 hidden">รหัสไม่ถูกต้อง</p>
+          </label>
+          <button type="submit"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-sm transition-transform active:scale-95 text-lg">
+            เข้าสู่ระบบ
+          </button>
+        </form>
+      </div>
+    </section>
+
     <!-- ===== JOIN VIEW ===== -->
     <section id="view-join" class="view">
       <div class="bg-white rounded-2xl shadow-sm p-6 max-w-sm mx-auto mt-8 border border-slate-100">
@@ -238,6 +276,12 @@
           <h2 class="text-2xl font-bold mt-4 mb-1">เข้าร่วมก๊วน</h2>
           <p id="joinSessionName" class="text-emerald-600 font-semibold text-lg">กำลังโหลด...</p>
           <p id="joinSessionDate" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+
+        <!-- Courts info for members -->
+        <div id="joinCourtsSection" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
+          <div class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">🏟️ สนาม</div>
+          <ul id="joinCourtsList" class="text-sm text-slate-700 space-y-1.5"></ul>
         </div>
 
         <div id="joinSuccessSection" class="hidden text-center mb-6 bg-emerald-50 py-5 rounded-xl border border-emerald-100">

@@ -6,7 +6,7 @@ import {
   initializeApp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, doc, getDoc, updateDoc,
+  getFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc,
   deleteDoc, onSnapshot, query, orderBy, limit, getDocs, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -23,6 +23,91 @@ let currentSession = null;
 let unsubscribeSession = null;
 let unsubscribeList = null;
 let debounceTimer = null;
+
+// ---------- Global Defaults (shared in cloud, ex: bankQR) ----------
+const GLOBAL_DEFAULTS_DOC = doc(db, "settings", "defaults");
+let globalDefaults = {};
+let globalDefaultsLoaded = false;
+let globalDefaultsPromise = null;
+
+async function loadGlobalDefaults() {
+  if (globalDefaultsPromise) return globalDefaultsPromise;
+  globalDefaultsPromise = (async () => {
+    try {
+      const snap = await getDoc(GLOBAL_DEFAULTS_DOC);
+      globalDefaults = snap.exists() ? snap.data() : {};
+    } catch (err) {
+      console.warn("[Defaults] Failed to load:", err);
+      globalDefaults = {};
+    }
+    globalDefaultsLoaded = true;
+    return globalDefaults;
+  })();
+  return globalDefaultsPromise;
+}
+
+async function saveGlobalDefaults(patch) {
+  // Optimistic local update
+  Object.assign(globalDefaults, patch);
+  try {
+    await setDoc(GLOBAL_DEFAULTS_DOC, patch, { merge: true });
+  } catch (err) {
+    console.warn("[Defaults] Failed to save:", err);
+    toast("บันทึก default ขึ้น cloud ไม่ได้ (ดูใน console)");
+  }
+}
+
+// Start loading defaults at app boot — non-blocking
+loadGlobalDefaults();
+
+// ---------- Authentication ----------
+// SHA-256 ของรหัส "SundayHH@" — ไม่เก็บรหัสตรงๆ ในซอร์ส
+const PASSCODE_HASH = "1f82ca11405f1594f1b6fde356b019b74e3bbd210576162f84b46223522daf7d";
+const AUTH_KEY = "bcAuthExp";
+const AUTH_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 วัน
+
+async function hashString(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function isAuthed() {
+  const exp = parseInt(localStorage.getItem(AUTH_KEY) || "0", 10);
+  return exp > Date.now();
+}
+
+function setAuthed() {
+  localStorage.setItem(AUTH_KEY, String(Date.now() + AUTH_DURATION_MS));
+}
+
+// ---------- Known Members (จดจำชื่อที่เคยใช้) ----------
+const KNOWN_MEMBERS_KEY = "knownMembers";
+const KNOWN_MEMBERS_MAX = 30;
+
+function getKnownMembers() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(KNOWN_MEMBERS_KEY) || "[]");
+    return Array.isArray(stored) ? stored.filter(n => typeof n === "string") : [];
+  } catch { return []; }
+}
+
+function addKnownMember(name) {
+  const trimmed = (name || "").trim();
+  if (!trimmed) return;
+  const list = getKnownMembers();
+  // ลบของเดิม (case-insensitive) แล้วเอามาไว้ต้น = เรียงตามใช้ล่าสุด
+  const filtered = list.filter(n => n.toLowerCase() !== trimmed.toLowerCase());
+  filtered.unshift(trimmed);
+  if (filtered.length > KNOWN_MEMBERS_MAX) filtered.length = KNOWN_MEMBERS_MAX;
+  localStorage.setItem(KNOWN_MEMBERS_KEY, JSON.stringify(filtered));
+}
+
+function removeKnownMember(name) {
+  const trimmed = (name || "").trim().toLowerCase();
+  if (!trimmed) return;
+  const filtered = getKnownMembers().filter(n => n.toLowerCase() !== trimmed);
+  localStorage.setItem(KNOWN_MEMBERS_KEY, JSON.stringify(filtered));
+}
 
 // ---------- Utility ----------
 const $ = (id) => document.getElementById(id);
@@ -54,15 +139,17 @@ function toast(msg, ms = 2200) {
   el._t = setTimeout(() => { el.style.opacity = "0"; }, ms);
 }
 
-function showView(name) {
+function showView(name, opts = {}) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   $("view-" + name).classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" });
 
-  // Lock navigation when in join view (so members can't navigate to manager pages)
+  // ซ่อน nav เมื่ออยู่หน้า join, login, หรือ session แบบ manager-mode (ไม่ได้ login)
   const logo = $("logoLink");
   const nav = $("mainNav");
-  if (name === "join") {
+  const shouldLockNav = name === "join" || name === "login" || (name === "session" && opts.lockNav);
+
+  if (shouldLockNav) {
     if (nav) nav.classList.add("hidden");
     if (logo) {
       logo.removeAttribute("href");
@@ -82,18 +169,37 @@ function route() {
   const hash = location.hash || "#/";
   const parts = hash.replace(/^#\/?/, "").split("/");
 
-  // Clean up previous session listener
+  // Clean up previous listeners
   if (unsubscribeSession) { unsubscribeSession(); unsubscribeSession = null; }
+  if (joinUnsubscribe) { joinUnsubscribe(); joinUnsubscribe = null; }
 
-  if (parts[0] === "session" && parts[1]) {
+  const authed = isAuthed();
+
+  // #/m/{id} = manager link — ล็อก nav เสมอ ไม่ว่า auth หรือไม่
+  // #/session/{id} = admin view — แสดง nav ถ้า authed, ล็อกถ้าไม่ authed
+  if ((parts[0] === "session" || parts[0] === "m") && parts[1]) {
     currentSessionId = parts[1];
-    showView("session");
+    const isManagerLink = parts[0] === "m";
+    showView("session", { lockNav: isManagerLink || !authed });
     subscribeSession(currentSessionId);
-  } else if (parts[0] === "join" && parts[1]) {
+    return;
+  }
+
+  // หน้า join เปิดได้ทุกคน (ล็อก nav อยู่แล้ว)
+  if (parts[0] === "join" && parts[1]) {
     currentSessionId = parts[1];
     showView("join");
     setupJoinView(currentSessionId);
-  } else if (parts[0] === "history") {
+    return;
+  }
+
+  // หน้าอื่นๆ (home, history) ต้อง login ก่อน
+  if (!authed) {
+    showView("login");
+    return;
+  }
+
+  if (parts[0] === "history") {
     showView("history");
     loadHistory();
   } else {
@@ -102,6 +208,28 @@ function route() {
   }
 }
 window.addEventListener("hashchange", route);
+
+// ---------- Login submit ----------
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("fldPasscode").value;
+  const hashed = await hashString(input);
+  if (hashed === PASSCODE_HASH) {
+    setAuthed();
+    $("fldPasscode").value = "";
+    $("loginError").classList.add("hidden");
+    // ถ้า hash เป็น "#/" อยู่แล้ว set ซ้ำไม่ trigger hashchange ต้อง re-route เอง
+    if (location.hash === "" || location.hash === "#/" || location.hash === "#") {
+      route();
+    } else {
+      location.hash = "#/";
+    }
+  } else {
+    $("loginError").classList.remove("hidden");
+    $("fldPasscode").value = "";
+    $("fldPasscode").focus();
+  }
+});
 
 // ============================================================
 // HOME VIEW
@@ -121,9 +249,13 @@ async function loadRecentSessions() {
 
 $("btnCreateSession").addEventListener("click", async () => {
   try {
-    const defaultBankQR = localStorage.getItem("defaultBankQR");
-    const defaultLocation = localStorage.getItem("defaultLocation") !== null 
-                              ? localStorage.getItem("defaultLocation") 
+    // Ensure global defaults are loaded before reading (มี QR ที่แชร์กันทั้งระบบ)
+    if (!globalDefaultsLoaded) await loadGlobalDefaults();
+
+    // QR: ใช้ของ cloud ก่อน, fallback ไป localStorage ถ้า cloud ไม่มี
+    const defaultBankQR = globalDefaults.bankQR || localStorage.getItem("defaultBankQR") || null;
+    const defaultLocation = localStorage.getItem("defaultLocation") !== null
+                              ? localStorage.getItem("defaultLocation")
                               : "Sunday Hey-Ha / PuunPlus Sport Club";
     const defaultCourtFee = parseFloat(localStorage.getItem("defaultCourtFee")) || 0;
     const defaultCourtFeeType = localStorage.getItem("defaultCourtFeeType") || "perPerson";
@@ -141,6 +273,7 @@ $("btnCreateSession").addEventListener("click", async () => {
       otherCostType: defaultOtherCostType,
       members: [],
       matches: [],
+      courts: [],
       bankQR: defaultBankQR || null,
       status: "open",
       createdAt: serverTimestamp(),
@@ -200,9 +333,147 @@ function renderSession() {
   }
 
   renderMembers();
+  renderMemberSuggestions();
   renderMatches();
   renderSummary();
+  renderCourts();
   updatePaymentReminder();
+}
+
+// ---------- Courts ----------
+function renderCourts() {
+  const list = $("courtsList");
+  if (!list) return;
+
+  // Preserve focus: ถ้า user กำลังพิมพ์อยู่ ห้าม rebuild
+  if (list.contains(document.activeElement)) return;
+
+  const courts = currentSession.courts || [];
+  $("courtCount").textContent = courts.length;
+
+  if (courts.length === 0) {
+    list.innerHTML = `<p class="text-slate-400 text-center py-3 text-xs">ยังไม่ได้ระบุสนาม กดเพิ่มได้</p>`;
+    return;
+  }
+
+  list.innerHTML = courts.map(c => `
+    <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-2 rounded-lg">
+      <span class="text-xs font-bold text-slate-500 shrink-0">สนาม</span>
+      <input type="text" data-court-id="${c.id}" data-field="number" placeholder="?" maxlength="6"
+        value="${escapeHtml(c.number || '')}"
+        class="w-14 text-center px-1 py-1 border border-slate-200 rounded font-bold text-sm focus:outline-none focus:border-emerald-500" />
+      <span class="text-slate-400 text-sm shrink-0">🕐</span>
+      <input type="time" data-court-id="${c.id}" data-field="startTime"
+        value="${c.startTime || ''}"
+        class="text-xs px-1 py-1 border border-slate-200 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500" />
+      <span class="text-slate-400 shrink-0 text-xs">–</span>
+      <input type="time" data-court-id="${c.id}" data-field="endTime"
+        value="${c.endTime || ''}"
+        class="text-xs px-1 py-1 border border-slate-200 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500" />
+      <button data-del-court="${c.id}" class="text-slate-300 hover:text-red-500 px-1 shrink-0 text-lg leading-none">×</button>
+    </div>
+  `).join("");
+}
+
+// Add court
+$("btnAddCourt").addEventListener("click", () => {
+  if (!currentSession) return;
+  const newId = uid();
+  const newCourts = [...(currentSession.courts || []), { id: newId, number: "", startTime: "", endTime: "" }];
+  saveSession({ courts: newCourts });
+  // Focus หลัง render เพื่อพิมพ์ต่อได้เลย
+  setTimeout(() => {
+    const input = document.querySelector(`input[data-court-id="${newId}"][data-field="number"]`);
+    if (input) input.focus();
+  }, 80);
+});
+
+// Event delegation: input changes
+$("courtsList").addEventListener("input", (e) => {
+  const input = e.target;
+  if (!input.matches("input[data-court-id]")) return;
+  const id = input.dataset.courtId;
+  const field = input.dataset.field;
+  const val = input.value;
+  const newCourts = (currentSession.courts || []).map(c => c.id === id ? { ...c, [field]: val } : c);
+  saveSession({ courts: newCourts });
+});
+
+// Event delegation: delete button
+$("courtsList").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-del-court]");
+  if (!btn) return;
+  const id = btn.dataset.delCourt;
+  const newCourts = (currentSession.courts || []).filter(c => c.id !== id);
+  saveSession({ courts: newCourts });
+});
+
+function renderMemberSuggestions() {
+  const container = $("memberSuggestions");
+  if (!container || !currentSession) return;
+
+  const known = getKnownMembers();
+  const currentNames = new Set((currentSession.members || []).map(m => (m.name || "").toLowerCase()));
+  const suggestions = known.filter(n => !currentNames.has(n.toLowerCase())).slice(0, 12);
+
+  if (suggestions.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="text-[11px] text-slate-400 mb-1.5">เพิ่มเร็ว (จากที่เคยใช้) — แตะค้างเพื่อลบจากประวัติ</div>
+    <div class="flex flex-wrap gap-1.5">
+      ${suggestions.map(name => `
+        <button data-quick-add="${escapeHtml(name)}" class="px-2.5 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full transition-transform active:scale-95 font-medium">
+          + ${escapeHtml(name)}
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  container.querySelectorAll("button[data-quick-add]").forEach(btn => {
+    const name = btn.dataset.quickAdd;
+
+    // คลิก = เพิ่มลงก๊วน
+    btn.addEventListener("click", () => {
+      const members = [...(currentSession.members || [])];
+      if (members.some(m => (m.name || "").toLowerCase() === name.toLowerCase())) {
+        toast(`มีชื่อ "${name}" ในก๊วนแล้ว`);
+        return;
+      }
+      members.push({ id: uid(), name, shuttlesUsed: 0 });
+      addKnownMember(name); // bump ขึ้นต้นใหม่
+      saveSession({ members });
+    });
+
+    // แตะค้าง / คลิกขวา = ลบจากประวัติ
+    let holdTimer = null;
+    const startHold = () => {
+      holdTimer = setTimeout(() => {
+        holdTimer = null;
+        if (confirm(`ลบ "${name}" ออกจากรายการที่เคยใช้?`)) {
+          removeKnownMember(name);
+          renderMemberSuggestions();
+        }
+      }, 600);
+    };
+    const cancelHold = () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
+    btn.addEventListener("touchstart", startHold, { passive: true });
+    btn.addEventListener("touchend", cancelHold);
+    btn.addEventListener("touchmove", cancelHold);
+    btn.addEventListener("mousedown", startHold);
+    btn.addEventListener("mouseup", cancelHold);
+    btn.addEventListener("mouseleave", cancelHold);
+    btn.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      cancelHold();
+      if (confirm(`ลบ "${name}" ออกจากรายการที่เคยใช้?`)) {
+        removeKnownMember(name);
+        renderMemberSuggestions();
+      }
+    });
+  });
 }
 
 // ---------- Payment Reminder ----------
@@ -235,7 +506,7 @@ function updatePaymentReminder() {
   }
 }
 
-$("btnCopyDueList").addEventListener("click", async () => {
+$("btnCopyDueList").addEventListener("click", () => {
   if (!currentSession) return;
   const s = currentSession;
   const members = s.members || [];
@@ -251,28 +522,203 @@ $("btnCopyDueList").addEventListener("click", async () => {
     return;
   }
 
-  const total = unpaid.reduce((sum, x) => sum + x.amount, 0);
-  const lines = unpaid.map(x => `• ${x.name} — ${fmt(x.amount)} ฿`);
-  const locationLine = s.location ? ` (${s.location})` : "";
+  const totalDue = unpaid.reduce((sum, x) => sum + x.amount, 0);
+  const hasQR = !!s.bankQR;
 
-  const msg =
-`🏸 ค่าก๊วน ${formatDate(s.date)}${locationLine}
+  // Load QR image safely (same pattern as Export Bill — works on mobile)
+  const loadImageSafe = (src) => new Promise((resolve) => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    let settled = false;
+    const finish = (val) => { if (!settled) { settled = true; resolve(val); } };
+    const timer = setTimeout(() => { console.warn("[Reminder] QR timeout"); finish(null); }, 10000);
+    img.onload = () => {
+      if (typeof img.decode === "function") {
+        img.decode().then(() => { clearTimeout(timer); finish(img); }).catch(() => { clearTimeout(timer); finish(img); });
+      } else {
+        clearTimeout(timer); finish(img);
+      }
+    };
+    img.onerror = () => { clearTimeout(timer); finish(null); };
+    img.src = src;
+    if (img.complete && img.naturalWidth > 0) img.onload();
+  });
 
-ยังไม่จ่าย ${unpaid.length} คน:
-${lines.join("\n")}
-─────────────
-รวมค้าง  ${fmt(total)} ฿
+  const buildReminder = (qrImg) => {
+    // Layout constants
+    const W = 540;
+    const PAD = 32;
+    const innerW = W - PAD * 2;
+    const rowH = 40;
+    const FONT = "'Sarabun', -apple-system, 'Segoe UI', sans-serif";
 
-📱 โอนตาม QR ที่ส่งให้นะครับ
-ขอบคุณครับ 🙏`;
+    // QR sizing (preserve aspect ratio)
+    let qrW = 0, qrH = 0;
+    if (qrImg) {
+      const maxQrSize = 260;
+      const aspect = qrImg.width / qrImg.height;
+      if (aspect >= 1) { qrW = maxQrSize; qrH = Math.round(maxQrSize / aspect); }
+      else { qrH = maxQrSize; qrW = Math.round(maxQrSize * aspect); }
+    }
 
-  try {
-    await navigator.clipboard.writeText(msg);
-    toast(`คัดลอกข้อความทวง ${unpaid.length} คนแล้ว ✓ (ไปแปะในไลน์ได้เลย)`, 3000);
-  } catch (e) {
-    // Fallback: show in prompt for manual copy
-    prompt("คัดลอกข้อความนี้:", msg);
-  }
+    // Calculate height
+    let H = 0;
+    H += 56;                                  // top accent + title margin
+    H += 28;                                  // title
+    H += 22;                                  // subtitle
+    H += 36;                                  // gap before list
+    H += 24;                                  // list header underline
+    H += unpaid.length * rowH + 8;            // rows
+    H += 20;                                  // gap before total
+    H += 56;                                  // total box
+    if (qrImg) H += 28 + 18 + qrH + 24;       // QR section
+    H += 40;                                  // footer
+
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    // White background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, W, H);
+
+    // Top accent gradient (rose theme — "ค้างจ่าย")
+    const topGrad = ctx.createLinearGradient(0, 0, W, 0);
+    topGrad.addColorStop(0, "#f43f5e");
+    topGrad.addColorStop(1, "#e11d48");
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, W, 6);
+
+    // ===== Title =====
+    let y = 50;
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 22px " + FONT;
+    ctx.textAlign = "center";
+    ctx.fillText("⏳ ทวงค่าก๊วน", W / 2, y);
+
+    y += 24;
+    ctx.fillStyle = "#64748b";
+    ctx.font = "13px " + FONT;
+    const subtitle = (s.location ? s.location + "  ·  " : "") + formatDate(s.date);
+    ctx.fillText(subtitle, W / 2, y);
+
+    y += 36;
+
+    // ===== List header =====
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "bold 11px " + FONT;
+    ctx.textAlign = "left";
+    ctx.fillText(`ยังไม่จ่าย ${unpaid.length} คน`, PAD, y);
+    ctx.textAlign = "right";
+    ctx.fillText("ยอดที่ค้าง", W - PAD, y);
+
+    y += 8;
+    ctx.beginPath();
+    ctx.strokeStyle = "#fecdd3";
+    ctx.lineWidth = 1;
+    ctx.moveTo(PAD, y);
+    ctx.lineTo(W - PAD, y);
+    ctx.stroke();
+
+    y += 22;
+
+    // ===== Unpaid rows =====
+    unpaid.forEach((u, idx) => {
+      // Status dot (rose, indicating unpaid)
+      ctx.fillStyle = "#f43f5e";
+      ctx.beginPath();
+      ctx.arc(PAD + 7, y - 6, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Name
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "17px " + FONT;
+      ctx.textAlign = "left";
+      ctx.fillText(u.name, PAD + 22, y);
+
+      // Amount
+      ctx.fillStyle = "#dc2626";
+      ctx.font = "bold 18px " + FONT;
+      ctx.textAlign = "right";
+      ctx.fillText(fmt(u.amount) + " ฿", W - PAD, y);
+
+      // Divider
+      if (idx < unpaid.length - 1) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#fef2f2";
+        ctx.lineWidth = 1;
+        ctx.moveTo(PAD, y + 12);
+        ctx.lineTo(W - PAD, y + 12);
+        ctx.stroke();
+      }
+      y += rowH;
+    });
+
+    y += 12;
+
+    // ===== Total box =====
+    const totalBoxY = y;
+    ctx.fillStyle = "#fff1f2";
+    roundRectPath(ctx, PAD, totalBoxY, innerW, 50, 12);
+    ctx.fill();
+
+    ctx.fillStyle = "#9f1239";
+    ctx.font = "bold 16px " + FONT;
+    ctx.textAlign = "left";
+    ctx.fillText("รวมค้างจ่าย", PAD + 18, totalBoxY + 32);
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "bold 22px " + FONT;
+    ctx.textAlign = "right";
+    ctx.fillText(fmt(totalDue) + " ฿", W - PAD - 18, totalBoxY + 32);
+
+    y = totalBoxY + 56;
+
+    // ===== QR section =====
+    if (qrImg) {
+      y += 28;
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 14px " + FONT;
+      ctx.textAlign = "center";
+      ctx.fillText("📱 สแกน QR เพื่อโอน", W / 2, y);
+
+      y += 18;
+      const qrX = (W - qrW) / 2;
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      roundRectPath(ctx, qrX - 8, y, qrW + 16, qrH + 16, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.drawImage(qrImg, qrX, y + 8, qrW, qrH);
+    }
+
+    // ===== Footer =====
+    ctx.fillStyle = "#cbd5e1";
+    ctx.font = "10px " + FONT;
+    ctx.textAlign = "center";
+    const ts = new Date().toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
+    ctx.fillText("BadCount  ·  " + ts, W / 2, H - 16);
+
+    // ===== Download =====
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    const safeLoc = (s.location || "due").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
+    a.download = `Due_${safeLoc}_${s.date || todayISO()}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    toast(`📥 บันทึกรูปทวง ${unpaid.length} คนแล้ว`, 3000);
+  };
+
+  loadImageSafe(hasQR ? s.bankQR : null).then((qrImg) => {
+    if (hasQR && !qrImg) {
+      toast("⚠️ โหลด QR ไม่ได้ — บันทึกรูปไม่มี QR");
+    }
+    buildReminder(qrImg);
+  });
 });
 
 function renderMembers() {
@@ -530,7 +976,12 @@ function addMember() {
   const name = input.value.trim();
   if (!name) return;
   const members = [...(currentSession.members || [])];
+  if (members.some(m => (m.name || "").toLowerCase() === name.toLowerCase())) {
+    toast(`มีชื่อ "${name}" ในก๊วนแล้ว`);
+    return;
+  }
   members.push({ id: uid(), name, shuttlesUsed: 0 });
+  addKnownMember(name); // จดจำไว้สำหรับครั้งหน้า
   saveSession({ members });
   input.value = "";
   input.focus();
@@ -596,9 +1047,9 @@ function renderMatchDraft() {
   const allMembers = currentSession.members || [];
   const selectedDiv = $("selectedPlayers");
   const availableDiv = $("availablePlayers");
-  
+
   $("selPlayerCount").textContent = matchDraftPlayers.length;
-  
+
   let selHtml = "";
   let availHtml = "";
 
@@ -737,10 +1188,11 @@ $("btnSaveMatch").addEventListener("click", () => {
 $("btnViewStats").addEventListener("click", () => {
   const members = currentSession.members || [];
   const matches = currentSession.matches || [];
-  
+
+  // playedWith[id1][id2] = จำนวนเกมที่ id1 และ id2 อยู่ในเกมเดียวกัน
   const stats = {};
-  members.forEach(m => { stats[m.id] = { name: m.name, games: 0, partners: {} }; });
-  
+  members.forEach(m => { stats[m.id] = { name: m.name, games: 0, playedWith: {} }; });
+
   matches.forEach(m => {
     const p = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
     p.forEach(id1 => {
@@ -748,34 +1200,53 @@ $("btnViewStats").addEventListener("click", () => {
       stats[id1].games++;
       p.forEach(id2 => {
         if (id1 !== id2 && stats[id2]) {
-          stats[id1].partners[id2] = (stats[id1].partners[id2] || 0) + 1;
+          stats[id1].playedWith[id2] = (stats[id1].playedWith[id2] || 0) + 1;
         }
       });
     });
   });
-  
-  const sortedIds = Object.keys(stats).sort((a,b) => stats[a].games - stats[b].games);
-  
+
+  // เรียงจากคนที่เล่นน้อยที่สุดก่อน (เพื่อเห็นว่าใครต้องลงเล่นเพิ่ม)
+  const sortedIds = Object.keys(stats).sort((a, b) => stats[a].games - stats[b].games);
+
   let html = "";
   if (matches.length === 0) {
     html = `<p class="text-center text-slate-500 text-sm py-4">ยังไม่มีข้อมูลสถิติ เริ่มจัดเกมได้เลย</p>`;
   } else {
     sortedIds.forEach(id => {
       const st = stats[id];
-      let partnersText = "ยังไม่เคยคู่ใคร";
-      if (Object.keys(st.partners).length > 0) {
-        partnersText = Object.keys(st.partners).map(pid => {
-          return `${escapeHtml(stats[pid] ? stats[pid].name : '?')}${st.partners[pid] > 1 ? `(${st.partners[pid]})` : ''}`;
-        }).join(", ");
+
+      // เรียงคนที่เล่นด้วยจากมาก -> น้อย
+      const playedEntries = Object.entries(st.playedWith).sort((a, b) => b[1] - a[1]);
+
+      let chipsHtml = "";
+      if (playedEntries.length === 0) {
+        chipsHtml = `<span class="text-slate-400 italic">ยังไม่ได้ลงเล่น</span>`;
+      } else {
+        chipsHtml = playedEntries.map(([pid, count]) => {
+          const name = stats[pid] ? stats[pid].name : "?";
+          // สีของ badge: เล่นด้วยกันมาก = เขียวเข้ม, น้อย = เทา
+          const badgeColor = count >= 3
+            ? "bg-emerald-500 text-white"
+            : count === 2
+              ? "bg-emerald-300 text-emerald-900"
+              : "bg-slate-200 text-slate-700";
+          return `<span class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2.5 py-1 text-xs">
+            <span class="text-slate-700">${escapeHtml(name)}</span>
+            <span class="${badgeColor} text-[10px] font-bold rounded-full px-1.5 min-w-[18px] text-center">${count}</span>
+          </span>`;
+        }).join("");
       }
+
       html += `
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm">
-          <div class="flex justify-between items-center mb-1">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 text-sm">
+          <div class="flex justify-between items-center mb-2">
             <span class="font-bold text-slate-800">${escapeHtml(st.name)}</span>
-            <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-semibold">${st.games} เกม</span>
+            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-semibold">🏸 ${st.games} เกม</span>
           </div>
-          <div class="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
-            <span class="font-semibold text-slate-600">เคยคู่กับ:</span> ${partnersText}
+          <div class="text-[10px] text-slate-400 mb-1.5 uppercase tracking-wide font-semibold">เคยเล่นด้วยกัน</div>
+          <div class="flex flex-wrap gap-1.5">
+            ${chipsHtml}
           </div>
         </div>
       `;
@@ -816,7 +1287,30 @@ async function setupJoinView(id) {
       const s = docSnap.data();
       $("joinSessionName").textContent = s.location || "ก๊วนแบดมินตัน";
       $("joinSessionDate").textContent = s.date ? formatDate(s.date) : "";
-      
+
+      // Render courts info
+      const courtsSection = $("joinCourtsSection");
+      const courtsListEl = $("joinCourtsList");
+      const courts = (s.courts || []).filter(c => c.number || c.startTime || c.endTime);
+      if (courtsSection && courtsListEl) {
+        if (courts.length === 0) {
+          courtsSection.classList.add("hidden");
+        } else {
+          courtsSection.classList.remove("hidden");
+          courtsListEl.innerHTML = courts.map(c => {
+            const num = c.number ? `สนาม ${escapeHtml(c.number)}` : "สนาม —";
+            let timeStr = "";
+            if (c.startTime && c.endTime) timeStr = `${c.startTime} - ${c.endTime}`;
+            else if (c.startTime) timeStr = `เริ่ม ${c.startTime}`;
+            else if (c.endTime) timeStr = `ถึง ${c.endTime}`;
+            return `<li class="flex items-center gap-2">
+              <span class="font-semibold text-slate-800">${num}</span>
+              ${timeStr ? `<span class="text-xs text-slate-500">🕐 ${timeStr}</span>` : ""}
+            </li>`;
+          }).join("");
+        }
+      }
+
       const mems = s.members || [];
       $("joinCount").textContent = mems.length;
       $("joinMembersList").innerHTML = mems.map(m => `<li class="flex items-center gap-2"><span class="text-emerald-500">●</span> ${escapeHtml(m.name)}</li>`).join("");
@@ -852,6 +1346,7 @@ $("btnSubmitJoin").addEventListener("click", async () => {
 
     members.push({ id: uid(), name, shuttlesUsed: 0 });
     await updateDoc(ref, { members });
+    addKnownMember(name); // จดจำชื่อในเครื่องของผู้เล่นไว้
 
     // Show success with the added name
     const successNameEl = $("joinSuccessName");
@@ -897,8 +1392,11 @@ $("btnShareJoin").addEventListener("click", () => {
 });
 
 $("btnShare").addEventListener("click", () => {
-  navigator.clipboard.writeText(window.location.href).then(() => {
-    toast("คัดลอกลิงก์เรียบร้อยแล้ว");
+  if (!currentSessionId) return;
+  // ใช้ #/m/{id} เพื่อให้ผู้รับล็อกอยู่ใน session view เสมอ ไม่ว่าเครื่องเขาจะ login ไว้หรือไม่
+  const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
+  navigator.clipboard.writeText(managerUrl).then(() => {
+    toast("คัดลอกลิงก์ Manager แล้ว (ผู้รับแก้ก๊วนนี้ได้อย่างเดียว)");
   }).catch(() => {
     toast("ไม่สามารถคัดลอกลิงก์ได้");
   });
@@ -1262,10 +1760,14 @@ $("fldBankQR").addEventListener("change", (e) => {
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, width, height);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      // Save 3 places: localStorage (cache), session (Firestore), global defaults (Firestore)
       localStorage.setItem("defaultBankQR", dataUrl);
-      saveSession({ bankQR: dataUrl }).then(() => {
+      Promise.all([
+        saveSession({ bankQR: dataUrl }),
+        saveGlobalDefaults({ bankQR: dataUrl })
+      ]).then(() => {
         renderBankQR();
-        toast("อัปโหลด QR Code สำเร็จ");
+        toast("อัปโหลด QR Code สำเร็จ — ใช้ได้ทุกก๊วน ✓");
       });
     };
     img.src = evt.target.result;
@@ -1274,13 +1776,15 @@ $("fldBankQR").addEventListener("change", (e) => {
 });
 
 $("btnRemoveQR").addEventListener("click", () => {
-  if(confirm("ต้องการลบรูป QR Code รับเงินใช่หรือไม่?")) {
-    localStorage.removeItem("defaultBankQR");
-    saveSession({ bankQR: null }).then(() => {
-      $("fldBankQR").value = "";
-      renderBankQR();
-    });
-  }
+  if (!confirm("ต้องการลบรูป QR Code รับเงินใช่หรือไม่? (จะลบทั้งระบบ — ก๊วนใหม่จะไม่มี QR)")) return;
+  localStorage.removeItem("defaultBankQR");
+  Promise.all([
+    saveSession({ bankQR: null }),
+    saveGlobalDefaults({ bankQR: null })
+  ]).then(() => {
+    $("fldBankQR").value = "";
+    renderBankQR();
+  });
 });
 
 $("btnCloseQR").addEventListener("click", () => $("qrModal").classList.add("hidden"));
@@ -1341,18 +1845,33 @@ function renderSessionList(container, snap, isHome) {
     const s = d.data();
     const totals = calcSessionTotals(s);
     const members = s.members || [];
+    const isClosed = s.status === "closed";
+
+    const cardClass = isClosed
+      ? "block p-3 pr-10 rounded-xl border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-400 transition"
+      : "block p-3 pr-10 rounded-xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/50 transition";
+    const priceClass = isClosed ? "font-bold text-emerald-700" : "font-bold text-emerald-600";
+    const statusBadge = isClosed
+      ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">✓ ปิดแล้ว</span>`
+      : `<span class="text-xs text-emerald-600">เปิดอยู่</span>`;
+
+    // Courts compact summary
+    const courtNums = (s.courts || []).map(c => c.number).filter(Boolean);
+    const courtSummary = courtNums.length > 0
+      ? ` · 🏟️ ${escapeHtml(courtNums.join(","))}`
+      : "";
+
     rows.push(`
       <div class="relative">
-        <a href="#/session/${d.id}"
-           class="block p-3 pr-10 rounded-xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/50 transition">
+        <a href="#/session/${d.id}" class="${cardClass}">
           <div class="flex items-center justify-between gap-2">
             <div class="flex-1 min-w-0">
-              <div class="font-semibold truncate">${escapeHtml(s.location || "ก๊วน")}</div>
-              <div class="text-xs text-slate-500 mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก</div>
+              <div class="font-semibold truncate ${isClosed ? "text-emerald-900" : ""}">${escapeHtml(s.location || "ก๊วน")}</div>
+              <div class="text-xs ${isClosed ? "text-emerald-700/70" : "text-slate-500"} mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก${courtSummary}</div>
             </div>
             <div class="text-right">
-              <div class="font-bold text-emerald-600">${fmt(totals.totalAll)} ฿</div>
-              <div class="text-xs ${s.status === "closed" ? "text-slate-400" : "text-emerald-600"}">${s.status === "closed" ? "ปิดแล้ว" : "เปิดอยู่"}</div>
+              <div class="${priceClass}">${fmt(totals.totalAll)} ฿</div>
+              <div class="mt-0.5">${statusBadge}</div>
             </div>
           </div>
         </a>
