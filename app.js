@@ -343,6 +343,7 @@ function renderSession() {
 // ---------- Courts ----------
 function renderCourts() {
   const list = $("courtsList");
+  const suggestions = $("courtSuggestions"); // ดึงกล่องใส่คำแนะนำมา
   if (!list) return;
 
   // Preserve focus: ถ้า user กำลังพิมพ์อยู่ ห้าม rebuild
@@ -350,6 +351,38 @@ function renderCourts() {
 
   const courts = currentSession.courts || [];
   $("courtCount").textContent = courts.length;
+
+  // --- 2. เพิ่มระบบสร้างปุ่ม Suggestion ดึงสนามล่าสุด ---
+  if (suggestions) {
+    if (courts.length === 0) {
+      try {
+        const lastCourts = JSON.parse(localStorage.getItem("lastUsedCourts") || "[]");
+        const validCourts = lastCourts.filter(c => c.number || c.startTime || c.endTime);
+        
+        if (validCourts.length > 0) {
+          const courtDesc = validCourts.map(c => c.number ? `สนาม ${c.number}` : "เวลา " + (c.startTime || '')).join(", ");
+          suggestions.innerHTML = `
+            <button id="btnSuggestCourts" class="px-3 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full font-medium transition-transform active:scale-95 shadow-sm">
+              + ดึงสนามล่าสุด (${escapeHtml(courtDesc)})
+            </button>
+          `;
+          
+          // เมื่อกดปุ่ม ให้ดึงข้อมูลมาสร้างสนามใหม่
+          $("btnSuggestCourts").addEventListener("click", () => {
+            const newCourts = validCourts.map(c => ({ ...c, id: uid() })); // สร้าง ID ใหม่ให้สนาม
+            saveSession({ courts: newCourts });
+          });
+        } else {
+          suggestions.innerHTML = "";
+        }
+      } catch (e) {
+        suggestions.innerHTML = "";
+      }
+    } else {
+      suggestions.innerHTML = ""; // ถ้ามีสนามถูกเลือกแล้ว ให้ซ่อนปุ่มแนะนำไป
+    }
+  }
+  // -------------------------------------------------
 
   if (courts.length === 0) {
     list.innerHTML = `<p class="text-slate-400 text-center py-3 text-xs">ยังไม่ได้ระบุสนาม กดเพิ่มได้</p>`;
