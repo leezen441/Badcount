@@ -1357,36 +1357,91 @@ async function setupJoinView(id) {
         }
       }
 
-// --- ก๊อปปี้ไปวางทับ ---
+// --- Render members + payment info ---
       const mems = s.members || [];
       $("joinCount").textContent = mems.length;
 
-      // 1. เรียกใช้ฟังก์ชันคำนวณเงินที่เราเพิ่งแก้ไป
+      const isClosed = s.status === "closed";
       const totals = calcSessionTotals(s);
 
-      // 2. วาดรายชื่อพร้อมยอดเงิน
-      $("joinMembersList").innerHTML = mems.map((m, idx) => {
-        const cost = totals.perMember && totals.perMember[idx] !== undefined ? totals.perMember[idx] : 0;
-        const isPaid = !!m.isPaid;
-        
-        // สถานะการจ่ายเงิน
-        const priceBadge = isPaid 
-          ? `<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">✓ จ่ายแล้ว</span>`
-          : `<span class="text-sm font-bold text-rose-600">${fmt(cost)} ฿</span>`;
+      // Toggle banner ปิดก๊วน
+      const closedBanner = $("joinClosedBanner");
+      if (closedBanner) closedBanner.classList.toggle("hidden", !isClosed);
 
+      // Toggle payment section (total + QR) — แสดงเฉพาะตอนปิดก๊วน
+      const paySection = $("joinPaymentSection");
+      const totalDueBox = $("joinTotalDueBox");
+      const qrWrap = $("joinQRWrap");
+      const qrImg = $("joinQRImg");
+
+      // Hide join form when session is closed (no more registration allowed)
+      const formSection = $("joinFormSection");
+      const btnJoinAnother = $("btnJoinAnother");
+
+      if (isClosed) {
+        paySection?.classList.remove("hidden");
+
+        // ซ่อน form ลงชื่อ + ปุ่ม "+ ลงชื่อให้คนอื่นเพิ่ม"
+        formSection?.classList.add("hidden");
+        btnJoinAnother?.classList.add("hidden");
+
+        // แสดงยอดค้างรวม (ถ้ามีคนยังไม่จ่าย)
+        const unpaidTotal = totals.unpaidTotal || 0;
+        if (unpaidTotal > 0) {
+          totalDueBox?.classList.remove("hidden");
+          $("joinTotalDue").textContent = fmt(unpaidTotal);
+        } else {
+          totalDueBox?.classList.add("hidden");
+        }
+
+        // แสดง QR ถ้ามี
+        if (s.bankQR && qrImg && qrWrap) {
+          qrImg.src = s.bankQR;
+          qrWrap.classList.remove("hidden");
+        } else {
+          qrWrap?.classList.add("hidden");
+        }
+      } else {
+        paySection?.classList.add("hidden");
+        totalDueBox?.classList.add("hidden");
+        qrWrap?.classList.add("hidden");
+
+        // กลับมาแสดง form ตอนเปิดก๊วน (เผื่อเปิดใหม่หลังปิด)
+        formSection?.classList.remove("hidden");
+        btnJoinAnother?.classList.remove("hidden");
+      }
+
+      // Render members list
+      // - ปิดก๊วน: แสดงยอดเงิน + สถานะจ่าย
+      // - เปิดก๊วน: แสดงแค่ชื่อ (ไม่โชว์ยอด)
+      $("joinMembersList").innerHTML = mems.map((m, idx) => {
+        const isPaid = !!m.isPaid;
+
+        if (isClosed) {
+          const cost = totals.perMember?.[idx] ?? 0;
+          const priceBadge = isPaid
+            ? `<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">✓ จ่ายแล้ว</span>`
+            : `<span class="text-sm font-bold text-rose-600">${fmt(cost)} ฿</span>`;
+          return `
+            <li class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 pr-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="${isPaid ? 'text-emerald-500' : 'text-rose-400'} shrink-0 text-xs">●</span>
+                <span class="${isPaid ? 'text-slate-500 line-through' : 'text-slate-800 font-medium'} truncate">${escapeHtml(m.name)}</span>
+              </div>
+              <div class="text-right shrink-0 ml-2">${priceBadge}</div>
+            </li>
+          `;
+        }
+
+        // เปิดก๊วน — แค่ชื่อ
         return `
-          <li class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 pr-2">
-            <div class="flex items-center gap-2 min-w-0">
-              <span class="${isPaid ? 'text-emerald-500' : 'text-slate-300'} shrink-0 text-xs">●</span> 
-              <span class="${isPaid ? 'text-slate-500' : 'text-slate-800 font-medium'} truncate">${escapeHtml(m.name)}</span>
-            </div>
-            <div class="text-right shrink-0 ml-2">
-              ${priceBadge}
-            </div>
+          <li class="flex items-center gap-2 py-1.5">
+            <span class="text-emerald-500 text-xs">●</span>
+            <span class="text-slate-800">${escapeHtml(m.name)}</span>
           </li>
         `;
       }).join("");
-      // --- สิ้นสุดส่วนที่ก๊อปปี้ ---
+      // --- สิ้นสุด ---
     });
   } catch (e) {
     $("joinSessionName").textContent = "เกิดข้อผิดพลาดในการโหลด";
