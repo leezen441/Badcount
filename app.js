@@ -1907,21 +1907,52 @@ function renderSessionList(container, snap, isHome) {
       ? ` · 🏟️ ${escapeHtml(courtNums.join(","))}`
       : "";
 
+// 1. ตรวจสอบรายชื่อคนที่ยังไม่ได้จ่ายเงิน
+    let unpaidListHtml = "";
+    if (isClosed) {
+      const unpaidMembers = [];
+      members.forEach((m, idx) => {
+        // เช็คว่ายังไม่จ่าย และมียอดที่ต้องจ่ายมากกว่า 0
+        if (!m.isPaid && totals.perMember && totals.perMember[idx] > 0) {
+          unpaidMembers.push({ name: m.name, amount: totals.perMember[idx] });
+        }
+      });
+
+      // 2. ถ้ามีคนค้างจ่าย ให้สร้าง HTML แสดงรายชื่อและจำนวนเงิน
+      if (unpaidMembers.length > 0) {
+        unpaidListHtml = `
+          <div class="mt-2 pt-2 border-t border-emerald-100/50">
+            <div class="text-[10px] font-semibold text-rose-600 mb-1">ค้างชำระ:</div>
+            <div class="flex flex-wrap gap-1.5">
+              ${unpaidMembers.map(u => `
+                <span class="inline-flex items-center gap-1 bg-white border border-rose-200 text-rose-700 text-[10px] px-1.5 py-0.5 rounded shadow-sm">
+                  <span class="truncate max-w-[80px]">${escapeHtml(u.name)}</span>
+                  <span class="font-bold border-l border-rose-200 pl-1">${fmt(u.amount)}฿</span>
+                </span>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // 3. วาดการ์ดแสดงผล
     rows.push(`
       <div class="relative">
         <a href="#/session/${d.id}" class="${cardClass}">
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
               <div class="font-semibold truncate ${isClosed ? "text-emerald-900" : ""}">${escapeHtml(s.location || "ก๊วน")}</div>
               <div class="text-xs ${isClosed ? "text-emerald-700/70" : "text-slate-500"} mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก${courtSummary}</div>
             </div>
-            <div class="text-right">
+            <div class="text-right flex flex-col items-end shrink-0">
               <div class="${priceClass}">${fmt(totals.totalAll)} ฿</div>
               <div class="mt-0.5">${statusBadge}</div>
             </div>
           </div>
+          ${unpaidListHtml}
         </a>
-        <button data-quick-del="${d.id}" class="absolute top-1/2 -translate-y-1/2 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors" title="ลบก๊วนนี้">
+        <button data-quick-del="${d.id}" class="absolute top-3 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors" title="ลบก๊วนนี้">
           ✕
         </button>
       </div>
@@ -1949,26 +1980,54 @@ function calcSessionTotals(s) {
   const matches = s.matches || [];
   const N = members.length;
   
+  // ดึงตั้งค่าค่าใช้จ่าย
+  const courtFee = +s.courtFee || 0;
+  const courtFeeType = s.courtFeeType || "total"; 
+  const shuttlePrice = +s.shuttlePrice || 0;
+  const otherCost = +s.otherCost || 0;
+  const otherCostType = s.otherCostType || "perPerson";
+
+  // คำนวณลูกแบด
   const manualShuttles = members.reduce((sum, m) => sum + (m.shuttlesUsed || 0), 0);
   let matchShuttlesTotal = 0;
-  let collectedShuttles = 0;
-  
+  const matchShuttlesMap = {};
+
   matches.forEach(match => {
+    const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
+    if (pIds.length === 0) return;
+
     const count = parseShuttleCount(match.shuttleNumbers);
     matchShuttlesTotal += count;
-    
-    const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
-    collectedShuttles += count * pIds.length;
+    pIds.forEach(id => {
+      matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+    });
   });
-  
+
   const totalShuttles = manualShuttles + matchShuttlesTotal;
-  
-  const courtFeeType = s.courtFeeType || "total";
-  const courtFee = +s.courtFee || 0;
-  const totalCourtCost = courtFeeType === "total" ? courtFee : courtFee * N;
-  
-  const totalAll = totalCourtCost + (manualShuttles + collectedShuttles) * (+s.shuttlePrice || 0) + (+s.otherCost || 0);
-  return { totalShuttles, totalAll };
+
+  // คำนวณค่าคอร์ดและค่าอื่นๆ ต่อคน
+  const courtPer = N > 0 ? (courtFeeType === "total" ? courtFee / N : courtFee) : 0;
+  const otherPer = N > 0 ? (otherCostType === "total" ? otherCost / N : otherCost) : 0;
+
+  let totalAll = 0;
+  let unpaidTotal = 0;
+
+  // คำนวณยอดเงินรายบุคคล
+  const perMember = members.map((m) => {
+    const individualShuttles = (m.shuttlesUsed || 0) + (matchShuttlesMap[m.id] || 0);
+    const cost = courtPer + otherPer + (individualShuttles * shuttlePrice);
+    
+    totalAll += cost;
+
+    // ถ้ายอดนี้ยังไม่ถูกทำเครื่องหมายว่าจ่ายแล้ว ให้บวกเข้ายอดค้างชำระ
+    if (!m.isPaid) {
+      unpaidTotal += cost;
+    }
+
+    return cost;
+  });
+
+  return { totalShuttles, totalAll, unpaidTotal, perMember };
 }
 
 function formatDate(iso) {
