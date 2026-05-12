@@ -1357,9 +1357,36 @@ async function setupJoinView(id) {
         }
       }
 
+// --- ก๊อปปี้ไปวางทับ ---
       const mems = s.members || [];
       $("joinCount").textContent = mems.length;
-      $("joinMembersList").innerHTML = mems.map(m => `<li class="flex items-center gap-2"><span class="text-emerald-500">●</span> ${escapeHtml(m.name)}</li>`).join("");
+
+      // 1. เรียกใช้ฟังก์ชันคำนวณเงินที่เราเพิ่งแก้ไป
+      const totals = calcSessionTotals(s);
+
+      // 2. วาดรายชื่อพร้อมยอดเงิน
+      $("joinMembersList").innerHTML = mems.map((m, idx) => {
+        const cost = totals.perMember && totals.perMember[idx] !== undefined ? totals.perMember[idx] : 0;
+        const isPaid = !!m.isPaid;
+        
+        // สถานะการจ่ายเงิน
+        const priceBadge = isPaid 
+          ? `<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">✓ จ่ายแล้ว</span>`
+          : `<span class="text-sm font-bold text-rose-600">${fmt(cost)} ฿</span>`;
+
+        return `
+          <li class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 pr-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="${isPaid ? 'text-emerald-500' : 'text-slate-300'} shrink-0 text-xs">●</span> 
+              <span class="${isPaid ? 'text-slate-500' : 'text-slate-800 font-medium'} truncate">${escapeHtml(m.name)}</span>
+            </div>
+            <div class="text-right shrink-0 ml-2">
+              ${priceBadge}
+            </div>
+          </li>
+        `;
+      }).join("");
+      // --- สิ้นสุดส่วนที่ก๊อปปี้ ---
     });
   } catch (e) {
     $("joinSessionName").textContent = "เกิดข้อผิดพลาดในการโหลด";
