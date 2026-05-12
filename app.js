@@ -1380,27 +1380,46 @@ async function setupJoinView(id) {
       const btnJoinAnother = $("btnJoinAnother");
 
       if (isClosed) {
-        paySection?.classList.remove("hidden");
-
         // ซ่อน form ลงชื่อ + ปุ่ม "+ ลงชื่อให้คนอื่นเพิ่ม"
         formSection?.classList.add("hidden");
         btnJoinAnother?.classList.add("hidden");
 
-        // แสดงจำนวนคนค้างชำระ (ไม่บอกยอด เพื่อไม่ให้สับสนว่าเป็นยอดของตัวเอง)
         const unpaidCount = mems.filter(m => !m.isPaid).length;
-        if (unpaidCount > 0) {
-          totalDueBox?.classList.remove("hidden");
-          $("joinUnpaidCount").textContent = unpaidCount;
-        } else {
-          totalDueBox?.classList.add("hidden");
-        }
+        const allPaid = mems.length > 0 && unpaidCount === 0;
 
-        // แสดง QR ถ้ามี
-        if (s.bankQR && qrImg && qrWrap) {
-          qrImg.src = s.bankQR;
-          qrWrap.classList.remove("hidden");
-        } else {
+        if (allPaid) {
+          // ✅ ทุกคนจ่ายครบ — ซ่อน QR/ยอด, เปลี่ยน banner เป็นสไตล์ดีใจ
+          paySection?.classList.add("hidden");
+          totalDueBox?.classList.add("hidden");
           qrWrap?.classList.add("hidden");
+
+          if (closedBanner) {
+            closedBanner.textContent = "✅ ปิดก๊วนแล้ว — ทุกคนจ่ายครบ 🎉";
+            closedBanner.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
+          }
+        } else {
+          // ⏳ ยังมีคนค้าง — โชว์ banner เตือน + QR + จำนวนคนค้าง
+          paySection?.classList.remove("hidden");
+
+          if (closedBanner) {
+            closedBanner.textContent = "🔒 ปิดแล้ว — ดูยอดที่ต้องจ่ายและ QR โอนเงินด้านล่าง";
+            closedBanner.className = "bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
+          }
+
+          if (unpaidCount > 0) {
+            totalDueBox?.classList.remove("hidden");
+            $("joinUnpaidCount").textContent = unpaidCount;
+          } else {
+            totalDueBox?.classList.add("hidden");
+          }
+
+          // แสดง QR ถ้ามี
+          if (s.bankQR && qrImg && qrWrap) {
+            qrImg.src = s.bankQR;
+            qrWrap.classList.remove("hidden");
+          } else {
+            qrWrap?.classList.add("hidden");
+          }
         }
       } else {
         paySection?.classList.add("hidden");
