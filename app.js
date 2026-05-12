@@ -1394,7 +1394,7 @@ async function setupJoinView(id) {
           qrWrap?.classList.add("hidden");
 
           if (closedBanner) {
-            closedBanner.textContent = "✅ ปิดก๊วนแล้ว — ทุกคนจ่ายครบ 🎉";
+            closedBanner.textContent = "✅ ปิดแล้ว — ทุกคนจ่ายครบ 🎉";
             closedBanner.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
           }
         } else {
