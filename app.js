@@ -286,6 +286,76 @@ $("btnCreateSession").addEventListener("click", async () => {
   }
 });
 
+// ---------- "ก๊วนอาทิตย์หน้า" — Clone จากก๊วนล่าสุด ----------
+
+// หาวันอาทิตย์ที่ใกล้ถึงที่สุด (ถ้าวันนี้คือวันอาทิตย์ ใช้วันนี้)
+function getNextSundayISO() {
+  const now = new Date();
+  const day = now.getDay(); // 0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์
+  const daysUntilSunday = day === 0 ? 0 : (7 - day);
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() + daysUntilSunday);
+  // ใช้ local date (ไม่ใช่ UTC) เพื่อให้ตรงกับเขตเวลาไทย
+  const yyyy = sunday.getFullYear();
+  const mm = String(sunday.getMonth() + 1).padStart(2, "0");
+  const dd = String(sunday.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+$("btnCreateRecurring").addEventListener("click", async () => {
+  const btn = $("btnCreateRecurring");
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span>⏳</span> <span>กำลังสร้าง...</span>`;
+
+  try {
+    // ดึงก๊วนล่าสุด 1 อัน
+    const q = query(SESSIONS, orderBy("createdAt", "desc"), limit(1));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      toast("ยังไม่มีก๊วนเก่าให้ copy — กด + Open Court สร้างก๊วนแรกได้เลย", 3500);
+      return;
+    }
+
+    const last = snap.docs[0].data();
+    const nextSunday = getNextSundayISO();
+
+    // Copy ทุกอย่างยกเว้น members, matches, status, isPaid
+    // - regenerate court IDs เพื่อความสะอาด
+    const newSession = {
+      date: nextSunday,
+      location: last.location || "",
+      courtFee: last.courtFee || 0,
+      courtFeeType: last.courtFeeType || "perPerson",
+      shuttlePrice: last.shuttlePrice || 0,
+      otherCost: last.otherCost || 0,
+      otherCostType: last.otherCostType || "perPerson",
+      courts: (last.courts || []).map(c => ({
+        id: uid(),
+        number: c.number || "",
+        startTime: c.startTime || "",
+        endTime: c.endTime || ""
+      })),
+      bankQR: last.bankQR || null,
+      members: [],   // ❌ ไม่ copy
+      matches: [],   // ❌ ไม่ copy
+      status: "open",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    const ref = await addDoc(SESSIONS, newSession);
+    toast(`สร้างก๊วน ${formatDate(nextSunday)} แล้ว 🎉`, 3000);
+    location.hash = `#/session/${ref.id}`;
+  } catch (err) {
+    alert("สร้างก๊วนไม่สำเร็จ: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+});
+
 // ============================================================
 // SESSION VIEW
 // ============================================================
