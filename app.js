@@ -80,6 +80,20 @@ function setAuthed() {
   localStorage.setItem(AUTH_KEY, String(Date.now() + AUTH_DURATION_MS));
 }
 
+// ---------- Manager Link Authentication ----------
+// รหัสคงที่สำหรับ manager (ผู้ช่วยจัดการกลุ่มรายวัน)
+// ใช้ sessionStorage — ปิดเบราว์เซอร์แล้วต้องใส่ใหม่
+const MANAGER_PASSCODE = "SHH123";
+const MANAGER_AUTH_KEY = "bcManagerAuth";
+
+function isManagerAuthed() {
+  return sessionStorage.getItem(MANAGER_AUTH_KEY) === "1";
+}
+
+function setManagerAuthed() {
+  sessionStorage.setItem(MANAGER_AUTH_KEY, "1");
+}
+
 // ---------- Known Members (จดจำชื่อที่เคยใช้) ----------
 const KNOWN_MEMBERS_KEY = "knownMembers";
 const KNOWN_MEMBERS_MAX = 30;
@@ -147,7 +161,7 @@ function showView(name, opts = {}) {
   // ซ่อน nav เมื่ออยู่หน้า join, login, หรือ session แบบ manager-mode (ไม่ได้ login)
   const logo = $("logoLink");
   const nav = $("mainNav");
-  const shouldLockNav = name === "join" || name === "login" || (name === "session" && opts.lockNav);
+  const shouldLockNav = name === "join" || name === "login" || name === "manager-login" || (name === "session" && opts.lockNav);
 
   if (shouldLockNav) {
     if (nav) nav.classList.add("hidden");
@@ -175,11 +189,18 @@ function route() {
 
   const authed = isAuthed();
 
-  // #/m/{id} = manager link — ล็อก nav เสมอ ไม่ว่า auth หรือไม่
+  // #/m/{id} = manager link — ต้องใส่รหัส manager ก่อน (หรือเป็น admin authed อยู่แล้ว)
   // #/session/{id} = admin view — แสดง nav ถ้า authed, ล็อกถ้าไม่ authed
   if ((parts[0] === "session" || parts[0] === "m") && parts[1]) {
     currentSessionId = parts[1];
     const isManagerLink = parts[0] === "m";
+
+    // Manager link: ถ้ายังไม่ผ่าน manager auth และไม่ใช่ admin → แสดงหน้าใส่รหัส
+    if (isManagerLink && !authed && !isManagerAuthed()) {
+      showView("manager-login");
+      return;
+    }
+
     showView("session", { lockNav: isManagerLink || !authed });
     subscribeSession(currentSessionId);
     return;
@@ -249,6 +270,23 @@ $("loginForm").addEventListener("submit", async (e) => {
     $("loginError").classList.remove("hidden");
     $("fldPasscode").value = "";
     $("fldPasscode").focus();
+  }
+});
+
+// ---------- Manager login submit ----------
+$("managerLoginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = $("fldManagerPasscode").value;
+  if (input === MANAGER_PASSCODE) {
+    setManagerAuthed();
+    $("fldManagerPasscode").value = "";
+    $("managerLoginError").classList.add("hidden");
+    // re-route ไป session ที่ผู้ใช้เปิดอยู่ (currentSessionId ถูก set ไว้แล้วใน router)
+    route();
+  } else {
+    $("managerLoginError").classList.remove("hidden");
+    $("fldManagerPasscode").value = "";
+    $("fldManagerPasscode").focus();
   }
 });
 
