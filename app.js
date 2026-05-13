@@ -207,8 +207,29 @@ function route() {
     loadRecentSessions();
   }
 }
-window.addEventListener("hashchange", route);
 
+let appHashHistory = [location.hash || "#/"];
+window.addEventListener("hashchange", () => {
+  if (appHashHistory[appHashHistory.length - 1] !== location.hash) {
+    appHashHistory.push(location.hash || "#/");
+  }
+  route();
+});
+
+// ---------- Back Navigation ----------
+const navBackBtn = $("navBack");
+if (navBackBtn) {
+  navBackBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (appHashHistory.length > 1) {
+      appHashHistory.pop(); // remove current
+      const prev = appHashHistory.pop(); // get previous
+      location.hash = prev || "#/";
+    } else {
+      location.hash = "#/";
+    }
+  });
+}
 // ---------- Login submit ----------
 $("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -359,11 +380,21 @@ $("btnCreateRecurring").addEventListener("click", async () => {
 // ============================================================
 // SESSION VIEW
 // ============================================================
+// Track sessions ที่ user เพิ่งกดลบเอง — จะได้ไม่โชว์ toast ซ้ำ
+let recentlyDeletedSessionId = null;
+
 function subscribeSession(id) {
   const ref = doc(db, "sessions", id);
   unsubscribeSession = onSnapshot(ref, (snap) => {
     if (!snap.exists()) {
-      $("view-session").innerHTML = `<div class="bg-white rounded-2xl shadow-sm p-8 text-center"><p class="text-slate-500">ไม่พบก๊วนนี้ อาจถูกลบไปแล้ว</p><a href="#/" class="inline-block mt-4 text-emerald-600 hover:underline">← กลับหน้าหลัก</a></div>`;
+      // ❌ ห้าม replace innerHTML ของ view-session (จะทำให้ DOM elements หายและพังเวลาเข้าก๊วนอื่น)
+      // ✅ Redirect กลับหน้า Home แทน — DOM ของ view-session ยังอยู่พร้อมใช้
+      if (recentlyDeletedSessionId !== id) {
+        toast("ไม่พบก๊วนนี้ อาจถูกลบไปแล้ว");
+      }
+      // Cleanup listener ก่อน redirect
+      if (unsubscribeSession) { unsubscribeSession(); unsubscribeSession = null; }
+      if (location.hash !== "#/") location.hash = "#/";
       return;
     }
     currentSession = { id: snap.id, ...snap.data() };
@@ -1132,11 +1163,21 @@ $("btnCloseSession").addEventListener("click", () => {
 // Delete
 $("btnDeleteSession").addEventListener("click", async () => {
   if (!confirm("ลบก๊วนนี้ทิ้ง? (ไม่สามารถกู้คืนได้)")) return;
+  const deletingId = currentSessionId;
   try {
-    await deleteDoc(doc(db, "sessions", currentSessionId));
+    // Mark ว่าเป็น user-initiated delete (ป้องกัน toast "ไม่พบก๊วน" ที่ซ้ำซ้อน)
+    recentlyDeletedSessionId = deletingId;
+    setTimeout(() => {
+      if (recentlyDeletedSessionId === deletingId) recentlyDeletedSessionId = null;
+    }, 5000);
+
+    await deleteDoc(doc(db, "sessions", deletingId));
+    // Cleanup listener ทันที (snapshot fire "ไม่มี" จะไม่ trigger logic)
+    if (unsubscribeSession) { unsubscribeSession(); unsubscribeSession = null; }
     location.hash = "#/";
     toast("ลบก๊วนแล้ว");
   } catch (err) {
+    recentlyDeletedSessionId = null;
     toast("ลบไม่ได้: " + err.message);
   }
 });
