@@ -1639,32 +1639,55 @@ if (btnJoinAnother) {
 // ============================================================
 // SHARE & BANK QR
 // ============================================================
-$("btnShareJoin").addEventListener("click", () => {
+$("btnShareJoin").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
-  
   const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
-  const shareText = `🏸 Register เข้าร่วมก๊วนของวันที่ ${dateText}\nคลิกลิงก์เพื่อลงชื่อ: ${joinUrl}`;
 
-  navigator.clipboard.writeText(shareText).then(() => {
-    toast("คัดลอกข้อความชวนเพื่อนแล้ว (วางลงในแชทได้เลย)");
-  }).catch(() => {
-    toast("ไม่สามารถคัดลอกได้");
-  });
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "🏸 Register เข้าร่วมก๊วน",
+        text: `Register เข้าร่วมก๊วนของวันที่ ${dateText}`,
+        url: joinUrl
+      });
+      toast("แชร์ลิงก์สำเร็จ ✓");
+    } catch (err) {
+      if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
+    }
+  } else {
+    navigator.clipboard.writeText(joinUrl).then(() => {
+      toast("คัดลอกลิงก์แล้ว (วางในเบราว์เซอร์ได้เลย)");
+    }).catch(() => {
+      toast("ไม่สามารถคัดลอกได้");
+    });
+  }
 });
 
-$("btnShare").addEventListener("click", () => {
+$("btnShare").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   // ใช้ #/m/{id} เพื่อให้ผู้รับล็อกอยู่ใน session view เสมอ ไม่ว่าเครื่องเขาจะ login ไว้หรือไม่
   const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
   const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
-  const shareText = `Manager Link - ${dateText}\n${managerUrl}`;
 
-  navigator.clipboard.writeText(shareText).then(() => {
-    toast("คัดลอกลิงก์ Manager แล้ว (ผู้รับแก้ก๊วนนี้ได้อย่างเดียว)");
-  }).catch(() => {
-    toast("ไม่สามารถคัดลอกได้");
-  });
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Manager Link",
+        text: `Manager Link - ${dateText}`,
+        url: managerUrl
+      });
+      toast("แชร์ลิงก์ Manager สำเร็จ ✓");
+    } catch (err) {
+      if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
+    }
+  } else {
+    navigator.clipboard.writeText(managerUrl).then(() => {
+      toast("คัดลอกลิงก์ Manager แล้ว (วางในเบราว์เซอร์ได้เลย)");
+    }).catch(() => {
+      toast("ไม่สามารถคัดลอกได้");
+    });
+  }
 });
 
 // Helper: rounded rectangle path
