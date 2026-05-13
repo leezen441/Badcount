@@ -735,7 +735,7 @@ $("btnCopyDueList").addEventListener("click", () => {
     ctx.fillStyle = "#0f172a";
     ctx.font = "bold 22px " + FONT;
     ctx.textAlign = "center";
-    ctx.fillText("⏳ ทวงค่าก๊วน", W / 2, y);
+    ctx.fillText("⏳ ทวงค่าแบดมินตัน", W / 2, y);
 
     y += 24;
     ctx.fillStyle = "#64748b";
