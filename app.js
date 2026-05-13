@@ -1654,13 +1654,16 @@ $("btnShareJoin").addEventListener("click", () => {
 });
 
 $("btnShare").addEventListener("click", () => {
-  if (!currentSessionId) return;
+  if (!currentSessionId || !currentSession) return;
   // ใช้ #/m/{id} เพื่อให้ผู้รับล็อกอยู่ใน session view เสมอ ไม่ว่าเครื่องเขาจะ login ไว้หรือไม่
   const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
-  navigator.clipboard.writeText(managerUrl).then(() => {
+  const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
+  const shareText = `Manager Link - ${dateText}\n${managerUrl}`;
+
+  navigator.clipboard.writeText(shareText).then(() => {
     toast("คัดลอกลิงก์ Manager แล้ว (ผู้รับแก้ก๊วนนี้ได้อย่างเดียว)");
   }).catch(() => {
-    toast("ไม่สามารถคัดลอกลิงก์ได้");
+    toast("ไม่สามารถคัดลอกได้");
   });
 });
 
@@ -2253,7 +2256,7 @@ function formatDate(iso) {
   if (!iso) return "-";
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+    return d.toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" });
   } catch { return iso; }
 }
 
