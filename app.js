@@ -428,13 +428,13 @@ function renderSession() {
   if (s.status === "closed") {
     badge.textContent = "ปิดแล้ว";
     badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-slate-200 text-slate-700 whitespace-nowrap";
-    btnClose.innerHTML = "🔓 เปิดก๊วนอีกครั้ง";
+    btnClose.innerHTML = "🔓 เปิด Court อีกครั้ง";
     // เปลี่ยนเป็นปุ่มสีเขียวอ่อนเมื่อก๊วนปิดแล้ว
     btnClose.className = "flex-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 py-3 rounded-lg font-medium transition-colors";
   } else {
     badge.textContent = "เปิดอยู่";
     badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap";
-    btnClose.innerHTML = "✅ ปิดก๊วน";
+    btnClose.innerHTML = "✅ ปิด Court";
     // กลับเป็นปุ่มสีเทาปกติเมื่อก๊วนยังเปิดอยู่
     btnClose.className = "flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg font-medium transition-colors";
   }
@@ -1157,7 +1157,7 @@ $("qrModal").addEventListener("click", e => { if (e.target.id === "qrModal") $("
 $("btnCloseSession").addEventListener("click", () => {
   const newStatus = currentSession.status === "closed" ? "open" : "closed";
   saveSession({ status: newStatus });
-  toast(newStatus === "closed" ? "ปิดแล้ว ✓" : "เปิดก๊วนอีกครั้ง ✓");
+  toast(newStatus === "closed" ? "ปิด Court แล้ว ✓" : "เปิด Court อีกครั้ง ✓");
 });
 
 // Delete
@@ -1505,7 +1505,7 @@ async function setupJoinView(id) {
           qrWrap?.classList.add("hidden");
 
           if (closedBanner) {
-            closedBanner.textContent = "✅ ปิดก๊วนแล้ว — ทุกคนจ่ายครบ 🎉";
+            closedBanner.textContent = "✅ ปิด Court แล้ว — ทุกคนจ่ายครบ 🎉";
             closedBanner.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
           }
         } else {
