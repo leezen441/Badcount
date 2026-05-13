@@ -1640,13 +1640,16 @@ if (btnJoinAnother) {
 // SHARE & BANK QR
 // ============================================================
 $("btnShareJoin").addEventListener("click", () => {
-  if (!currentSessionId) return;
-  // Construct the join URL
+  if (!currentSessionId || !currentSession) return;
   const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
-  navigator.clipboard.writeText(joinUrl).then(() => {
-    toast("คัดลอกลิงก์ชวนเพื่อนแล้ว (ส่งให้เพื่อนกดลงชื่อได้เลย)");
+  
+  const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
+  const shareText = `🏸 Register เข้าร่วมก๊วนของวันที่ ${dateText}\nคลิกลิงก์เพื่อลงชื่อ: ${joinUrl}`;
+
+  navigator.clipboard.writeText(shareText).then(() => {
+    toast("คัดลอกข้อความชวนเพื่อนแล้ว (วางลงในแชทได้เลย)");
   }).catch(() => {
-    toast("ไม่สามารถคัดลอกลิงก์ได้");
+    toast("ไม่สามารถคัดลอกได้");
   });
 });
 
