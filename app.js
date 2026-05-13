@@ -129,6 +129,28 @@ const fmt = (n) => (Number(n) || 0).toLocaleString("th-TH", { minimumFractionDig
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+// คืนค่าเป็น array ของเบอร์ลูกแบด (อาจมีซ้ำได้) เพื่อให้ตรวจสอบเบอร์ซ้ำได้
+function listShuttleNumbers(str) {
+  if (!str) return [];
+  const nums = [];
+  const parts = String(str).trim().split(/[\s,]+/);
+  parts.forEach(p => {
+    if (!p) return;
+    if (p.includes('-')) {
+      const [s, e] = p.split('-');
+      const start = parseInt(s, 10);
+      const end = parseInt(e, 10);
+      if (!isNaN(start) && !isNaN(end) && end >= start && end - start < 50) {
+        for (let i = start; i <= end; i++) nums.push(i);
+      }
+    } else {
+      const n = parseInt(p, 10);
+      if (!isNaN(n)) nums.push(n);
+    }
+  });
+  return nums;
+}
+
 function parseShuttleCount(str) {
   if (!str) return 0;
   let count = 0;
@@ -1365,7 +1387,37 @@ $("btnSaveMatch").addEventListener("click", () => {
 
   const shuttles = $("fldMatchShuttles").value.trim();
   const matches = [...(currentSession.matches || [])];
-  
+
+  // ตรวจสอบเบอร์ลูกแบดซ้ำ
+  const newNumbers = listShuttleNumbers(shuttles);
+  if (newNumbers.length > 0) {
+    // 1) เบอร์ซ้ำในเกมเดียวกัน
+    const seen = new Set();
+    const dupesInThis = new Set();
+    newNumbers.forEach(n => {
+      if (seen.has(n)) dupesInThis.add(n);
+      seen.add(n);
+    });
+    if (dupesInThis.size > 0) {
+      return alert(`เบอร์ลูกแบดซ้ำในเกมนี้: ${[...dupesInThis].sort((a, b) => a - b).join(", ")}`);
+    }
+
+    // 2) เบอร์ซ้ำกับเกมอื่น (ยกเว้นเกมที่กำลังแก้ไขอยู่)
+    const otherUsed = new Map(); // number -> matchIndex (1-based)
+    matches.forEach((m, i) => {
+      if (m.id === editingMatchId) return;
+      listShuttleNumbers(m.shuttleNumbers || "").forEach(n => {
+        if (!otherUsed.has(n)) otherUsed.set(n, i + 1);
+      });
+    });
+    const conflicts = [...new Set(newNumbers)].filter(n => otherUsed.has(n));
+    if (conflicts.length > 0) {
+      const sorted = conflicts.sort((a, b) => a - b);
+      const detail = sorted.map(n => `${n} (เกมที่ ${otherUsed.get(n)})`).join(", ");
+      return alert(`เบอร์ลูกแบดถูกใช้ในเกมอื่นแล้ว: ${detail}`);
+    }
+  }
+
   if (editingMatchId) {
     const idx = matches.findIndex(x => x.id === editingMatchId);
     if (idx !== -1) {
@@ -1375,7 +1427,7 @@ $("btnSaveMatch").addEventListener("click", () => {
   } else {
     matches.push({ id: uid(), players: matchDraftPlayers, shuttleNumbers: shuttles });
   }
-  
+
   saveSession({ matches });
   $("matchModal").classList.add("hidden");
 });
