@@ -333,10 +333,14 @@ function showView(name, opts = {}) {
   // หน้า session แบบ manager-mode: ไม่ซ่อน nav ถ้าเป็น manager ที่ login แล้ว
   const logo = $("logoLink");
   const nav = $("mainNav");
-  let shouldLockNav = name === "join" || name === "login" || name === "manager-login";
+  let shouldLockNav = name === "login" || name === "manager-login";
+  if (name === "join") {
+    // หน้า join ถ้าเป็น Admin/Manager ไม่ต้องซ่อนเมนูด้านล่าง
+    shouldLockNav = !(isAuthed() || isManagerAuthed());
+  }
   if (name === "session" && opts.lockNav) {
-    if (isManagerAuthed()) {
-      shouldLockNav = false; // Manager ได้สิทธิ์เห็นเมนู Home/Back
+    if (isManagerAuthed() || isAuthed()) {
+      shouldLockNav = false; // Admin/Manager ได้สิทธิ์เห็นเมนู Home/Back
     } else {
       shouldLockNav = true;
     }
