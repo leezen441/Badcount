@@ -2035,9 +2035,10 @@ $("btnShareJoin").addEventListener("click", async () => {
       if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
     }
   } else {
-    // บังคับก๊อปปี้ลง Clipboard สำหรับใช้งานบนคอมพิวเตอร์ (ไม่ให้หน้าต่าง Share ของ Windows เด้งกวนใจ)
-    navigator.clipboard.writeText(shareText).then(() => {
-      toast("คัดลอกข้อความแล้ว (นำไปวางในไลน์ได้เลย)");
+    // บังคับก๊อปปี้สำหรับใช้งานบนคอมพิวเตอร์ (เอาแค่ลิงก์เปล่าๆ ตามที่ขอ)
+    const textToCopy = isMobile ? shareText : joinUrl;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      toast(isMobile ? "คัดลอกข้อความแล้ว (นำไปวางในไลน์ได้เลย)" : "คัดลอกลิงก์แล้ว (นำไปวางในเบราว์เซอร์ได้เลย)");
     }).catch(() => {
       toast("ไม่สามารถคัดลอกได้");
     });
