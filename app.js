@@ -1626,7 +1626,7 @@ function renderMatchDraft() {
       extraHtml = " +";
     }
 
-    const infoText = pCount > 0 ? `(เจอ ${pCount})` : `(${gamesPlayed[m.id]} เกม)`;
+    const infoText = `(V${pCount} G${gamesPlayed[m.id]})`;
     
     tiers[tierNum].push({
       html: `<button data-draft-id="${m.id}" class="px-3 py-1.5 rounded-full text-sm transition-transform active:scale-95 ${chipClass}">${escapeHtml(m.name)} <span class="text-[10px] font-normal opacity-80">${infoText}</span>${extraHtml}</button>`,
