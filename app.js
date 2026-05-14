@@ -1622,7 +1622,7 @@ function renderMatchDraft() {
       chipClass = "bg-slate-50 border border-slate-300 text-slate-700 hover:bg-slate-100";
       extraHtml = " +";
     } else { // tierNum === 4
-      chipClass = "bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 opacity-60";
+      chipClass = "bg-white border border-rose-200 text-rose-500 hover:bg-rose-50";
       extraHtml = " +";
     }
 
