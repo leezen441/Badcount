@@ -1770,30 +1770,50 @@ $("btnAutoDraft").addEventListener("click", () => {
     }
   });
 
-  // เลือกแบบ greedy:
-  // 1) คนแรกสุ่มจากกลุ่มที่เล่นเกมน้อยที่สุด
-  // 2) คนถัดๆ ไปให้คะแนน = gamesPlayed * 10 + ผลรวม partnerCount กับคนที่เลือกแล้ว
-  //    เลือกคะแนนน้อยสุด (สุ่มถ้าเสมอกัน)
-  const picked = [];
-
+  // Joint optimization:
+  // 1) enumerate ทุกชุด 4 คนจากสมาชิกทั้งหมด
+  // 2) ให้คะแนนแต่ละชุด 3 ระดับ:
+  //    a) balance — รวมเกมส่วนเกินจากค่าต่ำสุด (ยิ่งน้อยยิ่งดี = คนเล่นน้อยถูกเลือกก่อน)
+  //    b) maxOverlap — คู่ที่จับกันมากสุดในชุดนี้ (เลี่ยงสร้างคู่ที่ซ้ำหนัก)
+  //    c) sumOverlap — ผลรวม partner overlap ทุกคู่ในชุด
+  // 3) เรียงตาม balance → maxOverlap → sumOverlap แล้วสุ่มในกลุ่มที่คะแนนเสมอกัน
   const minGames = Math.min(...members.map(m => gamesPlayed[m.id]));
-  const lowestTier = members.filter(m => gamesPlayed[m.id] === minGames);
-  const first = lowestTier[Math.floor(Math.random() * lowestTier.length)];
-  picked.push(first.id);
 
-  while (picked.length < 4) {
-    const candidates = members.filter(m => !picked.includes(m.id));
-    const scored = candidates.map(m => {
-      const overlap = picked.reduce((sum, pid) => sum + (partnerCount[m.id][pid] || 0), 0);
-      return { id: m.id, score: gamesPlayed[m.id] * 10 + overlap };
-    });
-    const minScore = Math.min(...scored.map(s => s.score));
-    const best = scored.filter(s => s.score === minScore);
-    const next = best[Math.floor(Math.random() * best.length)];
-    picked.push(next.id);
+  function scoreCombo(ids) {
+    let sum = 0, max = 0;
+    for (let i = 0; i < 4; i++) {
+      for (let j = i + 1; j < 4; j++) {
+        const o = partnerCount[ids[i]][ids[j]] || 0;
+        sum += o;
+        if (o > max) max = o;
+      }
+    }
+    const balance = ids.reduce((acc, id) => acc + (gamesPlayed[id] - minGames), 0);
+    return { balance, max, sum };
   }
 
-  matchDraftPlayers = picked;
+  const combos = [];
+  const n = members.length;
+  for (let a = 0; a < n - 3; a++) {
+    for (let b = a + 1; b < n - 2; b++) {
+      for (let c = b + 1; c < n - 1; c++) {
+        for (let d = c + 1; d < n; d++) {
+          const ids = [members[a].id, members[b].id, members[c].id, members[d].id];
+          const sc = scoreCombo(ids);
+          combos.push({ ids, balance: sc.balance, max: sc.max, sum: sc.sum });
+        }
+      }
+    }
+  }
+
+  combos.sort((x, y) => x.balance - y.balance || x.max - y.max || x.sum - y.sum);
+  const best = combos[0];
+  const topCombos = combos.filter(c =>
+    c.balance === best.balance && c.max === best.max && c.sum === best.sum
+  );
+  const chosen = topCombos[Math.floor(Math.random() * topCombos.length)];
+
+  matchDraftPlayers = [...chosen.ids];
   renderMatchDraft();
   toast("สุ่มจัดคิวเรียบร้อย ✨");
 });
