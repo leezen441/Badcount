@@ -254,23 +254,33 @@ async function ensureNotificationPermission() {
   }
 }
 
-function showBrowserNotification(title, body) {
+async function showBrowserNotification(title, body) {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
+  
+  const options = {
+    body,
+    icon: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏸</text></svg>`),
+    tag: "badcount-newmember",
+    requireInteraction: false,
+    silent: false
+  };
+
   try {
-    const notif = new Notification(title, {
-      body,
-      icon: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏸</text></svg>`),
-      tag: "badcount-newmember",     // ถ้ามีหลาย notification ติดกัน จะ overwrite อันเก่า
-      requireInteraction: false,      // หายไปเองภายในไม่กี่วินาที
-      silent: false
-    });
-    // คลิก → focus กลับมาที่ tab นี้
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) {
+        await reg.showNotification(title, options);
+        return; // Success via SW
+      }
+    }
+    
+    // Fallback to traditional Notification API (Desktop browsers usually support this)
+    const notif = new Notification(title, options);
     notif.onclick = () => {
       window.focus();
       notif.close();
     };
-    // Auto-close หลัง 6 วินาที (เผื่อ browser ไม่ auto-close)
     setTimeout(() => notif.close(), 6000);
   } catch (e) {
     console.warn("[Notification] failed:", e);
