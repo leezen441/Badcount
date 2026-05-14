@@ -2009,21 +2009,32 @@ $("btnShareJoin").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
   const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
+  
+  const members = currentSession.members || [];
+  let shareText = `🏸 Register ตีแบดวันที่ ${dateText}\n`;
+  
+  if (members.length === 0) {
+    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
+  } else {
+    shareText += `อัปเดตคนลงชื่อแล้ว (${members.length} คน) 🔥\n`;
+    members.forEach((m, idx) => {
+      shareText += `${idx + 1}. ${m.name}\n`;
+    });
+    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
+  }
 
   if (navigator.share) {
     try {
       await navigator.share({
-        title: "🏸 Register เข้าร่วมก๊วน",
-        text: `Register เข้าร่วมก๊วนของวันที่ ${dateText}`,
-        url: joinUrl
+        text: shareText
       });
       toast("แชร์ลิงก์สำเร็จ ✓");
     } catch (err) {
       if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
     }
   } else {
-    navigator.clipboard.writeText(joinUrl).then(() => {
-      toast("คัดลอกลิงก์แล้ว (วางในเบราว์เซอร์ได้เลย)");
+    navigator.clipboard.writeText(shareText).then(() => {
+      toast("คัดลอกข้อความแล้ว (นำไปวางได้เลย)");
     }).catch(() => {
       toast("ไม่สามารถคัดลอกได้");
     });
