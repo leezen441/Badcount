@@ -2023,7 +2023,9 @@ $("btnShareJoin").addEventListener("click", async () => {
     shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
   }
 
-  if (navigator.share) {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile && navigator.share) {
     try {
       await navigator.share({
         text: shareText
@@ -2033,8 +2035,9 @@ $("btnShareJoin").addEventListener("click", async () => {
       if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
     }
   } else {
+    // บังคับก๊อปปี้ลง Clipboard สำหรับใช้งานบนคอมพิวเตอร์ (ไม่ให้หน้าต่าง Share ของ Windows เด้งกวนใจ)
     navigator.clipboard.writeText(shareText).then(() => {
-      toast("คัดลอกข้อความแล้ว (นำไปวางได้เลย)");
+      toast("คัดลอกข้อความแล้ว (นำไปวางในไลน์ได้เลย)");
     }).catch(() => {
       toast("ไม่สามารถคัดลอกได้");
     });
