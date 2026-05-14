@@ -365,6 +365,11 @@ function route() {
   // Clean up previous listeners
   if (unsubscribeSession) { unsubscribeSession(); unsubscribeSession = null; }
   if (joinUnsubscribe) { joinUnsubscribe(); joinUnsubscribe = null; }
+  
+  // Clean up list listener unless we are going to a list view
+  if (parts[0] !== "" && parts[0] !== "m-home" && parts[0] !== "history") {
+    if (unsubscribeList) { unsubscribeList(); unsubscribeList = null; }
+  }
 
   const authed = isAuthed();
 
@@ -432,14 +437,20 @@ function renderManagerHome() {
 async function loadManagerRecentSessions() {
   const container = $("managerSessionsList");
   if (!container) return;
+  
+  if (unsubscribeList) { unsubscribeList(); unsubscribeList = null; }
+  
   container.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>`;
   try {
     const q = query(SESSIONS, orderBy("createdAt", "desc"), limit(2));
-    const snap = await getDocs(q);
-    renderSessionList(container, snap, false, true); // isManager = true
+    unsubscribeList = onSnapshot(q, (snap) => {
+      renderSessionList(container, snap, false, true); // isManager = true
+    }, (err) => {
+      console.error(err);
+      container.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">โหลดผิดพลาด: ${err.message}</p>`;
+    });
   } catch (err) {
     console.error(err);
-    container.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">โหลดผิดพลาด: ${err.message}</p>`;
   }
 }
 
@@ -529,14 +540,21 @@ $("managerLoginForm").addEventListener("submit", (e) => {
 // ============================================================
 async function loadRecentSessions() {
   const container = $("recentSessions");
+  if (!container) return;
+  
+  if (unsubscribeList) { unsubscribeList(); unsubscribeList = null; }
+
   container.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>`;
   try {
     const q = query(SESSIONS, orderBy("createdAt", "desc"), limit(5));
-    const snap = await getDocs(q);
-    renderSessionList(container, snap, true);
+    unsubscribeList = onSnapshot(q, (snap) => {
+      renderSessionList(container, snap, true);
+    }, (err) => {
+      console.error(err);
+      container.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">โหลดไม่ได้: ${err.message}<br/><span class="text-xs">ตรวจสอบ Firebase config และ Security Rules</span></p>`;
+    });
   } catch (err) {
     console.error(err);
-    container.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">โหลดไม่ได้: ${err.message}<br/><span class="text-xs">ตรวจสอบ Firebase config และ Security Rules</span></p>`;
   }
 }
 
