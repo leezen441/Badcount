@@ -1539,17 +1539,22 @@ function renderMatchDraft() {
   // 1. Calculate games played for each member
   const gamesPlayed = {};
   const partneredCount = {};
+  const lastMatchIndex = {};
   const matches = currentSession.matches || [];
   
   allMembers.forEach(m => {
     gamesPlayed[m.id] = 0;
     partneredCount[m.id] = 0;
+    lastMatchIndex[m.id] = -1;
   });
 
-  matches.forEach(match => {
+  matches.forEach((match, idx) => {
     const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
     pIds.forEach(id => {
-      if (gamesPlayed[id] !== undefined) gamesPlayed[id]++;
+      if (gamesPlayed[id] !== undefined) {
+        gamesPlayed[id]++;
+        lastMatchIndex[id] = idx;
+      }
     });
     
     if (matchDraftPlayers.length > 0) {
@@ -1628,16 +1633,21 @@ function renderMatchDraft() {
       tagClass = "bg-rose-50 text-rose-600";
     }
     
+    const isJustPlayed = lastMatchIndex[m.id] === matches.length - 1 && matches.length > 0;
+    const justPlayedBadge = isJustPlayed ? `<span class="bg-orange-500 text-white px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold shadow-sm ml-0.5">🔥 เพิ่งลง</span>` : "";
+
     tiers[tierNum].push({
       html: `<button data-draft-id="${m.id}" class="pl-3 pr-2 py-1.5 rounded-full text-sm transition-transform active:scale-95 flex items-center gap-2 ${chipClass}">
                <span class="font-bold whitespace-nowrap">${escapeHtml(m.name)}</span>
                <div class="flex items-center gap-1 opacity-90">
                  <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold">🏸 ${gamesPlayed[m.id]}</span>
                  <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold">🤝 ${pCount}</span>
+                 ${justPlayedBadge}
                </div>
              </button>`,
       games: gamesPlayed[m.id],
-      partnered: pCount
+      partnered: pCount,
+      restCount: lastMatchIndex[m.id] === -1 ? 999 : (matches.length - 1 - lastMatchIndex[m.id])
     });
   });
 
@@ -1657,9 +1667,10 @@ function renderMatchDraft() {
     if (tiers[t.id].length > 0) {
       hasAvailable = true;
 
-      // Sort players inside the tier by games (ascending) then partnered count (ascending)
+      // Sort players inside the tier by games (ascending), then restCount (descending), then partnered count (ascending)
       tiers[t.id].sort((a, b) => {
         if (a.games !== b.games) return a.games - b.games;
+        if (a.restCount !== b.restCount) return b.restCount - a.restCount;
         return a.partnered - b.partnered;
       });
 
