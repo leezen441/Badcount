@@ -502,7 +502,12 @@
   <!-- ===== MATCH MODAL ===== -->
   <div id="matchModal" class="hidden fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
     <div class="bg-white sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
-      <h3 class="text-lg font-bold mb-4" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
+        <button id="btnAutoDraft" class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-bold border border-indigo-200 shadow-sm flex items-center gap-1 transition-transform active:scale-95">
+          ✨ สุ่มจัดคิว
+        </button>
+      </div>
       
       <!-- Selected Box -->
       <div class="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-4 mb-4 min-h-[100px]" id="selectedPlayersBox">
