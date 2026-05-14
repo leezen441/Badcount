@@ -1535,7 +1535,6 @@ function renderMatchDraft() {
   $("selPlayerCount").textContent = matchDraftPlayers.length;
 
   let selHtml = "";
-  let availHtml = "";
 
   // 1. Calculate games played for each member
   const gamesPlayed = {};
@@ -1553,7 +1552,6 @@ function renderMatchDraft() {
       if (gamesPlayed[id] !== undefined) gamesPlayed[id]++;
     });
     
-    // If this match includes ANY of the currently selected players, increment partnered count
     if (matchDraftPlayers.length > 0) {
       const hasSelected = pIds.some(id => matchDraftPlayers.includes(id));
       if (hasSelected) {
@@ -1572,65 +1570,110 @@ function renderMatchDraft() {
     }
   });
 
-  // Find minimum partnered count among AVAILABLE players who are at minGames
-  let minPartnered = Infinity;
-  if (matchDraftPlayers.length > 0) {
-    allMembers.forEach(m => {
-      if (!matchDraftPlayers.includes(m.id) && gamesPlayed[m.id] === minGames) {
-        if (partneredCount[m.id] < minPartnered) {
-          minPartnered = partneredCount[m.id];
-        }
-      }
-    });
-  }
+  // Tiers object to group players
+  const tiers = {
+    1: [], // แนะนำ
+    2: [], // ปานกลาง
+    3: [], // ลงบ่อยกว่า
+    4: []  // ไม่แนะนำ
+  };
 
   allMembers.forEach(m => {
     const isSel = matchDraftPlayers.includes(m.id);
-    let chipClass = "";
-    let extraHtml = "";
-
+    
     if (isSel) {
-      chipClass = "bg-emerald-500 text-white shadow-sm";
-      extraHtml = " ✕";
-    } else {
-      let isRecommended = false;
-      if (gamesPlayed[m.id] === minGames) {
-        if (matchDraftPlayers.length > 0) {
-          isRecommended = (partneredCount[m.id] === minPartnered);
-        } else {
-          isRecommended = true;
-        }
-      }
+      // Selected players go to selHtml directly
+      const chipClass = "bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1";
+      selHtml += `<button data-draft-id="${m.id}" class="px-3 py-1.5 rounded-full text-sm font-medium transition-transform active:scale-95 ${chipClass}">${escapeHtml(m.name)} ✕</button>`;
+      return; // Skip tier logic
+    }
 
-      if (isRecommended) {
-        // Highlight!
-        chipClass = "bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 shadow-sm font-bold ring-2 ring-amber-200 ring-offset-1";
-        extraHtml = ` <span class="text-[10px] ml-1 bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full">แนะนำ</span> +`;
-      } else {
-        // Not recommended, could be they have more games, or played together too much
-        if (matchDraftPlayers.length > 0 && partneredCount[m.id] > 0) {
-          chipClass = "bg-white border border-slate-200 text-slate-400 hover:bg-slate-50 opacity-60";
-        } else {
-          chipClass = "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50";
-        }
-        extraHtml = " +";
+    // Tier logic for Available Players
+    const pCount = partneredCount[m.id];
+    const isMinGames = gamesPlayed[m.id] === minGames;
+    let tierNum;
+
+    if (matchDraftPlayers.length === 0) {
+      // If no one is selected, we only judge by gamesPlayed
+      if (isMinGames) tierNum = 1; // เกมน้อยสุด
+      else tierNum = 3; // ลงบ่อยกว่าคนอื่น
+    } else {
+      // Someone is selected, use partneredCount
+      if (pCount >= 2) {
+        tierNum = 4; // ไม่แนะนำ (เล่นด้วยกันบ่อยมาก)
+      } else if (pCount === 1) {
+        if (isMinGames) tierNum = 2; // ปานกลาง (เกมน้อย แต่เล่นด้วยกันแล้ว)
+        else tierNum = 4; // ไม่แนะนำ (เกมเยอะ แถมเล่นด้วยกันแล้ว)
+      } else { // pCount === 0
+        if (isMinGames) tierNum = 1; // แนะนำ (เกมน้อยสุด + ไม่เคยคู่กัน)
+        else tierNum = 3; // ลงบ่อยกว่า (เกมเยอะกว่า แต่ยังไม่เคยคู่กัน)
       }
     }
 
-    const chip = `<button data-draft-id="${m.id}" class="px-3 py-1.5 rounded-full text-sm font-medium transition-transform active:scale-95 ${chipClass}">${escapeHtml(m.name)}${extraHtml}</button>`;
+    // Prepare chip UI based on Tier
+    let chipClass, extraHtml;
+    if (tierNum === 1) {
+      chipClass = "bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold shadow-sm";
+      extraHtml = " +";
+    } else if (tierNum === 2) {
+      chipClass = "bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 font-medium shadow-sm";
+      extraHtml = " +";
+    } else if (tierNum === 3) {
+      chipClass = "bg-slate-50 border border-slate-300 text-slate-700 hover:bg-slate-100";
+      extraHtml = " +";
+    } else { // tierNum === 4
+      chipClass = "bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 opacity-60";
+      extraHtml = " +";
+    }
+
+    const infoText = pCount > 0 ? `(เจอ ${pCount})` : `(${gamesPlayed[m.id]} เกม)`;
     
-    if (isSel) selHtml += chip;
-    else availHtml += chip;
+    tiers[tierNum].push({
+      html: `<button data-draft-id="${m.id}" class="px-3 py-1.5 rounded-full text-sm transition-transform active:scale-95 ${chipClass}">${escapeHtml(m.name)} <span class="text-[10px] font-normal opacity-80">${infoText}</span>${extraHtml}</button>`,
+      games: gamesPlayed[m.id],
+      partnered: pCount
+    });
   });
+
+  // Build Available Players HTML
+  let availHtml = "";
   
-  if(matchDraftPlayers.length === 0) selHtml = `<div class="text-slate-300 text-sm py-2 w-full text-center">ยังไม่ได้เลือกผู้เล่น</div>`;
-  if(availHtml === "") availHtml = `<div class="text-slate-300 text-sm py-2 w-full text-center">ไม่มีผู้เล่นเหลือ</div>`;
+  // Define tier headers and descriptions
+  const tierConfig = [
+    { id: 1, title: "⭐ แนะนำ (เกมน้อยสุด + ไม่เจอทีมนี้เลย)", color: "text-emerald-700", bg: "bg-emerald-50/50" },
+    { id: 2, title: "👍 ปานกลาง (เกมน้อย แต่เคยเจอทีมนี้แล้ว)", color: "text-amber-700", bg: "bg-amber-50/50" },
+    { id: 3, title: "⏳ ลงสนามบ่อย (ยังไม่เคยเจอทีมนี้)", color: "text-slate-600", bg: "bg-slate-50/50" },
+    { id: 4, title: "⚠️ ไม่แนะนำ (เจอทีมนี้บ่อย หรือเกมเยอะ)", color: "text-rose-600", bg: "bg-rose-50/50" }
+  ];
+
+  let hasAvailable = false;
+  tierConfig.forEach(t => {
+    if (tiers[t.id].length > 0) {
+      hasAvailable = true;
+      availHtml += `
+        <div class="mb-2 last:mb-0 ${t.bg} p-2 rounded-xl border border-slate-100">
+          <div class="text-[11px] font-bold ${t.color} mb-1.5 ml-1">${t.title}</div>
+          <div class="flex flex-wrap gap-1.5">
+            ${tiers[t.id].map(p => p.html).join("")}
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  if(matchDraftPlayers.length === 0) selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
+  if(!hasAvailable) availHtml = `<div class="text-slate-400 text-sm py-2 w-full text-center">ไม่มีผู้เล่นเหลือ</div>`;
   
+  // Re-structure selected players container
+  if (matchDraftPlayers.length > 0) {
+    selHtml = `<div class="flex flex-wrap gap-2">${selHtml}</div>`;
+  }
+
   selectedDiv.innerHTML = selHtml;
   availableDiv.innerHTML = availHtml;
   
   $("btnSaveMatch").disabled = matchDraftPlayers.length !== 4;
-  $("btnSaveMatch").className = matchDraftPlayers.length === 4 ? "flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm" : "flex-1 bg-slate-200 text-slate-400 py-3 rounded-xl font-medium text-sm cursor-not-allowed";
+  $("btnSaveMatch").className = matchDraftPlayers.length === 4 ? "flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow-md transition-transform active:scale-95" : "flex-1 bg-slate-200 text-slate-400 py-3 rounded-xl font-medium cursor-not-allowed";
 
   $("matchModal").querySelectorAll("button[data-draft-id]").forEach(btn => {
     btn.addEventListener("click", () => {
