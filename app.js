@@ -2472,13 +2472,21 @@ const HISTORY_LIMIT = 50;
 
 async function loadHistory() {
   const container = $("historyList");
+  if (!container) return;
+  
+  if (unsubscribeList) { unsubscribeList(); unsubscribeList = null; }
+
   container.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>`;
   try {
     const q = query(SESSIONS, orderBy("createdAt", "desc"), limit(HISTORY_LIMIT));
-    const snap = await getDocs(q);
-    renderSessionList(container, snap, false);
+    unsubscribeList = onSnapshot(q, (snap) => {
+      renderSessionList(container, snap, false);
+    }, (err) => {
+      console.error(err);
+      container.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">${err.message}</p>`;
+    });
   } catch (err) {
-    container.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">${err.message}</p>`;
+    console.error(err);
   }
 }
 
