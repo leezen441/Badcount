@@ -183,8 +183,8 @@ let pendingNotifCount = 0;
 let titleFlashInterval = null;
 let mySubmittedJoinIds = new Set();   // กัน notify ตัวเองตอนเพิ่งลงชื่อ
 
-function notifyNewMember(name) {
-  // 1️⃣ Toast
+function notifyNewMember(name, options = {}) {
+  // 1️⃣ Toast (เสมอ)
   toast(`🎉 ${name} เพิ่งเข้าร่วม!`, 3500);
 
   // 2️⃣ Tab title flash + count (เฉพาะตอน tab ไม่ active)
@@ -195,6 +195,14 @@ function notifyNewMember(name) {
 
   // 3️⃣ Ping sound (ไม่บังคับ เผื่อ browser block)
   playPing();
+
+  // 4️⃣ Native OS notification (เฉพาะ admin/manager — ไม่แสดงในหน้า join)
+  if (options.nativeNotify) {
+    showBrowserNotification(
+      "🏸 BadCount — มีคนเข้าร่วมก๊วน",
+      `${name} เพิ่งกดลงชื่อเข้าร่วม`
+    );
+  }
 }
 
 function flashTabTitle() {
@@ -222,6 +230,53 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) resetTabTitle();
 });
 window.addEventListener("focus", resetTabTitle);
+
+// ---------- Native Browser Notification (Chrome/Safari/Firefox) ----------
+// แสดง notification ของ OS — ใช้ได้แม้ tab ไม่ active
+// iOS Safari ต้อง install เป็น PWA ก่อนถึงจะใช้ได้
+
+let notificationPermissionRequested = false;
+
+async function ensureNotificationPermission() {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
+  if (notificationPermissionRequested) return false;
+
+  notificationPermissionRequested = true;
+  try {
+    const result = await Notification.requestPermission();
+    if (result === "granted") {
+      toast("🔔 เปิดการแจ้งเตือนแล้ว — จะเตือนเมื่อมีคนเข้าร่วมก๊วน", 3500);
+    }
+    return result === "granted";
+  } catch (e) {
+    return false;
+  }
+}
+
+function showBrowserNotification(title, body) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  try {
+    const notif = new Notification(title, {
+      body,
+      icon: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏸</text></svg>`),
+      tag: "badcount-newmember",     // ถ้ามีหลาย notification ติดกัน จะ overwrite อันเก่า
+      requireInteraction: false,      // หายไปเองภายในไม่กี่วินาที
+      silent: false
+    });
+    // คลิก → focus กลับมาที่ tab นี้
+    notif.onclick = () => {
+      window.focus();
+      notif.close();
+    };
+    // Auto-close หลัง 6 วินาที (เผื่อ browser ไม่ auto-close)
+    setTimeout(() => notif.close(), 6000);
+  } catch (e) {
+    console.warn("[Notification] failed:", e);
+  }
+}
 
 function playPing() {
   try {
@@ -535,6 +590,10 @@ let previousSessionMembers = null;
 function subscribeSession(id) {
   // Reset เมื่อสลับ session
   previousSessionMembers = null;
+
+  // ขอ permission แจ้งเตือน (admin/manager เท่านั้น) — ถามครั้งเดียวต่อ page load
+  ensureNotificationPermission();
+
   const ref = doc(db, "sessions", id);
   unsubscribeSession = onSnapshot(ref, (snap) => {
     if (!snap.exists()) {
@@ -551,10 +610,11 @@ function subscribeSession(id) {
     const newSession = { id: snap.id, ...snap.data() };
 
     // 🔔 ตรวจคนที่เพิ่งเข้าร่วม (เปรียบเทียบกับ snapshot ก่อนหน้า)
+    // admin/manager → ใช้ native OS notification ด้วย (option { nativeNotify: true })
     const currentMembers = newSession.members || [];
     if (previousSessionMembers !== null) {
       const newcomers = findNewMembers(previousSessionMembers, currentMembers, mySubmittedJoinIds);
-      newcomers.forEach(m => notifyNewMember(m.name || "ใครบางคน"));
+      newcomers.forEach(m => notifyNewMember(m.name || "ใครบางคน", { nativeNotify: true }));
     }
     previousSessionMembers = currentMembers.map(m => ({ id: m.id }));
 
@@ -2499,3 +2559,13 @@ function escapeHtml(s) {
 // Init
 // ============================================================
 route();
+
+// ---------- Register Service Worker (PWA support) ----------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => console.log("[PWA] Service worker registered"))
+      .catch((err) => console.warn("[PWA] SW registration failed:", err));
+  });
+}
