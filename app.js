@@ -1539,12 +1539,20 @@ function renderMatchDraft() {
   // 1. Calculate games played for each member
   const gamesPlayed = {};
   const partneredCount = {};
+  const partneredNames = {};
   const lastMatchIndex = {};
   const matches = currentSession.matches || [];
   
+  const draftNamesMap = {};
+  matchDraftPlayers.forEach(draftId => {
+     const dm = allMembers.find(x => x.id === draftId);
+     if (dm) draftNamesMap[draftId] = dm.name;
+  });
+
   allMembers.forEach(m => {
     gamesPlayed[m.id] = 0;
     partneredCount[m.id] = 0;
+    partneredNames[m.id] = new Set();
     lastMatchIndex[m.id] = -1;
   });
 
@@ -1558,10 +1566,17 @@ function renderMatchDraft() {
     });
     
     if (matchDraftPlayers.length > 0) {
-      const hasSelected = pIds.some(id => matchDraftPlayers.includes(id));
-      if (hasSelected) {
+      const draftedInMatch = pIds.filter(id => matchDraftPlayers.includes(id));
+      if (draftedInMatch.length > 0) {
         pIds.forEach(id => {
-          if (partneredCount[id] !== undefined) partneredCount[id]++;
+          if (partneredCount[id] !== undefined) {
+            partneredCount[id]++;
+            draftedInMatch.forEach(dId => {
+              if (id !== dId) {
+                partneredNames[id].add(draftNamesMap[dId]);
+              }
+            });
+          }
         });
       }
     }
@@ -1636,12 +1651,17 @@ function renderMatchDraft() {
     const isJustPlayed = lastMatchIndex[m.id] === matches.length - 1 && matches.length > 0;
     const justPlayedBadge = isJustPlayed ? `<span class="bg-orange-500 text-white px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold shadow-sm ml-0.5">🔥 เพิ่งลง</span>` : "";
 
+    let metText = pCount.toString();
+    if (partneredNames[m.id] && partneredNames[m.id].size > 0) {
+       metText = Array.from(partneredNames[m.id]).map(escapeHtml).join(", ");
+    }
+
     tiers[tierNum].push({
       html: `<button data-draft-id="${m.id}" class="pl-3 pr-2 py-1.5 rounded-full text-sm transition-transform active:scale-95 flex items-center gap-2 ${chipClass}">
                <span class="font-bold whitespace-nowrap">${escapeHtml(m.name)}</span>
                <div class="flex items-center gap-1 opacity-90">
                  <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold">🏸 ${gamesPlayed[m.id]}</span>
-                 <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold">🤝 ${pCount}</span>
+                 <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold max-w-[120px] truncate">🤝 ${metText}</span>
                  ${justPlayedBadge}
                </div>
              </button>`,
