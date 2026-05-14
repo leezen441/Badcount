@@ -1656,6 +1656,13 @@ function renderMatchDraft() {
   tierConfig.forEach(t => {
     if (tiers[t.id].length > 0) {
       hasAvailable = true;
+
+      // Sort players inside the tier by games (ascending) then partnered count (ascending)
+      tiers[t.id].sort((a, b) => {
+        if (a.games !== b.games) return a.games - b.games;
+        return a.partnered - b.partnered;
+      });
+
       availHtml += `
         <div class="mb-2 last:mb-0 ${t.bg} p-2 rounded-xl border border-slate-100">
           <div class="text-[11px] font-bold ${t.color} mb-1.5 ml-1">${t.title}</div>
