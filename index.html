@@ -61,6 +61,23 @@
         </button>
       </div>
 
+      <!-- PWA Install Banner (hidden by default, shown via JS) -->
+      <div id="installBanner" class="hidden mb-6">
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl shadow-sm p-5 text-white">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">📲</span>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm">Install BadCount</div>
+              <div class="text-xs text-emerald-100 mt-0.5">เปิดได้จาก Home Screen เหมือนแอปจริง</div>
+            </div>
+            <button id="btnInstallApp"
+              class="bg-white text-emerald-700 px-4 py-2 rounded-xl font-bold text-sm shadow-sm hover:bg-emerald-50 active:scale-95 transition-transform shrink-0">
+              Install
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-white rounded-2xl shadow-sm p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold">Recent</h2>
@@ -71,6 +88,49 @@
         </div>
       </div>
     </section>
+
+    <!-- ===== iOS Install Modal ===== -->
+    <div id="iosInstallModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white sm:rounded-2xl rounded-t-2xl p-6 w-full max-w-sm shadow-xl">
+        <div class="text-center mb-5">
+          <span class="text-5xl block mb-3">🏸</span>
+          <h3 class="text-xl font-bold">Install BadCount</h3>
+          <p class="text-sm text-slate-500 mt-1">ทำตาม 3 ขั้นตอนง่ายๆ</p>
+        </div>
+
+        <div class="space-y-4 mb-6">
+          <!-- Step 1 -->
+          <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl">
+            <span class="bg-emerald-100 text-emerald-700 font-bold w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0">1</span>
+            <div>
+              <div class="font-semibold text-sm">แตะปุ่ม Share</div>
+              <div class="text-xs text-slate-500 mt-0.5">ปุ่ม <span class="inline-block bg-slate-200 px-1.5 py-0.5 rounded text-slate-700 font-mono">□↑</span> ด้านล่างของ Safari</div>
+            </div>
+          </div>
+          <!-- Step 2 -->
+          <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl">
+            <span class="bg-emerald-100 text-emerald-700 font-bold w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0">2</span>
+            <div>
+              <div class="font-semibold text-sm">เลื่อนหา "Add to Home Screen"</div>
+              <div class="text-xs text-slate-500 mt-0.5">หรือ "เพิ่มที่หน้าจอโฮม"</div>
+            </div>
+          </div>
+          <!-- Step 3 -->
+          <div class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl">
+            <span class="bg-emerald-100 text-emerald-700 font-bold w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0">3</span>
+            <div>
+              <div class="font-semibold text-sm">กด "Add" หรือ "เพิ่ม"</div>
+              <div class="text-xs text-slate-500 mt-0.5">BadCount จะปรากฏบน Home Screen ✨</div>
+            </div>
+          </div>
+        </div>
+
+        <button id="btnCloseIosModal"
+          class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-medium">
+          เข้าใจแล้ว 👍
+        </button>
+      </div>
+    </div>
 
     <!-- ===== SESSION VIEW ===== -->
     <section id="view-session" class="view">

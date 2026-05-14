@@ -2556,6 +2556,92 @@ function escapeHtml(s) {
 }
 
 // ============================================================
+// PWA Install Button
+// ============================================================
+let deferredInstallPrompt = null;
+const INSTALL_DISMISSED_KEY = "installDismissed";
+
+// Detect platform
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+function isInStandaloneMode() {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+}
+
+// Show/hide install banner based on platform
+function updateInstallBanner() {
+  const banner = $("installBanner");
+  if (!banner) return;
+
+  // Already installed as PWA — hide
+  if (isInStandaloneMode()) {
+    banner.classList.add("hidden");
+    return;
+  }
+
+  // User dismissed before — hide (reset after 7 days)
+  const dismissed = parseInt(localStorage.getItem(INSTALL_DISMISSED_KEY) || "0", 10);
+  if (dismissed > Date.now()) {
+    banner.classList.add("hidden");
+    return;
+  }
+
+  // Android/Desktop: show only if beforeinstallprompt was captured
+  // iOS: always show (will open instruction modal)
+  if (isIOS() || deferredInstallPrompt) {
+    banner.classList.remove("hidden");
+  }
+}
+
+// Capture beforeinstallprompt (Android / Desktop Chrome)
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallBanner();
+});
+
+// Handle install button click
+$("btnInstallApp")?.addEventListener("click", async () => {
+  if (isIOS()) {
+    // iOS: show instruction modal
+    $("iosInstallModal")?.classList.remove("hidden");
+    return;
+  }
+
+  if (deferredInstallPrompt) {
+    // Android/Desktop: trigger native install prompt
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    if (result.outcome === "accepted") {
+      toast("ติดตั้ง BadCount สำเร็จ! 🎉");
+      $("installBanner")?.classList.add("hidden");
+    }
+    deferredInstallPrompt = null;
+  }
+});
+
+// Close iOS modal
+$("btnCloseIosModal")?.addEventListener("click", () => {
+  $("iosInstallModal")?.classList.add("hidden");
+  // Dismiss banner for 7 days
+  localStorage.setItem(INSTALL_DISMISSED_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+  $("installBanner")?.classList.add("hidden");
+});
+
+// Hide banner when app is installed
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  $("installBanner")?.classList.add("hidden");
+  toast("ติดตั้ง BadCount สำเร็จ! 🎉");
+});
+
+// Check on page load (after a short delay for iOS detection)
+setTimeout(updateInstallBanner, 1000);
+
+// ============================================================
 // Init
 // ============================================================
 route();
