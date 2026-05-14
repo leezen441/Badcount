@@ -1736,6 +1736,68 @@ function renderMatchDraft() {
 $("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.add("hidden"));
 $("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal") $("matchModal").classList.add("hidden"); });
 
+// ---------- Auto Draft (สุ่มจัดคิว) ----------
+$("btnAutoDraft").addEventListener("click", () => {
+  const members = (currentSession && currentSession.members) || [];
+  if (members.length < 4) {
+    return toast("ต้องมีสมาชิกอย่างน้อย 4 คน");
+  }
+
+  // ถ้ากำลังแก้ไขเกม ให้ยกเว้นเกมนั้นออกจากการนับสถิติ
+  const allMatches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
+
+  // นับเกมที่เล่นและจำนวนครั้งที่จับคู่กัน
+  const gamesPlayed = {};
+  const partnerCount = {};
+  members.forEach(m => {
+    gamesPlayed[m.id] = 0;
+    partnerCount[m.id] = {};
+  });
+
+  allMatches.forEach(match => {
+    const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
+    pIds.forEach(id => {
+      if (gamesPlayed[id] !== undefined) gamesPlayed[id]++;
+    });
+    for (let i = 0; i < pIds.length; i++) {
+      for (let j = i + 1; j < pIds.length; j++) {
+        const a = pIds[i], b = pIds[j];
+        if (partnerCount[a] !== undefined && partnerCount[b] !== undefined) {
+          partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+          partnerCount[b][a] = (partnerCount[b][a] || 0) + 1;
+        }
+      }
+    }
+  });
+
+  // เลือกแบบ greedy:
+  // 1) คนแรกสุ่มจากกลุ่มที่เล่นเกมน้อยที่สุด
+  // 2) คนถัดๆ ไปให้คะแนน = gamesPlayed * 10 + ผลรวม partnerCount กับคนที่เลือกแล้ว
+  //    เลือกคะแนนน้อยสุด (สุ่มถ้าเสมอกัน)
+  const picked = [];
+
+  const minGames = Math.min(...members.map(m => gamesPlayed[m.id]));
+  const lowestTier = members.filter(m => gamesPlayed[m.id] === minGames);
+  const first = lowestTier[Math.floor(Math.random() * lowestTier.length)];
+  picked.push(first.id);
+
+  while (picked.length < 4) {
+    const candidates = members.filter(m => !picked.includes(m.id));
+    const scored = candidates.map(m => {
+      const overlap = picked.reduce((sum, pid) => sum + (partnerCount[m.id][pid] || 0), 0);
+      return { id: m.id, score: gamesPlayed[m.id] * 10 + overlap };
+    });
+    const minScore = Math.min(...scored.map(s => s.score));
+    const best = scored.filter(s => s.score === minScore);
+    const next = best[Math.floor(Math.random() * best.length)];
+    picked.push(next.id);
+  }
+
+  matchDraftPlayers = picked;
+  renderMatchDraft();
+  toast("สุ่มจัดคิวเรียบร้อย ✨");
+});
+
 $("btnSaveMatch").addEventListener("click", () => {
   if (matchDraftPlayers.length !== 4) return alert("กรุณาเลือกผู้เล่นให้ครบ 4 คน");
 
