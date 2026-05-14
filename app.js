@@ -1611,25 +1611,31 @@ function renderMatchDraft() {
     }
 
     // Prepare chip UI based on Tier
-    let chipClass, extraHtml;
+    let chipClass = "";
+    let tagClass = "";
+    
     if (tierNum === 1) {
-      chipClass = "bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold shadow-sm";
-      extraHtml = " +";
+      chipClass = "bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 shadow-sm";
+      tagClass = "bg-emerald-100 text-emerald-800";
     } else if (tierNum === 2) {
-      chipClass = "bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 font-medium shadow-sm";
-      extraHtml = " +";
+      chipClass = "bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 shadow-sm";
+      tagClass = "bg-amber-100 text-amber-800";
     } else if (tierNum === 3) {
       chipClass = "bg-slate-50 border border-slate-300 text-slate-700 hover:bg-slate-100";
-      extraHtml = " +";
+      tagClass = "bg-slate-200 text-slate-700";
     } else { // tierNum === 4
       chipClass = "bg-white border border-rose-200 text-rose-500 hover:bg-rose-50";
-      extraHtml = " +";
+      tagClass = "bg-rose-50 text-rose-600";
     }
-
-    const infoText = `(V${pCount} G${gamesPlayed[m.id]})`;
     
     tiers[tierNum].push({
-      html: `<button data-draft-id="${m.id}" class="px-3 py-1.5 rounded-full text-sm transition-transform active:scale-95 ${chipClass}">${escapeHtml(m.name)} <span class="text-[10px] font-normal opacity-80">${infoText}</span>${extraHtml}</button>`,
+      html: `<button data-draft-id="${m.id}" class="pl-3 pr-2 py-1.5 rounded-full text-sm transition-transform active:scale-95 flex items-center gap-2 ${chipClass}">
+               <span class="font-bold whitespace-nowrap">${escapeHtml(m.name)}</span>
+               <div class="flex items-center gap-1 opacity-90">
+                 <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold">🏸 ${gamesPlayed[m.id]}</span>
+                 <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold">🤝 ${pCount}</span>
+               </div>
+             </button>`,
       games: gamesPlayed[m.id],
       partnered: pCount
     });
