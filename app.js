@@ -82,10 +82,8 @@ function setAuthed() {
 
 // ---------- Manager Link Authentication ----------
 // รหัสคงที่สำหรับ manager (ผู้ช่วยจัดการกลุ่มรายวัน)
-// ใช้ sessionStorage — ปิดเบราว์เซอร์แล้วต้องใส่ใหม่
 const MANAGER_PASSCODE = "SHH123";
 const MANAGER_AUTH_KEY = "bcManagerAuth";
-const MANAGER_SESSIONS_KEY = "bcManagerSessions"; // จำ session ที่เคยเข้า
 
 function isManagerAuthed() {
   return localStorage.getItem(MANAGER_AUTH_KEY) === "1";
@@ -93,23 +91,6 @@ function isManagerAuthed() {
 
 function setManagerAuthed() {
   localStorage.setItem(MANAGER_AUTH_KEY, "1");
-}
-
-function getManagerSessions() {
-  try {
-    return JSON.parse(localStorage.getItem(MANAGER_SESSIONS_KEY) || "[]");
-  } catch { return []; }
-}
-
-function saveManagerSession(id, dateText, ts) {
-  let sessions = getManagerSessions();
-  // Remove if exists
-  sessions = sessions.filter(s => s.id !== id);
-  // Add to top
-  sessions.unshift({ id, dateText, ts: ts || Date.now() });
-  // Keep only last 20
-  if (sessions.length > 20) sessions.length = 20;
-  localStorage.setItem(MANAGER_SESSIONS_KEY, JSON.stringify(sessions));
 }
 
 // ---------- Known Members (จดจำชื่อที่เคยใช้) ----------
@@ -339,10 +320,18 @@ function showView(name, opts = {}) {
   $("view-" + name).classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" });
 
-  // ซ่อน nav เมื่ออยู่หน้า join, login, manager-login หรือ session แบบ manager-mode
+  // ซ่อน nav เมื่ออยู่หน้า join, login, manager-login
+  // หน้า session แบบ manager-mode: ไม่ซ่อน nav ถ้าเป็น manager ที่ login แล้ว
   const logo = $("logoLink");
   const nav = $("mainNav");
-  const shouldLockNav = name === "join" || name === "login" || name === "manager-login" || (name === "session" && opts.lockNav);
+  let shouldLockNav = name === "join" || name === "login" || name === "manager-login";
+  if (name === "session" && opts.lockNav) {
+    if (isManagerAuthed()) {
+      shouldLockNav = false; // Manager ได้สิทธิ์เห็นเมนู Home/Back
+    } else {
+      shouldLockNav = true;
+    }
+  }
 
   if (shouldLockNav) {
     if (nav) nav.classList.add("hidden");
@@ -435,25 +424,23 @@ function route() {
   }
 }
 
-// Render Manager Home
+// Render Manager Home (Load directly from Firebase)
 function renderManagerHome() {
-  const list = $("managerSessionsList");
-  if (!list) return;
-  const sessions = getManagerSessions();
-  
-  if (sessions.length === 0) {
-    list.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีกลุ่มที่เคยเข้าจัดการ<br>กรุณาเปิดลิงก์ Manager ที่ Admin ส่งให้</p>`;
-    return;
-  }
+  loadManagerRecentSessions();
+}
 
-  list.innerHTML = sessions.map(s => `
-    <a href="#/m/${s.id}" class="block bg-slate-50 hover:bg-emerald-50 border border-slate-100 p-4 rounded-xl transition-colors">
-      <div class="flex items-center justify-between">
-        <div class="font-bold text-slate-800 text-lg">${s.dateText}</div>
-        <div class="text-emerald-600 font-bold">→</div>
-      </div>
-    </a>
-  `).join("");
+async function loadManagerRecentSessions() {
+  const container = $("managerSessionsList");
+  if (!container) return;
+  container.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>`;
+  try {
+    const q = query(SESSIONS, orderBy("createdAt", "desc"), limit(2));
+    const snap = await getDocs(q);
+    renderSessionList(container, snap, false, true); // isManager = true
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">โหลดผิดพลาด: ${err.message}</p>`;
+  }
 }
 
 // Manager Logout
@@ -464,17 +451,11 @@ $("btnManagerLogout")?.addEventListener("click", () => {
   route();
 });
 
-// Manager Add Link
-$("btnAddManagerLink")?.addEventListener("click", () => {
-  const link = $("fldAddManagerLink").value.trim();
-  if (!link) return;
-  const match = link.match(/#\/m\/([a-zA-Z0-9_-]+)/);
-  if (match) {
-    $("fldAddManagerLink").value = "";
-    location.hash = "#/m/" + match[1];
-  } else {
-    toast("ลิงก์ไม่ถูกต้อง กรุณาวางลิงก์ Manager แบบเต็ม");
-  }
+// Admin Logout
+$("btnAdminLogout")?.addEventListener("click", () => {
+  localStorage.removeItem(AUTH_KEY);
+  location.hash = "#/";
+  route();
 });
 
 let appHashHistory = [location.hash || "#/"];
@@ -709,12 +690,6 @@ function subscribeSession(id) {
     previousSessionMembers = currentMembers.map(m => ({ id: m.id }));
 
     currentSession = newSession;
-
-    // ถ้าเป็น Manager ให้จำ session นี้ไว้ในประวัติ
-    if (location.hash.startsWith("#/m/") && isManagerAuthed()) {
-      saveManagerSession(currentSessionId, formatDate(newSession.date), newSession.createdAt);
-    }
-
     renderSession();
   }, (err) => {
     console.error(err);
@@ -2489,7 +2464,7 @@ async function loadHistory() {
   }
 }
 
-function renderSessionList(container, snap, isHome) {
+function renderSessionList(container, snap, isHome, isManager = false) {
   if (snap.empty) {
     container.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีก๊วน${isHome ? " เริ่มก๊วนแรกได้เลย" : ""}</p>`;
     return;
@@ -2548,7 +2523,7 @@ function renderSessionList(container, snap, isHome) {
     // 3. วาดการ์ดแสดงผล
     rows.push(`
       <div class="relative">
-        <a href="#/session/${d.id}" class="${cardClass}">
+        <a href="#/${isManager ? 'm' : 'session'}/${d.id}" class="${cardClass}">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
               <div class="font-semibold truncate ${isClosed ? "text-emerald-900" : ""}">${escapeHtml(s.location || "ก๊วน")}</div>
@@ -2561,9 +2536,11 @@ function renderSessionList(container, snap, isHome) {
           </div>
           ${unpaidListHtml}
         </a>
+        ${isManager ? '' : `
         <button data-quick-del="${d.id}" class="absolute top-3 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors" title="ลบก๊วนนี้">
           ✕
         </button>
+        `}
       </div>
     `);
   });
