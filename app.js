@@ -175,6 +175,92 @@ function toast(msg, ms = 2200) {
   el._t = setTimeout(() => { el.style.opacity = "0"; }, ms);
 }
 
+// ============================================================
+// 🔔 New-Member Notification (Toast + Tab Title Flash + Sound)
+// ============================================================
+const ORIGINAL_TITLE = document.title;
+let pendingNotifCount = 0;
+let titleFlashInterval = null;
+let mySubmittedJoinIds = new Set();   // กัน notify ตัวเองตอนเพิ่งลงชื่อ
+
+function notifyNewMember(name) {
+  // 1️⃣ Toast
+  toast(`🎉 ${name} เพิ่งเข้าร่วม!`, 3500);
+
+  // 2️⃣ Tab title flash + count (เฉพาะตอน tab ไม่ active)
+  if (document.hidden) {
+    pendingNotifCount++;
+    flashTabTitle();
+  }
+
+  // 3️⃣ Ping sound (ไม่บังคับ เผื่อ browser block)
+  playPing();
+}
+
+function flashTabTitle() {
+  if (titleFlashInterval) clearInterval(titleFlashInterval);
+  let toggle = false;
+  const showAlert = () => { document.title = `(${pendingNotifCount}) 🎉 มีคนเข้าร่วม!`; };
+  const showNormal = () => { document.title = `(${pendingNotifCount}) ${ORIGINAL_TITLE}`; };
+  showAlert();
+  titleFlashInterval = setInterval(() => {
+    if (toggle) showAlert(); else showNormal();
+    toggle = !toggle;
+  }, 1200);
+}
+
+function resetTabTitle() {
+  pendingNotifCount = 0;
+  if (titleFlashInterval) {
+    clearInterval(titleFlashInterval);
+    titleFlashInterval = null;
+  }
+  document.title = ORIGINAL_TITLE;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) resetTabTitle();
+});
+window.addEventListener("focus", resetTabTitle);
+
+function playPing() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.type = "sine";
+    o.frequency.setValueAtTime(880, ctx.currentTime);   // A5
+    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.08); // up to E6
+    g.gain.setValueAtTime(0.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    o.start();
+    o.stop(ctx.currentTime + 0.4);
+  } catch (e) {
+    // Silent — บาง browser block จนกว่า user จะ interact
+  }
+}
+
+// Diff helper: ใช้เปรียบเทียบรายชื่อก่อน-หลัง หาคนที่เพิ่งเพิ่ม
+function findNewMembers(prev, current, skipIds) {
+  if (!Array.isArray(prev) || !Array.isArray(current)) return [];
+  return current.filter(cm => {
+    if (skipIds && skipIds.has(cm.id)) return false;
+    return !prev.some(pm => pm.id === cm.id);
+  });
+}
+
+// Mark ว่าตัวเองเพิ่งเพิ่มสมาชิกคนนี้ (กัน notify ซ้ำซ้อน)
+// auto cleanup 5 วินาทีหลังเพิ่ม
+function trackOwnSubmit(memberId) {
+  if (!memberId) return;
+  mySubmittedJoinIds.add(memberId);
+  setTimeout(() => mySubmittedJoinIds.delete(memberId), 5000);
+}
+
 function showView(name, opts = {}) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   $("view-" + name).classList.add("active");
@@ -443,7 +529,12 @@ $("btnCreateRecurring").addEventListener("click", async () => {
 // Track sessions ที่ user เพิ่งกดลบเอง — จะได้ไม่โชว์ toast ซ้ำ
 let recentlyDeletedSessionId = null;
 
+// Track รายชื่อสมาชิกก่อนหน้า เพื่อตรวจจับ "คนเข้าร่วมใหม่"
+let previousSessionMembers = null;
+
 function subscribeSession(id) {
+  // Reset เมื่อสลับ session
+  previousSessionMembers = null;
   const ref = doc(db, "sessions", id);
   unsubscribeSession = onSnapshot(ref, (snap) => {
     if (!snap.exists()) {
@@ -457,7 +548,17 @@ function subscribeSession(id) {
       if (location.hash !== "#/") location.hash = "#/";
       return;
     }
-    currentSession = { id: snap.id, ...snap.data() };
+    const newSession = { id: snap.id, ...snap.data() };
+
+    // 🔔 ตรวจคนที่เพิ่งเข้าร่วม (เปรียบเทียบกับ snapshot ก่อนหน้า)
+    const currentMembers = newSession.members || [];
+    if (previousSessionMembers !== null) {
+      const newcomers = findNewMembers(previousSessionMembers, currentMembers, mySubmittedJoinIds);
+      newcomers.forEach(m => notifyNewMember(m.name || "ใครบางคน"));
+    }
+    previousSessionMembers = currentMembers.map(m => ({ id: m.id }));
+
+    currentSession = newSession;
     renderSession();
   }, (err) => {
     console.error(err);
@@ -642,7 +743,9 @@ function renderMemberSuggestions() {
         toast(`มีชื่อ "${name}" ในก๊วนแล้ว`);
         return;
       }
-      members.push({ id: uid(), name, shuttlesUsed: 0 });
+      const newId = uid();
+      trackOwnSubmit(newId);
+      members.push({ id: newId, name, shuttlesUsed: 0 });
       addKnownMember(name); // bump ขึ้นต้นใหม่
       saveSession({ members });
     });
@@ -1187,7 +1290,9 @@ function addMember() {
     toast(`มีชื่อ "${name}" ในก๊วนแล้ว`);
     return;
   }
-  members.push({ id: uid(), name, shuttlesUsed: 0 });
+  const newId = uid();
+  trackOwnSubmit(newId);
+  members.push({ id: newId, name, shuttlesUsed: 0 });
   addKnownMember(name); // จดจำไว้สำหรับครั้งหน้า
   saveSession({ members });
   input.value = "";
@@ -1510,6 +1615,7 @@ $("statsModal").addEventListener("click", e => { if (e.target.id === "statsModal
 // JOIN VIEW
 // ============================================================
 let joinUnsubscribe = null;
+let previousJoinMembers = null;  // เปรียบเทียบเพื่อ detect คนใหม่
 
 async function setupJoinView(id) {
   $("joinFormSection").classList.remove("hidden");
@@ -1519,7 +1625,8 @@ async function setupJoinView(id) {
   $("joinSessionDate").textContent = "";
   $("joinCount").textContent = "0";
   $("joinMembersList").innerHTML = "";
-  
+  previousJoinMembers = null;  // reset เมื่อเปิด join view ใหม่
+
   if (joinUnsubscribe) { joinUnsubscribe(); joinUnsubscribe = null; }
 
   try {
@@ -1532,6 +1639,15 @@ async function setupJoinView(id) {
         return;
       }
       const s = docSnap.data();
+
+      // 🔔 Detect คนเพิ่งเข้าร่วม (ยกเว้นตัวเองที่เพิ่งกดลงชื่อ)
+      const currentMembers = s.members || [];
+      if (previousJoinMembers !== null) {
+        const newcomers = findNewMembers(previousJoinMembers, currentMembers, mySubmittedJoinIds);
+        newcomers.forEach(m => notifyNewMember(m.name || "ใครบางคน"));
+      }
+      previousJoinMembers = currentMembers.map(m => ({ id: m.id }));
+
       $("joinSessionName").textContent = s.location || "ก๊วนแบดมินตัน";
       $("joinSessionDate").textContent = s.date ? formatDate(s.date) : "";
 
@@ -1693,7 +1809,9 @@ $("btnSubmitJoin").addEventListener("click", async () => {
       return;
     }
 
-    members.push({ id: uid(), name, shuttlesUsed: 0 });
+    const newId = uid();
+    trackOwnSubmit(newId);
+    members.push({ id: newId, name, shuttlesUsed: 0 });
     await updateDoc(ref, { members });
     addKnownMember(name); // จดจำชื่อในเครื่องของผู้เล่นไว้
 
