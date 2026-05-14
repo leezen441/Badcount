@@ -320,13 +320,29 @@
         </div>
       </div>
     </section>
+
+    <!-- ===== MANAGER HOME VIEW ===== -->
+    <section id="view-manager-home" class="view">
+      <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <div class="text-center mb-6">
+          <span class="text-5xl block mb-3">🛡️</span>
+          <h2 class="text-2xl font-bold mt-4 mb-1">Manager Home</h2>
+          <p class="text-sm text-slate-500">กลุ่มที่คุณได้รับสิทธิ์จัดการ (20 รายการล่าสุด)</p>
+        </div>
+        <div id="managerSessionsList" class="space-y-3">
+          <!-- JS will populate this -->
+          <p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีกลุ่มที่เคยเข้าจัดการ<br>กรุณาเปิดลิงก์ Manager ที่ Admin ส่งให้</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== LOGIN VIEW ===== -->
     <section id="view-login" class="view">
       <div class="bg-white rounded-2xl shadow-sm p-6 max-w-sm mx-auto mt-8 border border-slate-100">
         <div class="text-center mb-6">
           <span class="text-5xl">🔒</span>
           <h2 class="text-2xl font-bold mt-4 mb-1">เข้าสู่ระบบ</h2>
-          <p class="text-sm text-slate-500">ใส่รหัสเพื่อใช้งาน BadCount</p>
+          <p class="text-sm text-slate-500">ใส่รหัส Admin หรือ Manager เพื่อใช้งาน</p>
         </div>
         <form id="loginForm">
           <label class="block mb-4">

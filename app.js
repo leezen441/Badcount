@@ -85,13 +85,31 @@ function setAuthed() {
 // ใช้ sessionStorage — ปิดเบราว์เซอร์แล้วต้องใส่ใหม่
 const MANAGER_PASSCODE = "SHH123";
 const MANAGER_AUTH_KEY = "bcManagerAuth";
+const MANAGER_SESSIONS_KEY = "bcManagerSessions"; // จำ session ที่เคยเข้า
 
 function isManagerAuthed() {
-  return sessionStorage.getItem(MANAGER_AUTH_KEY) === "1";
+  return localStorage.getItem(MANAGER_AUTH_KEY) === "1";
 }
 
 function setManagerAuthed() {
-  sessionStorage.setItem(MANAGER_AUTH_KEY, "1");
+  localStorage.setItem(MANAGER_AUTH_KEY, "1");
+}
+
+function getManagerSessions() {
+  try {
+    return JSON.parse(localStorage.getItem(MANAGER_SESSIONS_KEY) || "[]");
+  } catch { return []; }
+}
+
+function saveManagerSession(id, dateText, ts) {
+  let sessions = getManagerSessions();
+  // Remove if exists
+  sessions = sessions.filter(s => s.id !== id);
+  // Add to top
+  sessions.unshift({ id, dateText, ts: ts || Date.now() });
+  // Keep only last 20
+  if (sessions.length > 20) sessions.length = 20;
+  localStorage.setItem(MANAGER_SESSIONS_KEY, JSON.stringify(sessions));
 }
 
 // ---------- Known Members (จดจำชื่อที่เคยใช้) ----------
@@ -321,7 +339,7 @@ function showView(name, opts = {}) {
   $("view-" + name).classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" });
 
-  // ซ่อน nav เมื่ออยู่หน้า join, login, หรือ session แบบ manager-mode (ไม่ได้ login)
+  // ซ่อน nav เมื่ออยู่หน้า join, login, manager-login หรือ session แบบ manager-mode
   const logo = $("logoLink");
   const nav = $("mainNav");
   const shouldLockNav = name === "join" || name === "login" || name === "manager-login" || (name === "session" && opts.lockNav);
@@ -335,7 +353,8 @@ function showView(name, opts = {}) {
   } else {
     if (nav) nav.classList.remove("hidden");
     if (logo) {
-      logo.setAttribute("href", "#/");
+      // ให้กด logo แล้วไปหน้า home หรือ m-home ขึ้นอยู่กับสิทธิ์
+      logo.setAttribute("href", isAuthed() ? "#/" : (isManagerAuthed() ? "#/m-home" : "#/"));
       logo.classList.remove("pointer-events-none", "cursor-default");
     }
   }
@@ -377,8 +396,24 @@ function route() {
     return;
   }
 
-  // หน้าอื่นๆ (home, history) ต้อง login ก่อน
+  // หน้า Manager Home
+  if (parts[0] === "m-home") {
+    if (!authed && !isManagerAuthed()) {
+      showView("login");
+      return;
+    }
+    showView("manager-home");
+    renderManagerHome();
+    return;
+  }
+
+  // หน้าอื่นๆ (home, history) ต้อง login (Admin) ก่อน
   if (!authed) {
+    // ถ้าไม่มีสิทธิ์ admin แต่มีสิทธิ์ manager ให้ไปหน้า manager home แทน
+    if (isManagerAuthed() && (parts[0] === "" || parts[0] === "history")) {
+      location.hash = "#/m-home";
+      return;
+    }
     showView("login");
     return;
   }
@@ -390,6 +425,30 @@ function route() {
     showView("home");
     loadRecentSessions();
   }
+}
+
+// Render Manager Home
+function renderManagerHome() {
+  const list = $("managerSessionsList");
+  if (!list) return;
+  const sessions = getManagerSessions();
+  
+  if (sessions.length === 0) {
+    list.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีกลุ่มที่เคยเข้าจัดการ<br>กรุณาเปิดลิงก์ Manager ที่ Admin ส่งให้</p>`;
+    return;
+  }
+
+  list.innerHTML = sessions.map(s => `
+    <a href="#/m/${s.id}" class="block bg-slate-50 hover:bg-emerald-50 border border-slate-100 p-4 rounded-xl transition-colors">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="font-bold text-slate-800">${s.dateText}</div>
+          <div class="text-xs text-slate-500 mt-1 text-mono">${s.id}</div>
+        </div>
+        <div class="text-emerald-600 font-bold">→</div>
+      </div>
+    </a>
+  `).join("");
 }
 
 let appHashHistory = [location.hash || "#/"];
@@ -429,6 +488,11 @@ $("loginForm").addEventListener("submit", async (e) => {
     } else {
       location.hash = "#/";
     }
+  } else if (input === MANAGER_PASSCODE) {
+    setManagerAuthed();
+    $("fldPasscode").value = "";
+    $("loginError").classList.add("hidden");
+    location.hash = "#/m-home";
   } else {
     $("loginError").classList.remove("hidden");
     $("fldPasscode").value = "";
@@ -619,6 +683,12 @@ function subscribeSession(id) {
     previousSessionMembers = currentMembers.map(m => ({ id: m.id }));
 
     currentSession = newSession;
+
+    // ถ้าเป็น Manager ให้จำ session นี้ไว้ในประวัติ
+    if (location.hash.startsWith("#/m/") && isManagerAuthed()) {
+      saveManagerSession(currentSessionId, formatDate(newSession.date), newSession.createdAt);
+    }
+
     renderSession();
   }, (err) => {
     console.error(err);
