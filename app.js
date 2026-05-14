@@ -260,7 +260,6 @@ async function showBrowserNotification(title, body) {
   
   const options = {
     body,
-    icon: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏸</text></svg>`),
     tag: "badcount-newmember",
     requireInteraction: false,
     silent: false
@@ -268,14 +267,14 @@ async function showBrowserNotification(title, body) {
 
   try {
     if ("serviceWorker" in navigator) {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await navigator.serviceWorker.getRegistration();
       if (reg && reg.showNotification) {
         await reg.showNotification(title, options);
         return; // Success via SW
       }
     }
     
-    // Fallback to traditional Notification API (Desktop browsers usually support this)
+    // Fallback to traditional Notification API
     const notif = new Notification(title, options);
     notif.onclick = () => {
       window.focus();
