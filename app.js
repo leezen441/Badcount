@@ -1797,6 +1797,7 @@ async function setupJoinView(id) {
         return;
       }
       const s = docSnap.data();
+      currentSession = { id: docSnap.id, ...s }; // เก็บใส่ตัวแปรโกลบอลให้ปุ่มแชร์เข้าถึงได้
 
       // 🔔 Detect คนเพิ่งเข้าร่วม (ยกเว้นตัวเองที่เพิ่งกดลงชื่อ)
       const currentMembers = s.members || [];
