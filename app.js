@@ -2045,6 +2045,43 @@ $("btnShareJoin").addEventListener("click", async () => {
   }
 });
 
+$("btnShareJoinPublic").addEventListener("click", async () => {
+  if (!currentSessionId || !currentSession) return;
+  const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
+  const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
+  
+  const members = currentSession.members || [];
+  let shareText = `🏸 Register ตีแบดวันที่ ${dateText}\n`;
+  
+  if (members.length === 0) {
+    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
+  } else {
+    shareText += `อัปเดตคนลงชื่อแล้ว (${members.length} คน) 🔥\n`;
+    members.forEach((m, idx) => {
+      shareText += `${idx + 1}. ${m.name}\n`;
+    });
+    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
+  }
+
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile && navigator.share) {
+    try {
+      await navigator.share({ text: shareText });
+      toast("แชร์ลิงก์สำเร็จ ✓");
+    } catch (err) {
+      if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
+    }
+  } else {
+    const textToCopy = isMobile ? shareText : joinUrl;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      toast(isMobile ? "คัดลอกข้อความแล้ว" : "คัดลอกลิงก์แล้ว");
+    }).catch(() => {
+      toast("ไม่สามารถคัดลอกได้");
+    });
+  }
+});
+
 $("btnShare").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   // ใช้ #/m/{id} เพื่อให้ผู้รับล็อกอยู่ใน session view เสมอ ไม่ว่าเครื่องเขาจะ login ไว้หรือไม่
