@@ -322,18 +322,34 @@
     </section>
 
     <!-- ===== MANAGER HOME VIEW ===== -->
+    <!-- ===== MANAGER HOME VIEW ===== -->
     <section id="view-manager-home" class="view">
-      <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+      <div class="bg-white rounded-2xl shadow-sm p-6 mb-4">
         <div class="text-center mb-6">
           <span class="text-5xl block mb-3">🛡️</span>
           <h2 class="text-2xl font-bold mt-4 mb-1">Manager Home</h2>
           <p class="text-sm text-slate-500">กลุ่มที่คุณได้รับสิทธิ์จัดการ (20 รายการล่าสุด)</p>
         </div>
+
+        <!-- Add Link Box (for iOS) -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+          <label class="block text-sm font-semibold text-slate-600 mb-2">📥 เพิ่มกลุ่มจากลิงก์ (สำหรับแอป iOS)</label>
+          <div class="flex gap-2">
+            <input type="text" id="fldAddManagerLink" placeholder="วางลิงก์ Manager ที่นี่..."
+              class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-emerald-500 text-sm" />
+            <button id="btnAddManagerLink" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors whitespace-nowrap">เพิ่ม</button>
+          </div>
+        </div>
+
         <div id="managerSessionsList" class="space-y-3">
           <!-- JS will populate this -->
           <p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีกลุ่มที่เคยเข้าจัดการ<br>กรุณาเปิดลิงก์ Manager ที่ Admin ส่งให้</p>
         </div>
       </div>
+      
+      <button id="btnManagerLogout" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-4 rounded-2xl transition-colors">
+        ออกจากระบบ (Log off)
+      </button>
     </section>
 
     <!-- ===== LOGIN VIEW ===== -->

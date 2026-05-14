@@ -358,6 +358,14 @@ function showView(name, opts = {}) {
       logo.classList.remove("pointer-events-none", "cursor-default");
     }
   }
+
+  // Move install banner to the active view if appropriate
+  const banner = $("installBanner");
+  if (banner) {
+    if (name === "home" || name === "manager-home" || name === "manager-login") {
+      $("view-" + name).prepend(banner);
+    }
+  }
 }
 
 // ---------- Router (hash-based for GitHub Pages) ----------
@@ -441,15 +449,33 @@ function renderManagerHome() {
   list.innerHTML = sessions.map(s => `
     <a href="#/m/${s.id}" class="block bg-slate-50 hover:bg-emerald-50 border border-slate-100 p-4 rounded-xl transition-colors">
       <div class="flex items-center justify-between">
-        <div>
-          <div class="font-bold text-slate-800">${s.dateText}</div>
-          <div class="text-xs text-slate-500 mt-1 text-mono">${s.id}</div>
-        </div>
+        <div class="font-bold text-slate-800 text-lg">${s.dateText}</div>
         <div class="text-emerald-600 font-bold">→</div>
       </div>
     </a>
   `).join("");
 }
+
+// Manager Logout
+$("btnManagerLogout")?.addEventListener("click", () => {
+  localStorage.removeItem(MANAGER_AUTH_KEY);
+  localStorage.removeItem(AUTH_KEY); // In case they were admin too
+  location.hash = "#/";
+  route();
+});
+
+// Manager Add Link
+$("btnAddManagerLink")?.addEventListener("click", () => {
+  const link = $("fldAddManagerLink").value.trim();
+  if (!link) return;
+  const match = link.match(/#\/m\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    $("fldAddManagerLink").value = "";
+    location.hash = "#/m/" + match[1];
+  } else {
+    toast("ลิงก์ไม่ถูกต้อง กรุณาวางลิงก์ Manager แบบเต็ม");
+  }
+});
 
 let appHashHistory = [location.hash || "#/"];
 window.addEventListener("hashchange", () => {
