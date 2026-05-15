@@ -2273,14 +2273,56 @@ if (btnJoinAnother) {
 // ============================================================
 // SHARE & BANK QR
 // ============================================================
+
+// แปลง startTime/endTime → string สำหรับแสดง
+function formatTimeRangeForShare(startTime, endTime) {
+  if (startTime && endTime) return `${startTime} - ${endTime}`;
+  if (startTime) return `เริ่ม ${startTime}`;
+  if (endTime) return `ถึง ${endTime}`;
+  return "";
+}
+
+// สร้างข้อความ "🏟️ สนาม X  🕐 เวลา" สำหรับ share message
+// - group courts ที่เวลาเดียวกัน → รวมเลขสนามในบรรทัดเดียว
+// - คนละเวลา → แยกบรรทัด
+// - คืน "" ถ้าไม่มีข้อมูลสนามเลย
+function formatCourtsForShare(courts) {
+  const valid = (courts || []).filter(c => c.number || c.startTime || c.endTime);
+  if (valid.length === 0) return "";
+
+  // จัดกลุ่มตามคู่ (startTime, endTime)
+  const groups = new Map();
+  valid.forEach(c => {
+    const key = `${c.startTime || ''}|${c.endTime || ''}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(c);
+  });
+
+  const lines = [];
+  groups.forEach(group => {
+    const numbers = group.map(c => c.number).filter(Boolean);
+    const timeStr = formatTimeRangeForShare(group[0].startTime, group[0].endTime);
+
+    let line = "";
+    if (numbers.length > 0) line += `🏟️ สนาม ${numbers.join(", ")}`;
+    if (timeStr) line += (line ? "  " : "") + `🕐 ${timeStr}`;
+    if (line) lines.push(line);
+  });
+
+  return lines.join("\n");
+}
+
 $("btnShareJoin").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
   const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
-  
+
   const members = currentSession.members || [];
+  const courtInfo = formatCourtsForShare(currentSession.courts);
+
   let shareText = `🏸 Register ตีแบดวันที่ ${dateText}\n`;
-  
+  if (courtInfo) shareText += `${courtInfo}\n`;
+
   if (members.length === 0) {
     shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
   } else {
@@ -2317,10 +2359,13 @@ $("btnShareJoinPublic").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
   const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
-  
+
   const members = currentSession.members || [];
+  const courtInfo = formatCourtsForShare(currentSession.courts);
+
   let shareText = `🏸 Register ตีแบดวันที่ ${dateText}\n`;
-  
+  if (courtInfo) shareText += `${courtInfo}\n`;
+
   if (members.length === 0) {
     shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
   } else {
