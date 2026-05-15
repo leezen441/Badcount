@@ -54,7 +54,7 @@
     <!-- ===== HOME VIEW ===== -->
     <section id="view-home" class="view active">
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 mb-6">
-        <h1 class="text-2xl font-bold mb-2">Start your badminton session 🏸</h1>
+        <h1 class="text-2xl font-bold mb-2 text-slate-800 dark:text-slate-100">Start your badminton session 🏸</h1>
 
         <button id="btnCreateSession"
           class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-lg">
@@ -87,7 +87,7 @@
 
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold">Recent</h2>
+          <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Recent</h2>
           <a href="#/history" class="text-sm text-emerald-600 hover:underline">ดูทั้งหมด →</a>
         </div>
         <div id="recentSessions" class="space-y-2 mb-4">
@@ -171,7 +171,7 @@
 
         <div class="grid grid-cols-4 gap-2 text-xs sm:text-sm mt-3">
           <button id="btnShareJoin"
-            class="bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
+            class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
             <span class="text-base">✉️</span> Invite
           </button>
           <button id="btnShare"
@@ -183,7 +183,7 @@
             <span class="text-base">📥</span> Export
           </button>
           <button id="btnQR"
-            class="bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
+            class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
             <span class="text-base">💰</span> QR Payment
           </button>
         </div>
@@ -208,29 +208,29 @@
           <label class="block">
             <div class="flex items-center justify-between">
               <span class="text-xs text-slate-500 dark:text-slate-400">ค่าคอร์ด</span>
-              <select id="fldCourtFeeType" class="text-xs text-emerald-600 bg-transparent focus:outline-none cursor-pointer">
+              <select id="fldCourtFeeType" class="text-xs text-emerald-600 dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer">
                 <option value="perPerson">คิดต่อคน</option>
                 <option value="total">รวม (หารเท่า)</option>
               </select>
             </div>
             <input id="fldCourtFee" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
+              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </label>
           <label class="block">
             <span class="text-xs text-slate-500 dark:text-slate-400">ราคาลูก/ลูก (บาท)</span>
             <input id="fldShuttlePrice" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
+              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </label>
           <label class="block col-span-2">
             <div class="flex items-center justify-between">
               <span class="text-xs text-slate-500 dark:text-slate-400">ค่าใช้จ่ายอื่นๆ (น้ำ/อาหาร)</span>
-              <select id="fldOtherCostType" class="text-xs text-emerald-600 bg-transparent focus:outline-none cursor-pointer">
+              <select id="fldOtherCostType" class="text-xs text-emerald-600 dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer">
                 <option value="perPerson">คิดต่อคน</option>
                 <option value="total">รวม (หารเท่า)</option>
               </select>
             </div>
             <input id="fldOtherCost" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
+              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </label>
         </div>
       </div>
@@ -244,7 +244,7 @@
         <!-- Add member -->
         <div class="flex gap-2 mb-2">
           <input id="fldNewMember" type="text" placeholder="ใส่ชื่อสมาชิก..."
-            class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
+            class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           <button id="btnAddMember"
             class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg font-medium">+ เพิ่ม</button>
         </div>

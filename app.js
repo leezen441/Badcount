@@ -1794,10 +1794,10 @@ function renderMatchDraft() {
             const selMember = allMembers.find(x => x.id === selId);
             const partnerName = selMember ? selMember.name : "?";
             const color = cnt >= 3
-              ? "bg-rose-100 text-rose-700"
+              ? "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
               : cnt === 2
-                ? "bg-amber-100 text-amber-800"
-                : "bg-slate-100 text-slate-700";
+                ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
+                : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300";
             return `<span class="${color} px-1.5 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap">${escapeHtml(partnerName)}·${cnt}</span>`;
           })
           .join('');
@@ -1805,15 +1805,15 @@ function renderMatchDraft() {
       }
 
       const rowClass = isTop
-        ? "bg-emerald-50/50 border-l-4 border-emerald-500"
-        : "bg-white border-l-4 border-transparent";
+        ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-l-4 border-emerald-500"
+        : "bg-white dark:bg-slate-800 border-l-4 border-transparent";
 
       const nameClass = isTop
-        ? "font-semibold text-slate-800"
-        : "font-medium text-slate-700";
+        ? "font-semibold text-slate-800 dark:text-slate-100"
+        : "font-medium text-slate-700 dark:text-slate-300";
 
       return `
-        <button data-draft-id="${m.id}" class="w-full text-left px-3 py-2.5 flex flex-wrap items-center gap-2 transition-colors hover:bg-slate-50 active:bg-slate-100 ${rowClass}">
+        <button data-draft-id="${m.id}" class="w-full text-left px-3 py-2.5 flex flex-wrap items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 active:bg-slate-100 dark:active:bg-slate-700 ${rowClass}">
           ${rankBadge}
           <span class="${nameClass} flex-1 min-w-0 truncate">${escapeHtml(m.name)}</span>
           <span class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 flex-shrink-0">
@@ -2832,12 +2832,12 @@ function renderSessionList(container, snap, isHome, isManager = false) {
     const isClosed = s.status === "closed";
 
     const cardClass = isClosed
-      ? "block p-3 pr-10 rounded-xl border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-400 transition"
-      : "block p-3 pr-10 rounded-xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/50 transition";
-    const priceClass = isClosed ? "font-bold text-emerald-700" : "font-bold text-emerald-600";
+      ? "block p-3 pr-10 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:border-emerald-400 transition"
+      : "block p-3 pr-10 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-slate-800/50 transition";
+    const priceClass = isClosed ? "font-bold text-emerald-700 dark:text-emerald-400" : "font-bold text-emerald-600 dark:text-emerald-500";
     const statusBadge = isClosed
-      ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">✓ ปิดแล้ว</span>`
-      : `<span class="text-xs text-emerald-600">เปิดอยู่</span>`;
+      ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded">✓ ปิดแล้ว</span>`
+      : `<span class="text-xs text-emerald-600 dark:text-emerald-500">เปิดอยู่</span>`;
 
     // Courts compact summary
     const courtNums = (s.courts || []).map(c => c.number).filter(Boolean);
@@ -2859,11 +2859,11 @@ function renderSessionList(container, snap, isHome, isManager = false) {
       // 2. ถ้ามีคนค้างจ่าย ให้สร้าง HTML แสดงรายชื่อและจำนวนเงิน
       if (unpaidMembers.length > 0) {
         unpaidListHtml = `
-          <div class="mt-2 pt-2 border-t border-emerald-100/50">
-            <div class="text-[10px] font-semibold text-rose-600 mb-1">ค้างชำระ:</div>
+          <div class="mt-2 pt-2 border-t border-emerald-100/50 dark:border-slate-700">
+            <div class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 mb-1">ค้างชำระ:</div>
             <div class="flex flex-wrap gap-1.5">
               ${unpaidMembers.map(u => `
-                <span class="inline-flex items-center gap-1 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800/50 text-rose-700 text-[10px] px-1.5 py-0.5 rounded shadow-sm">
+                <span class="inline-flex items-center gap-1 bg-white dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 text-[10px] px-1.5 py-0.5 rounded shadow-sm">
                   <span class="truncate max-w-[80px]">${escapeHtml(u.name)}</span>
                   <span class="font-bold border-l border-rose-200 dark:border-rose-800/50 pl-1">${fmt(u.amount)}฿</span>
                 </span>
@@ -2880,8 +2880,8 @@ function renderSessionList(container, snap, isHome, isManager = false) {
         <a href="#/${isManager ? 'm' : 'session'}/${d.id}" class="${cardClass}">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
-              <div class="font-semibold truncate ${isClosed ? "text-emerald-900" : ""}">${escapeHtml(s.location || "ก๊วน")}</div>
-              <div class="text-xs ${isClosed ? "text-emerald-700/70" : "text-slate-500"} mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก${courtSummary}</div>
+              <div class="font-semibold truncate ${isClosed ? "text-emerald-900 dark:text-emerald-300" : "text-slate-800 dark:text-slate-200"}">${escapeHtml(s.location || "ก๊วน")}</div>
+              <div class="text-xs ${isClosed ? "text-emerald-700/70 dark:text-emerald-400/70" : "text-slate-500 dark:text-slate-400"} mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก${courtSummary}</div>
             </div>
             <div class="text-right flex flex-col items-end shrink-0">
               <div class="${priceClass}">${fmt(totals.totalAll)} ฿</div>
