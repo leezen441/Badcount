@@ -616,6 +616,32 @@ async function loadRecentSessions() {
   }
 }
 
+// ---------- Session slug (วันที่ DDMMYY เป็น Firestore doc ID) ----------
+// แปลง ISO date "2026-05-17" → "170526"
+function dateToSlug(dateISO) {
+  if (!dateISO) return "";
+  const parts = dateISO.split("-"); // YYYY-MM-DD
+  if (parts.length !== 3) return "";
+  const [yyyy, mm, dd] = parts;
+  return `${dd}${mm}${yyyy.slice(2)}`;
+}
+
+// หา slug ที่ว่างอยู่ — ถ้าซ้ำให้ลอง -2, -3, ฯลฯ
+async function findAvailableSessionSlug(baseSlug) {
+  let candidate = baseSlug;
+  let n = 1;
+  // จำกัด loop ไว้ที่ 50 รอบ (โอกาสเกิดน้อยมาก แต่กันไม่ให้ infinite)
+  while (n <= 50) {
+    const ref = doc(db, "sessions", candidate);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return candidate;
+    n++;
+    candidate = `${baseSlug}-${n}`;
+  }
+  // Fallback: ถ้าชนกัน 50 ครั้ง ใส่ timestamp ท้าย (กันชนแน่ๆ)
+  return `${baseSlug}-${Date.now()}`;
+}
+
 $("btnCreateSession").addEventListener("click", async () => {
   try {
     // Ensure global defaults are loaded before reading (มี QR ที่แชร์กันทั้งระบบ)
@@ -648,8 +674,11 @@ $("btnCreateSession").addEventListener("click", async () => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
-    const ref = await addDoc(SESSIONS, newSession);
-    location.hash = `#/session/${ref.id}`;
+    // ใช้ DDMMYY เป็น doc ID — ถ้าซ้ำในวันเดียวกัน append -2, -3
+    const baseSlug = dateToSlug(newSession.date);
+    const slug = await findAvailableSessionSlug(baseSlug);
+    await setDoc(doc(db, "sessions", slug), newSession);
+    location.hash = `#/session/${slug}`;
   } catch (err) {
     alert("สร้างก๊วนไม่สำเร็จ: " + err.message);
   }
@@ -714,9 +743,12 @@ $("btnCreateRecurring").addEventListener("click", async () => {
       updatedAt: serverTimestamp()
     };
 
-    const ref = await addDoc(SESSIONS, newSession);
+    // ใช้ DDMMYY เป็น doc ID — ถ้าซ้ำในวันเดียวกัน append -2, -3
+    const baseSlug = dateToSlug(newSession.date);
+    const slug = await findAvailableSessionSlug(baseSlug);
+    await setDoc(doc(db, "sessions", slug), newSession);
     toast(`สร้างก๊วน ${formatDate(nextSunday)} แล้ว 🎉`, 3000);
-    location.hash = `#/session/${ref.id}`;
+    location.hash = `#/session/${slug}`;
   } catch (err) {
     alert("สร้างก๊วนไม่สำเร็จ: " + err.message);
   } finally {
