@@ -466,6 +466,7 @@ function route() {
     loadHistory();
   } else if (parts[0] === "personal-stats") {
     showView("personal-stats");
+    populatePlayerDatalist();
   } else if (parts[0] === "admin-summary") {
     showView("admin-summary");
     loadAdminSummaryData($("fldAdminSummaryFilter").value);
@@ -3150,7 +3151,10 @@ async function loadPersonalStatsData(playerName, filterType) {
     toast("กรุณาใส่ชื่อผู้เล่น");
     return;
   }
-  
+
+  // จดจำชื่อไว้แนะนำคราวหน้า
+  addKnownMember(playerName);
+
   container.classList.add("hidden");
   $("psPeriod").textContent = "กำลังคำนวณ...";
   container.classList.remove("hidden");
@@ -3221,7 +3225,7 @@ async function loadPersonalStatsData(playerName, filterType) {
         const d = new Date(h.date);
         const dateStr = isNaN(d) ? h.date : d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
         return `
-        <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900 rounded-lg text-sm">
+        <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg text-sm">
           <div>
             <div class="font-bold text-slate-700 dark:text-slate-300">${dateStr}</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">${escapeHtml(h.location || 'ไม่ระบุสถานที่')}</div>
@@ -3253,6 +3257,49 @@ $("fldStatsPlayerName")?.addEventListener("keypress", (e) => {
     loadPersonalStatsData($("fldStatsPlayerName").value, $("fldStatsFilter").value);
   }
 });
+
+// ---------- Player Suggestions Cache ----------
+let allPlayerNamesCache = null;
+
+async function populatePlayerDatalist() {
+  const datalist = $("playersDatalist");
+  if (!datalist) return;
+
+  // 1. เริ่มจากชื่อในเครื่องก่อน (เร็ว)
+  let names = new Set(getKnownMembers());
+  const updateUI = () => {
+    const sortedNames = Array.from(names).sort((a, b) => a.localeCompare(b, 'th'));
+    datalist.innerHTML = sortedNames.map(name => `<option value="${escapeHtml(name)}">`).join("");
+  };
+  
+  updateUI();
+
+  // 2. ถ้าเคยโหลดจาก Cloud แล้วในเซสชันนี้ ให้ใช้ของเดิม
+  if (allPlayerNamesCache) {
+    names = allPlayerNamesCache;
+    updateUI();
+    return;
+  }
+
+  // 3. ดึงจาก Cloud (ทุกก๊วน) เพื่อความครอบคลุม
+  try {
+    const q = query(SESSIONS);
+    const snap = await getDocs(q);
+    snap.forEach(doc => {
+      const s = doc.data();
+      (s.members || []).forEach(m => {
+        if (m.name) {
+          const trimmed = m.name.trim();
+          if (trimmed) names.add(trimmed);
+        }
+      });
+    });
+    allPlayerNamesCache = names;
+    updateUI();
+  } catch (err) {
+    console.warn("Failed to fetch all player names for suggestions:", err);
+  }
+}
 
 // ============================================================
 // Init
