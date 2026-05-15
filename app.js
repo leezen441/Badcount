@@ -1534,25 +1534,16 @@ function renderMatchDraft() {
 
   $("selPlayerCount").textContent = matchDraftPlayers.length;
 
-  let selHtml = "";
+  // ----- Compute stats (ยกเว้นเกมที่กำลังแก้ไข) -----
+  const matches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
+  const matchesCount = matches.length;
 
-  // 1. Calculate games played for each member
   const gamesPlayed = {};
-  const partneredCount = {};
-  const partneredNames = {};
+  const partnerCount = {}; // partnerCount[a][b] = ครั้งที่ a เคยอยู่ทีมเดียวกับ b
   const lastMatchIndex = {};
-  const matches = currentSession.matches || [];
-  
-  const draftNamesMap = {};
-  matchDraftPlayers.forEach(draftId => {
-     const dm = allMembers.find(x => x.id === draftId);
-     if (dm) draftNamesMap[draftId] = dm.name;
-  });
-
   allMembers.forEach(m => {
     gamesPlayed[m.id] = 0;
-    partneredCount[m.id] = 0;
-    partneredNames[m.id] = new Set();
+    partnerCount[m.id] = {};
     lastMatchIndex[m.id] = -1;
   });
 
@@ -1564,157 +1555,140 @@ function renderMatchDraft() {
         lastMatchIndex[id] = idx;
       }
     });
-    
-    if (matchDraftPlayers.length > 0) {
-      const draftedInMatch = pIds.filter(id => matchDraftPlayers.includes(id));
-      if (draftedInMatch.length > 0) {
-        pIds.forEach(id => {
-          if (partneredCount[id] !== undefined) {
-            partneredCount[id]++;
-            draftedInMatch.forEach(dId => {
-              if (id !== dId) {
-                partneredNames[id].add(draftNamesMap[dId]);
-              }
-            });
-          }
-        });
+    for (let i = 0; i < pIds.length; i++) {
+      for (let j = i + 1; j < pIds.length; j++) {
+        const a = pIds[i], b = pIds[j];
+        if (partnerCount[a] && partnerCount[b]) {
+          partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+          partnerCount[b][a] = (partnerCount[b][a] || 0) + 1;
+        }
       }
     }
   });
 
-  // Find minimum games played among AVAILABLE players
-  let minGames = Infinity;
-  allMembers.forEach(m => {
-    if (!matchDraftPlayers.includes(m.id) && gamesPlayed[m.id] < minGames) {
-      minGames = gamesPlayed[m.id];
-    }
+  // ----- Selected players (กล่องบน) -----
+  let selHtml = "";
+  matchDraftPlayers.forEach(id => {
+    const m = allMembers.find(x => x.id === id);
+    if (!m) return;
+    selHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
   });
 
-  // Tiers object to group players
-  const tiers = {
-    1: [], // แนะนำ
-    2: [], // ปานกลาง
-    3: [], // ลงบ่อยกว่า
-    4: []  // ไม่แนะนำ
-  };
-
-  allMembers.forEach(m => {
-    const isSel = matchDraftPlayers.includes(m.id);
-    
-    if (isSel) {
-      // Selected players go to selHtml directly
-      const chipClass = "bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1";
-      selHtml += `<button data-draft-id="${m.id}" class="px-3 py-1.5 rounded-full text-sm font-medium transition-transform active:scale-95 ${chipClass}">${escapeHtml(m.name)} ✕</button>`;
-      return; // Skip tier logic
-    }
-
-    // Tier logic for Available Players
-    const pCount = partneredCount[m.id];
-    const isMinGames = gamesPlayed[m.id] === minGames;
-    let tierNum;
-
-    if (matchDraftPlayers.length === 0) {
-      // If no one is selected, we only judge by gamesPlayed
-      if (isMinGames) tierNum = 1; // เกมน้อยสุด
-      else tierNum = 3; // ลงบ่อยกว่าคนอื่น
-    } else {
-      // Someone is selected, use partneredCount
-      if (pCount >= 2) {
-        tierNum = 4; // ไม่แนะนำ (เล่นด้วยกันบ่อยมาก)
-      } else if (pCount === 1) {
-        if (isMinGames) tierNum = 2; // ปานกลาง (เกมน้อย แต่เล่นด้วยกันแล้ว)
-        else tierNum = 4; // ไม่แนะนำ (เกมเยอะ แถมเล่นด้วยกันแล้ว)
-      } else { // pCount === 0
-        if (isMinGames) tierNum = 1; // แนะนำ (เกมน้อยสุด + ไม่เคยคู่กัน)
-        else tierNum = 3; // ลงบ่อยกว่า (เกมเยอะกว่า แต่ยังไม่เคยคู่กัน)
-      }
-    }
-
-    // Prepare chip UI based on Tier
-    let chipClass = "";
-    let tagClass = "";
-    
-    if (tierNum === 1) {
-      chipClass = "bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 shadow-sm";
-      tagClass = "bg-emerald-100 text-emerald-800";
-    } else if (tierNum === 2) {
-      chipClass = "bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 shadow-sm";
-      tagClass = "bg-amber-100 text-amber-800";
-    } else if (tierNum === 3) {
-      chipClass = "bg-slate-50 border border-slate-300 text-slate-700 hover:bg-slate-100";
-      tagClass = "bg-slate-200 text-slate-700";
-    } else { // tierNum === 4
-      chipClass = "bg-white border border-rose-200 text-rose-500 hover:bg-rose-50";
-      tagClass = "bg-rose-50 text-rose-600";
-    }
-    
-    const isJustPlayed = lastMatchIndex[m.id] === matches.length - 1 && matches.length > 0;
-    const justPlayedBadge = isJustPlayed ? `<span class="bg-orange-500 text-white px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold shadow-sm ml-0.5">🔥 เพิ่งลง</span>` : "";
-
-    let metText = pCount.toString();
-    if (partneredNames[m.id] && partneredNames[m.id].size > 0) {
-       metText = Array.from(partneredNames[m.id]).map(escapeHtml).join(", ");
-    }
-
-    tiers[tierNum].push({
-      html: `<button data-draft-id="${m.id}" class="pl-3 pr-2 py-1.5 rounded-full text-sm transition-transform active:scale-95 flex items-center gap-2 ${chipClass}">
-               <span class="font-bold whitespace-nowrap">${escapeHtml(m.name)}</span>
-               <div class="flex items-center gap-1 opacity-90">
-                 <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold">🏸 ${gamesPlayed[m.id]}</span>
-                 <span class="${tagClass} px-1.5 py-0.5 rounded-md text-[10px] leading-none font-bold max-w-[120px] truncate">🤝 ${metText}</span>
-                 ${justPlayedBadge}
-               </div>
-             </button>`,
-      games: gamesPlayed[m.id],
-      partnered: pCount,
-      restCount: lastMatchIndex[m.id] === -1 ? 999 : (matches.length - 1 - lastMatchIndex[m.id])
-    });
-  });
-
-  // Build Available Players HTML
-  let availHtml = "";
-  
-  // Define tier headers and descriptions
-  const tierConfig = [
-    { id: 1, title: "⭐ แนะนำ (เกมน้อยสุด + ไม่เจอทีมนี้เลย)", color: "text-emerald-700", bg: "bg-emerald-50/50" },
-    { id: 2, title: "👍 ปานกลาง (เกมน้อย แต่เคยเจอทีมนี้แล้ว)", color: "text-amber-700", bg: "bg-amber-50/50" },
-    { id: 3, title: "⏳ ลงสนามบ่อย (ยังไม่เคยเจอทีมนี้)", color: "text-slate-600", bg: "bg-slate-50/50" },
-    { id: 4, title: "⚠️ ไม่แนะนำ (เจอทีมนี้บ่อย หรือเกมเยอะ)", color: "text-rose-600", bg: "bg-rose-50/50" }
-  ];
-
-  let hasAvailable = false;
-  tierConfig.forEach(t => {
-    if (tiers[t.id].length > 0) {
-      hasAvailable = true;
-
-      // Sort players inside the tier by games (ascending), then restCount (descending), then partnered count (ascending)
-      tiers[t.id].sort((a, b) => {
-        if (a.games !== b.games) return a.games - b.games;
-        if (a.restCount !== b.restCount) return b.restCount - a.restCount;
-        return a.partnered - b.partnered;
-      });
-
-      availHtml += `
-        <div class="mb-2 last:mb-0 ${t.bg} p-2 rounded-xl border border-slate-100">
-          <div class="text-[11px] font-bold ${t.color} mb-1.5 ml-1">${t.title}</div>
-          <div class="flex flex-wrap gap-1.5">
-            ${tiers[t.id].map(p => p.html).join("")}
-          </div>
-        </div>
-      `;
-    }
-  });
-
-  if(matchDraftPlayers.length === 0) selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
-  if(!hasAvailable) availHtml = `<div class="text-slate-400 text-sm py-2 w-full text-center">ไม่มีผู้เล่นเหลือ</div>`;
-  
-  // Re-structure selected players container
-  if (matchDraftPlayers.length > 0) {
+  if (matchDraftPlayers.length === 0) {
+    selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
+  } else {
     selHtml = `<div class="flex flex-wrap gap-2">${selHtml}</div>`;
   }
-
   selectedDiv.innerHTML = selHtml;
-  availableDiv.innerHTML = availHtml;
+
+  // ----- Available players (รายการแนวตั้ง) -----
+  const available = allMembers.filter(m => !matchDraftPlayers.includes(m.id));
+
+  if (available.length === 0) {
+    availableDiv.innerHTML = `<div class="text-slate-400 text-sm py-2 w-full text-center">ไม่มีผู้เล่นเหลือ</div>`;
+  } else {
+    // Partner overlap กับคนที่เลือกแล้ว
+    const overlapWithSelected = {}; // { id: { selectedId: count } }
+    const totalOverlap = {};
+    available.forEach(m => {
+      overlapWithSelected[m.id] = {};
+      let total = 0;
+      matchDraftPlayers.forEach(selId => {
+        const cnt = partnerCount[m.id][selId] || 0;
+        if (cnt > 0) overlapWithSelected[m.id][selId] = cnt;
+        total += cnt;
+      });
+      totalOverlap[m.id] = total;
+    });
+
+    // เรียง: games asc → totalOverlap asc → restCount desc
+    const sorted = [...available].sort((a, b) => {
+      if (gamesPlayed[a.id] !== gamesPlayed[b.id]) return gamesPlayed[a.id] - gamesPlayed[b.id];
+      if (totalOverlap[a.id] !== totalOverlap[b.id]) return totalOverlap[a.id] - totalOverlap[b.id];
+      const restA = lastMatchIndex[a.id] === -1 ? 9999 : (matchesCount - 1 - lastMatchIndex[a.id]);
+      const restB = lastMatchIndex[b.id] === -1 ? 9999 : (matchesCount - 1 - lastMatchIndex[b.id]);
+      return restB - restA;
+    });
+
+    const top4Ids = new Set(sorted.slice(0, 4).map(m => m.id));
+
+    const rows = sorted.map((m, idx) => {
+      const isTop = top4Ids.has(m.id);
+      const rank = idx + 1;
+      const games = gamesPlayed[m.id];
+      const lastIdx = lastMatchIndex[m.id];
+
+      // Rest calculation
+      let restHtml;
+      if (matchesCount === 0) {
+        restHtml = `<span class="text-slate-300 text-sm">—</span>`;
+      } else if (lastIdx === -1) {
+        // ยังไม่เคยลงเลย — พักมานานกว่าทุกคน
+        restHtml = `<span class="flex items-center gap-1 text-slate-500">
+            <span class="text-base">🪑</span>
+            <span class="font-medium text-slate-700 tabular-nums">${matchesCount}</span>
+          </span>`;
+      } else {
+        const rested = matchesCount - 1 - lastIdx;
+        if (rested === 0) {
+          restHtml = `<span class="text-base" title="เพิ่งลงเกมที่แล้ว">🔥</span>`;
+        } else {
+          restHtml = `<span class="flex items-center gap-1 text-slate-500" title="พักมา ${rested} เกม">
+              <span class="text-base">🪑</span>
+              <span class="font-medium text-slate-700 tabular-nums">${rested}</span>
+            </span>`;
+        }
+      }
+
+      // Rank badge — top 4 only
+      const rankBadge = isTop
+        ? `<span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold bg-emerald-500 text-white flex-shrink-0">${rank}</span>`
+        : `<span class="w-6 h-6 flex-shrink-0"></span>`;
+
+      // Partner pills — แสดงเฉพาะคนที่เคยจับคู่กับคนที่ selected
+      let partnerHtml = "";
+      const partnerEntries = Object.entries(overlapWithSelected[m.id]);
+      if (partnerEntries.length > 0) {
+        const pills = partnerEntries
+          .sort((a, b) => b[1] - a[1]) // มากสุดก่อน
+          .map(([selId, cnt]) => {
+            const selMember = allMembers.find(x => x.id === selId);
+            const partnerName = selMember ? selMember.name : "?";
+            const color = cnt >= 3
+              ? "bg-rose-100 text-rose-700"
+              : cnt === 2
+                ? "bg-amber-100 text-amber-800"
+                : "bg-slate-100 text-slate-700";
+            return `<span class="${color} px-1.5 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap">${escapeHtml(partnerName)}·${cnt}</span>`;
+          })
+          .join('');
+        partnerHtml = `<span class="flex items-center gap-1 flex-wrap pl-2 ml-1 border-l border-slate-200">${pills}</span>`;
+      }
+
+      const rowClass = isTop
+        ? "bg-emerald-50/50 border-l-4 border-emerald-500"
+        : "bg-white border-l-4 border-transparent";
+
+      const nameClass = isTop
+        ? "font-semibold text-slate-800"
+        : "font-medium text-slate-700";
+
+      return `
+        <button data-draft-id="${m.id}" class="w-full text-left px-3 py-2.5 flex flex-wrap items-center gap-2 transition-colors hover:bg-slate-50 active:bg-slate-100 ${rowClass}">
+          ${rankBadge}
+          <span class="${nameClass} flex-1 min-w-0 truncate">${escapeHtml(m.name)}</span>
+          <span class="flex items-center gap-1 text-sm text-slate-500 flex-shrink-0">
+            <span class="text-base">🏸</span>
+            <span class="font-medium text-slate-700 tabular-nums w-5 text-right">${games}</span>
+          </span>
+          <span class="flex items-center text-sm flex-shrink-0 ml-1 min-w-[28px]">${restHtml}</span>
+          ${partnerHtml}
+        </button>
+      `;
+    }).join('');
+
+    availableDiv.innerHTML = `<div class="bg-white rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">${rows}</div>`;
+  }
   
   $("btnSaveMatch").disabled = matchDraftPlayers.length !== 4;
   $("btnSaveMatch").className = matchDraftPlayers.length === 4 ? "flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow-md transition-transform active:scale-95" : "flex-1 bg-slate-200 text-slate-400 py-3 rounded-xl font-medium cursor-not-allowed";
