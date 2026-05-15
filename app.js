@@ -508,11 +508,14 @@ $("btnManagerLogout")?.addEventListener("click", () => {
   route();
 });
 
-// Manager Nav Buttons
+// Manager / Admin Nav Buttons
 $("btnGotoAdminSummary")?.addEventListener("click", () => {
   location.hash = "#/admin-summary";
 });
 $("btnGotoPersonalStats")?.addEventListener("click", () => {
+  location.hash = "#/personal-stats";
+});
+$("btnGotoPersonalStatsHome")?.addEventListener("click", () => {
   location.hash = "#/personal-stats";
 });
 
