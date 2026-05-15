@@ -835,7 +835,7 @@ function renderCourts() {
       if (validCourts.length > 0) {
         const courtDesc = validCourts.map(c => c.number ? `สนาม ${c.number}` : "เวลา " + (c.startTime || '')).join(", ");
         suggestions.innerHTML = `
-          <button id="btnSuggestCourts" class="px-3 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full font-medium transition-transform active:scale-95 shadow-sm">
+          <button id="btnSuggestCourts" class="px-3 py-1.5 text-xs bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 border border-emerald-200 dark:border-emerald-800/50 rounded-full font-medium transition-transform active:scale-95 shadow-sm">
             + ดึงสนามล่าสุด (${escapeHtml(courtDesc)})
           </button>
         `;
@@ -859,21 +859,21 @@ function renderCourts() {
   }
 
   list.innerHTML = courts.map(c => `
-    <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-2 rounded-lg">
-      <span class="text-xs font-bold text-slate-500 shrink-0">สนาม</span>
+    <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
+      <span class="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0">สนาม</span>
       <input type="text" data-court-id="${c.id}" data-field="number" placeholder="?" maxlength="6"
         value="${escapeHtml(c.number || '')}"
-        class="w-14 text-center px-1 py-1 border border-slate-200 rounded font-bold text-sm focus:outline-none focus:border-emerald-500" />
+        class="w-14 text-center px-1 py-1 border border-slate-200 dark:border-slate-700 rounded font-bold text-sm focus:outline-none focus:border-emerald-500 bg-white dark:bg-slate-900" />
       <span class="text-slate-400 text-sm shrink-0">🕐</span>
       <input type="time" data-court-id="${c.id}" data-field="startTime"
         value="${c.startTime || ''}"
         style="color-scheme: light;"
-        class="text-xs px-1 py-1 border border-slate-200 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500" />
+        class="text-xs px-1 py-1 border border-slate-200 dark:border-slate-700 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500 bg-white dark:bg-slate-900" />
       <span class="text-slate-400 shrink-0 text-xs">–</span>
       <input type="time" data-court-id="${c.id}" data-field="endTime"
         value="${c.endTime || ''}"
         style="color-scheme: light;"
-        class="text-xs px-1 py-1 border border-slate-200 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500" />
+        class="text-xs px-1 py-1 border border-slate-200 dark:border-slate-700 rounded min-w-0 flex-1 focus:outline-none focus:border-emerald-500 bg-white dark:bg-slate-900" />
       <button data-del-court="${c.id}" class="text-slate-300 hover:text-red-500 px-1 shrink-0 text-lg leading-none">×</button>
     </div>
   `).join("");
@@ -932,7 +932,7 @@ function renderMemberSuggestions() {
     <div class="text-[11px] text-slate-400 mb-1.5">เพิ่มเร็ว (จากที่เคยใช้) — แตะค้างเพื่อลบจากประวัติ</div>
     <div class="flex flex-wrap gap-1.5">
       ${suggestions.map(name => `
-        <button data-quick-add="${escapeHtml(name)}" class="px-2.5 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full transition-transform active:scale-95 font-medium">
+        <button data-quick-add="${escapeHtml(name)}" class="px-2.5 py-1 text-xs bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 border border-emerald-200 dark:border-emerald-800/50 rounded-full transition-transform active:scale-95 font-medium">
           + ${escapeHtml(name)}
         </button>
       `).join("")}
@@ -1265,7 +1265,7 @@ function renderMembers() {
     
     return `
     <div class="py-3 flex items-center gap-2 sm:gap-3">
-      <button data-act="toggle-paid" data-idx="${idx}" class="w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-emerald-400'}" title="ทำเครื่องหมายว่าจ่ายแล้ว">
+      <button data-act="toggle-paid" data-idx="${idx}" class="w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-400'}" title="ทำเครื่องหมายว่าจ่ายแล้ว">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
@@ -1282,10 +1282,10 @@ function renderMembers() {
         <div class="font-bold text-lg ${priceColor} whitespace-nowrap ml-2">${fmt(totals.perMember[idx])} ฿</div>
       </div>
       
-      <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 shrink-0">
-        <button data-act="dec" data-idx="${idx}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">−</button>
+      <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shrink-0">
+        <button data-act="dec" data-idx="${idx}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">−</button>
         <div class="w-7 sm:w-10 text-center font-semibold text-sm" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
-        <button data-act="inc" data-idx="${idx}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">+</button>
+        <button data-act="inc" data-idx="${idx}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">+</button>
       </div>
       
       <button data-act="del" data-idx="${idx}" class="text-slate-300 hover:text-red-500 pl-1 pr-2 text-xl shrink-0 leading-none">×</button>
@@ -1384,11 +1384,11 @@ function renderMatches() {
   (currentSession.members || []).forEach(m => membersMap[m.id] = m.name);
 
   list.innerHTML = matches.map((m, idx) => `
-    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-start justify-between gap-3">
+    <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
       <div class="flex-1 text-sm min-w-0">
         <div class="flex justify-between items-center mb-1">
-          <div class="font-bold text-slate-700">เกมที่ ${idx + 1}</div>
-          ${m.shuttleNumbers ? `<div class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>` : ''}
+          <div class="font-bold text-slate-700 dark:text-slate-300">เกมที่ ${idx + 1}</div>
+          ${m.shuttleNumbers ? `<div class="bg-emerald-100 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>` : ''}
         </div>
         <div class="text-emerald-700 font-medium text-xs leading-relaxed">
           ${(m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean)).map(pid => escapeHtml(membersMap[pid] || '?')).join(", ")}
@@ -1695,7 +1695,7 @@ function renderMatchDraft() {
   });
 
   if (matchDraftPlayers.length === 0) {
-    selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
+    selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
   } else {
     selHtml = `<div class="flex flex-wrap gap-2">${selHtml}</div>`;
   }
@@ -1763,18 +1763,18 @@ function renderMatchDraft() {
         restHtml = `<span class="text-slate-300 text-sm">—</span>`;
       } else if (lastIdx === -1) {
         // ยังไม่เคยลงเลย — พักมานานกว่าทุกคน
-        restHtml = `<span class="flex items-center gap-1 text-slate-500">
+        restHtml = `<span class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
             <span class="text-base">🪑</span>
-            <span class="font-medium text-slate-700 tabular-nums">${matchesCount}</span>
+            <span class="font-medium text-slate-700 dark:text-slate-300 tabular-nums">${matchesCount}</span>
           </span>`;
       } else {
         const rested = matchesCount - 1 - lastIdx;
         if (rested === 0) {
           restHtml = `<span class="text-base" title="เพิ่งลงเกมที่แล้ว">🔥</span>`;
         } else {
-          restHtml = `<span class="flex items-center gap-1 text-slate-500" title="พักมา ${rested} เกม">
+          restHtml = `<span class="flex items-center gap-1 text-slate-500 dark:text-slate-400" title="พักมา ${rested} เกม">
               <span class="text-base">🪑</span>
-              <span class="font-medium text-slate-700 tabular-nums">${rested}</span>
+              <span class="font-medium text-slate-700 dark:text-slate-300 tabular-nums">${rested}</span>
             </span>`;
         }
       }
@@ -1801,7 +1801,7 @@ function renderMatchDraft() {
             return `<span class="${color} px-1.5 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap">${escapeHtml(partnerName)}·${cnt}</span>`;
           })
           .join('');
-        partnerHtml = `<span class="flex items-center gap-1 flex-wrap pl-2 ml-1 border-l border-slate-200">${pills}</span>`;
+        partnerHtml = `<span class="flex items-center gap-1 flex-wrap pl-2 ml-1 border-l border-slate-200 dark:border-slate-700">${pills}</span>`;
       }
 
       const rowClass = isTop
@@ -1816,9 +1816,9 @@ function renderMatchDraft() {
         <button data-draft-id="${m.id}" class="w-full text-left px-3 py-2.5 flex flex-wrap items-center gap-2 transition-colors hover:bg-slate-50 active:bg-slate-100 ${rowClass}">
           ${rankBadge}
           <span class="${nameClass} flex-1 min-w-0 truncate">${escapeHtml(m.name)}</span>
-          <span class="flex items-center gap-1 text-sm text-slate-500 flex-shrink-0">
+          <span class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 flex-shrink-0">
             <span class="text-base">🏸</span>
-            <span class="font-medium text-slate-700 tabular-nums w-5 text-right">${games}</span>
+            <span class="font-medium text-slate-700 dark:text-slate-300 tabular-nums w-5 text-right">${games}</span>
           </span>
           <span class="flex items-center text-sm flex-shrink-0 ml-1 min-w-[28px]">${restHtml}</span>
           ${partnerHtml}
@@ -1831,10 +1831,10 @@ function renderMatchDraft() {
 
     // ถ้ามีทั้ง Top และ Rest → ใส่ section header เล็กๆ คั่น
     const restSection = restPicks.length > 0
-      ? `<div class="px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 uppercase tracking-wide border-t border-slate-200">อื่นๆ</div>${restRowsHtml}`
+      ? `<div class="px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 dark:bg-slate-900/50 uppercase tracking-wide border-t border-slate-200 dark:border-slate-700">อื่นๆ</div>${restRowsHtml}`
       : '';
 
-    availableDiv.innerHTML = `<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    availableDiv.innerHTML = `<div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
       <div class="divide-y divide-slate-100">${topRowsHtml}</div>
       ${restSection ? `<div class="divide-y divide-slate-100">${restSection}</div>` : ''}
     </div>`;
@@ -1987,7 +1987,7 @@ $("btnViewStats").addEventListener("click", () => {
 
   let html = "";
   if (matches.length === 0) {
-    html = `<p class="text-center text-slate-500 text-sm py-4">ยังไม่มีข้อมูลสถิติ เริ่มจัดเกมได้เลย</p>`;
+    html = `<p class="text-center text-slate-500 dark:text-slate-400 text-sm py-4">ยังไม่มีข้อมูลสถิติ เริ่มจัดเกมได้เลย</p>`;
   } else {
     sortedIds.forEach(id => {
       const st = stats[id];
@@ -2007,18 +2007,18 @@ $("btnViewStats").addEventListener("click", () => {
             : count === 2
               ? "bg-emerald-300 text-emerald-900"
               : "bg-slate-200 text-slate-700";
-          return `<span class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2.5 py-1 text-xs">
-            <span class="text-slate-700">${escapeHtml(name)}</span>
+          return `<span class="inline-flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-2.5 py-1 text-xs">
+            <span class="text-slate-700 dark:text-slate-300">${escapeHtml(name)}</span>
             <span class="${badgeColor} text-[10px] font-bold rounded-full px-1.5 min-w-[18px] text-center">${count}</span>
           </span>`;
         }).join("");
       }
 
       html += `
-        <div class="bg-white p-3 rounded-xl border border-slate-200 text-sm">
+        <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">
           <div class="flex justify-between items-center mb-2">
-            <span class="font-bold text-slate-800">${escapeHtml(st.name)}</span>
-            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-semibold">🏸 ${st.games} เกม</span>
+            <span class="font-bold text-slate-800 dark:text-slate-200">${escapeHtml(st.name)}</span>
+            <span class="bg-emerald-100 text-emerald-800 dark:text-emerald-300 text-xs px-2.5 py-1 rounded-full font-semibold">🏸 ${st.games} เกม</span>
           </div>
           <div class="text-[10px] text-slate-400 mb-1.5 uppercase tracking-wide font-semibold">เคยเล่นด้วยกัน</div>
           <div class="flex flex-wrap gap-1.5">
@@ -2093,8 +2093,8 @@ async function setupJoinView(id) {
             else if (c.startTime) timeStr = `เริ่ม ${c.startTime}`;
             else if (c.endTime) timeStr = `ถึง ${c.endTime}`;
             return `<li class="flex items-center gap-2">
-              <span class="font-semibold text-slate-800">${num}</span>
-              ${timeStr ? `<span class="text-xs text-slate-500">🕐 ${timeStr}</span>` : ""}
+              <span class="font-semibold text-slate-800 dark:text-slate-200">${num}</span>
+              ${timeStr ? `<span class="text-xs text-slate-500 dark:text-slate-400">🕐 ${timeStr}</span>` : ""}
             </li>`;
           }).join("");
         }
@@ -2185,7 +2185,7 @@ async function setupJoinView(id) {
             ? `<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">✓ จ่ายแล้ว</span>`
             : `<span class="text-sm font-bold text-rose-600">${fmt(cost)} ฿</span>`;
           return `
-            <li class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 pr-2">
+            <li class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 pr-2">
               <div class="flex items-center gap-2 min-w-0">
                 <span class="${isPaid ? 'text-emerald-500' : 'text-rose-400'} shrink-0 text-xs">●</span>
                 <span class="${isPaid ? 'text-slate-500 line-through' : 'text-slate-800 font-medium'} truncate">${escapeHtml(m.name)}</span>
@@ -2199,7 +2199,7 @@ async function setupJoinView(id) {
         return `
           <li class="flex items-center gap-2 py-1.5">
             <span class="text-emerald-500 text-xs">●</span>
-            <span class="text-slate-800">${escapeHtml(m.name)}</span>
+            <span class="text-slate-800 dark:text-slate-200">${escapeHtml(m.name)}</span>
           </li>
         `;
       }).join("");
@@ -2863,9 +2863,9 @@ function renderSessionList(container, snap, isHome, isManager = false) {
             <div class="text-[10px] font-semibold text-rose-600 mb-1">ค้างชำระ:</div>
             <div class="flex flex-wrap gap-1.5">
               ${unpaidMembers.map(u => `
-                <span class="inline-flex items-center gap-1 bg-white border border-rose-200 text-rose-700 text-[10px] px-1.5 py-0.5 rounded shadow-sm">
+                <span class="inline-flex items-center gap-1 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800/50 text-rose-700 text-[10px] px-1.5 py-0.5 rounded shadow-sm">
                   <span class="truncate max-w-[80px]">${escapeHtml(u.name)}</span>
-                  <span class="font-bold border-l border-rose-200 pl-1">${fmt(u.amount)}฿</span>
+                  <span class="font-bold border-l border-rose-200 dark:border-rose-800/50 pl-1">${fmt(u.amount)}฿</span>
                 </span>
               `).join("")}
             </div>
@@ -3221,7 +3221,7 @@ async function loadPersonalStatsData(playerName, filterType) {
         const d = new Date(h.date);
         const dateStr = isNaN(d) ? h.date : d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
         return `
-        <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg text-sm">
+        <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900/50 dark:bg-slate-900 rounded-lg text-sm">
           <div>
             <div class="font-bold text-slate-700 dark:text-slate-300">${dateStr}</div>
             <div class="text-xs text-slate-500 dark:text-slate-400">${escapeHtml(h.location || 'ไม่ระบุสถานที่')}</div>

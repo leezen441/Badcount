@@ -62,7 +62,7 @@
         </button>
 
         <button id="btnCreateRecurring"
-          class="w-full mt-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold py-3 rounded-xl border border-emerald-200 flex items-center justify-center gap-2 text-sm">
+          class="w-full mt-3 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-800 dark:text-emerald-300 font-semibold py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center gap-2 text-sm">
           <span class="text-base">🔄</span>
           <span>สร้างกลุ่มอาทิตย์หน้า (Copy กลุ่มล่าสุด)</span>
         </button>
@@ -94,10 +94,10 @@
           <p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีกลุ่ม เริ่มกลุ่มแรกได้เลย</p>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-4">
-          <button id="btnGotoAdminSummary" class="bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-200 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
+          <button id="btnGotoAdminSummary" class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold py-3 rounded-xl border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
             <span class="text-lg">💰</span> สรุปยอดรวม
           </button>
-          <button id="btnGotoPersonalStatsHome" class="bg-sky-50 text-sky-700 font-bold py-3 rounded-xl border border-sky-200 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
+          <button id="btnGotoPersonalStatsHome" class="bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-bold py-3 rounded-xl border border-sky-200 dark:border-sky-800/50 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
             <span class="text-lg">📈</span> สถิติส่วนตัว
           </button>
         </div>
@@ -171,7 +171,7 @@
 
         <div class="grid grid-cols-4 gap-2 text-xs sm:text-sm mt-3">
           <button id="btnShareJoin"
-            class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 flex flex-col items-center justify-center gap-1">
+            class="bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
             <span class="text-base">✉️</span> Invite
           </button>
           <button id="btnShare"
@@ -183,7 +183,7 @@
             <span class="text-base">📥</span> Export
           </button>
           <button id="btnQR"
-            class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 flex flex-col items-center justify-center gap-1">
+            class="bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
             <span class="text-base">💰</span> QR Payment
           </button>
         </div>
@@ -214,12 +214,12 @@
               </select>
             </div>
             <input id="fldCourtFee" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none" />
+              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
           </label>
           <label class="block">
             <span class="text-xs text-slate-500 dark:text-slate-400">ราคาลูก/ลูก (บาท)</span>
             <input id="fldShuttlePrice" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none" />
+              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
           </label>
           <label class="block col-span-2">
             <div class="flex items-center justify-between">
@@ -230,7 +230,7 @@
               </select>
             </div>
             <input id="fldOtherCost" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none" />
+              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
           </label>
         </div>
       </div>
@@ -244,7 +244,7 @@
         <!-- Add member -->
         <div class="flex gap-2 mb-2">
           <input id="fldNewMember" type="text" placeholder="ใส่ชื่อสมาชิก..."
-            class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none" />
+            class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
           <button id="btnAddMember"
             class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg font-medium">+ เพิ่ม</button>
         </div>
@@ -298,7 +298,7 @@
       </div>
 
       <!-- Payment Reminder Card (auto-show when unpaid > 0) -->
-      <div id="paymentReminderCard" class="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-4 hidden">
+      <div id="paymentReminderCard" class="bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 rounded-2xl p-4 mb-4 hidden">
         <div class="flex items-center justify-between gap-3">
           <div class="flex-1 min-w-0">
             <div class="text-sm font-semibold text-rose-700 flex items-center gap-1.5">
@@ -324,7 +324,7 @@
           ✅ ปิด Court
         </button>
         <button id="btnDeleteSession"
-          class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-3 rounded-lg font-medium">
+          class="bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg font-medium">
           🗑️
         </button>
       </div>
@@ -355,7 +355,7 @@
           <p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>
         </div>
 
-        <button id="btnGotoPersonalStats" class="w-full mt-6 bg-sky-50 text-sky-700 font-bold py-3 rounded-xl border border-sky-200 flex items-center justify-center gap-2 transition-transform active:scale-95">
+        <button id="btnGotoPersonalStats" class="w-full mt-6 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-bold py-3 rounded-xl border border-sky-200 dark:border-sky-800/50 flex items-center justify-center gap-2 transition-transform active:scale-95">
           <span class="text-xl">📈</span> สถิติส่วนตัว
         </button>
       </div>
@@ -377,7 +377,7 @@
           <label class="block mb-4">
             <span class="text-sm font-semibold text-slate-600 dark:text-slate-400 block mb-2">รหัสผ่าน</span>
             <input id="fldPasscode" type="password" autocomplete="current-password"
-              class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-lg" />
+              class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-lg bg-white dark:bg-slate-900" />
             <p id="loginError" class="text-sm text-rose-500 mt-2 hidden">รหัสไม่ถูกต้อง</p>
           </label>
           <button type="submit"
@@ -400,7 +400,7 @@
           <label class="block mb-4">
             <span class="text-sm font-semibold text-slate-600 dark:text-slate-400 block mb-2">รหัส Manager</span>
             <input id="fldManagerPasscode" type="password" autocomplete="current-password"
-              class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-lg" />
+              class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-lg bg-white dark:bg-slate-900" />
             <p id="managerLoginError" class="text-sm text-rose-500 mt-2 hidden">รหัสไม่ถูกต้อง</p>
           </label>
           <button type="submit"
@@ -422,7 +422,7 @@
         </div>
 
         <!-- Closed status banner -->
-        <div id="joinClosedBanner" class="hidden bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold">
+        <div id="joinClosedBanner" class="hidden bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 p-3 rounded-xl mb-4 text-center text-sm font-semibold">
           🔒 ปิดแล้ว — ดูยอดที่ต้องจ่ายและ QR โอนเงินด้านล่าง
         </div>
 
@@ -435,7 +435,7 @@
         <!-- Payment section (shown only when session is closed) -->
         <div id="joinPaymentSection" class="hidden mb-4">
           <!-- Unpaid count summary -->
-          <div id="joinTotalDueBox" class="hidden bg-rose-50 border border-rose-200 p-3 rounded-xl mb-3 text-center">
+          <div id="joinTotalDueBox" class="hidden bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 p-3 rounded-xl mb-3 text-center">
             <div class="text-base font-bold text-rose-700">
               ⏳ ยังไม่จ่าย <span id="joinUnpaidCount">0</span> คน
             </div>
@@ -450,12 +450,12 @@
           </div>
         </div>
 
-        <div id="joinSuccessSection" class="hidden text-center mb-6 bg-emerald-50 py-5 rounded-xl border border-emerald-100">
+        <div id="joinSuccessSection" class="hidden text-center mb-6 bg-emerald-50 dark:bg-emerald-900/30 py-5 rounded-xl border border-emerald-100">
           <span class="text-4xl block mb-2">✅</span>
-          <h3 class="text-lg font-bold text-emerald-800">ลงชื่อสำเร็จ!</h3>
+          <h3 class="text-lg font-bold text-emerald-800 dark:text-emerald-300">ลงชื่อสำเร็จ!</h3>
           <p id="joinSuccessName" class="text-sm text-emerald-700 mt-1">ยินดีต้อนรับ 🎉</p>
           <button id="btnJoinAnother"
-            class="mt-4 inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-4 py-2 rounded-lg text-sm font-semibold transition-transform active:scale-95">
+            class="mt-4 inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 border border-emerald-300 px-4 py-2 rounded-lg text-sm font-semibold transition-transform active:scale-95">
             <span class="text-lg leading-none">+</span>
             <span>ลงชื่อให้คนอื่นเพิ่ม</span>
           </button>
@@ -465,7 +465,7 @@
           <label class="block mb-5">
             <span class="text-sm font-semibold text-slate-600 dark:text-slate-400 block mb-2">ชื่อของคุณ</span>
             <input id="fldJoinName" type="text" placeholder="พิมพ์ชื่อเล่น..."
-              class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-lg text-center" />
+              class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-lg text-center bg-white dark:bg-slate-900" />
           </label>
           <button id="btnSubmitJoin"
             class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-sm transition-transform active:scale-95 text-lg mb-6">
@@ -491,10 +491,10 @@
         <h2 class="text-xl font-bold mb-4">📈 สถิติผู้เล่น (Personal Stats)</h2>
         
         <div class="flex flex-col gap-3 mb-4">
-          <input type="text" id="fldStatsPlayerName" placeholder="พิมพ์ชื่อผู้เล่น..." class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none" />
+          <input type="text" id="fldStatsPlayerName" placeholder="พิมพ์ชื่อผู้เล่น..." class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900" />
           
           <div class="flex gap-2">
-            <select id="fldStatsFilter" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none">
+            <select id="fldStatsFilter" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900">
               <option value="all">ทั้งหมด (All Time)</option>
               <option value="month">รายเดือน (This Month)</option>
               <option value="year">รายปี (This Year)</option>
@@ -542,7 +542,7 @@
         <h2 class="text-xl font-bold mb-4">💰 สรุปยอดรวม (Admin Summary)</h2>
         
         <div class="flex gap-2 mb-6">
-          <select id="fldAdminSummaryFilter" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none">
+          <select id="fldAdminSummaryFilter" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900">
             <option value="month">รายเดือน (This Month)</option>
             <option value="year">รายปี (This Year)</option>
             <option value="all">ทั้งหมด (All Time)</option>
@@ -567,15 +567,15 @@
               <span id="asTotalOther" class="font-bold">0.00 ฿</span>
             </div>
             <div class="border-t-2 border-slate-200 dark:border-slate-700 my-2"></div>
-            <div class="flex justify-between items-center p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+            <div class="flex justify-between items-center p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100">
               <span class="font-bold text-indigo-800">ค่าใช้จ่ายสุทธิ (Actual Cost)</span>
-              <span id="asActualCost" class="text-xl font-bold text-indigo-700">0.00 ฿</span>
+              <span id="asActualCost" class="text-xl font-bold text-indigo-700 dark:text-indigo-300">0.00 ฿</span>
             </div>
-            <div class="flex justify-between items-center p-4 bg-emerald-50 rounded-xl border border-emerald-100 mt-2">
-              <span class="font-bold text-emerald-800">ยอดที่เรียกเก็บ (Expected Collection)</span>
+            <div class="flex justify-between items-center p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-100 mt-2">
+              <span class="font-bold text-emerald-800 dark:text-emerald-300">ยอดที่เรียกเก็บ (Expected Collection)</span>
               <span id="asExpectedCollection" class="text-xl font-bold text-emerald-700">0.00 ฿</span>
             </div>
-            <div class="flex justify-between items-center p-4 bg-rose-50 rounded-xl border border-rose-100 mt-2">
+            <div class="flex justify-between items-center p-4 bg-rose-50 dark:bg-rose-900/30 rounded-xl border border-rose-100 mt-2">
               <span class="font-bold text-rose-800">ยอดค้างจ่ายสะสม (Unpaid)</span>
               <span id="asUnpaid" class="text-xl font-bold text-rose-700">0.00 ฿</span>
             </div>
@@ -600,7 +600,7 @@
         <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 text-center">ยังไม่ได้ตั้งค่ารูป QR Code<br>อัปโหลดรูปจากแอปธนาคาร</p>
         <label class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-medium cursor-pointer text-sm shadow-sm transition-colors">
           เลือกรูป QR Code
-          <input type="file" id="fldBankQR" accept="image/*" class="hidden" />
+          <input type="file" id="fldBankQR" accept="image/*" class="hidden bg-white dark:bg-slate-900" />
         </label>
       </div>
 
@@ -622,7 +622,7 @@
     <div class="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-bold" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
-        <button id="btnAutoDraft" class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-bold border border-indigo-200 shadow-sm flex items-center gap-1 transition-transform active:scale-95">
+        <button id="btnAutoDraft" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800/50 shadow-sm flex items-center gap-1 transition-transform active:scale-95">
           ✨ สุ่มจัดคิว
         </button>
       </div>
@@ -636,7 +636,7 @@
       <!-- Shuttlecock Input -->
       <div class="mb-4">
         <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">เบอร์ลูกแบดที่ใช้ในเกมนี้ (เช่น 1, 2 หรือ 1-3)</label>
-        <input type="text" id="fldMatchShuttles" placeholder="เว้นว่างได้ถ้าไม่ระบุ" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-emerald-500 text-sm" />
+        <input type="text" id="fldMatchShuttles" placeholder="เว้นว่างได้ถ้าไม่ระบุ" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-emerald-500 text-sm bg-white dark:bg-slate-900" />
       </div>
 
       <!-- Available List -->
