@@ -128,6 +128,29 @@ const fmt = (n) => (Number(n) || 0).toLocaleString("th-TH", { minimumFractionDig
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+// ---------- Dark Mode Init ----------
+function initTheme() {
+  const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+initTheme();
+
+const btnThemeToggle = $("btnThemeToggle");
+if (btnThemeToggle) {
+  btnThemeToggle.addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark");
+    if (document.documentElement.classList.contains("dark")) {
+      localStorage.setItem("theme", "dark");
+    } else {
+      localStorage.setItem("theme", "light");
+    }
+  });
+}
+
 // คืนค่าเป็น array ของเบอร์ลูกแบด (อาจมีซ้ำได้) เพื่อให้ตรวจสอบเบอร์ซ้ำได้
 function listShuttleNumbers(str) {
   if (!str) return [];
@@ -380,7 +403,7 @@ function route() {
   if (joinUnsubscribe) { joinUnsubscribe(); joinUnsubscribe = null; }
   
   // Clean up list listener unless we are going to a list view
-  if (parts[0] !== "" && parts[0] !== "m-home" && parts[0] !== "history") {
+  if (parts[0] !== "" && parts[0] !== "m-home" && parts[0] !== "history" && parts[0] !== "personal-stats" && parts[0] !== "admin-summary") {
     if (unsubscribeList) { unsubscribeList(); unsubscribeList = null; }
   }
 
@@ -422,20 +445,30 @@ function route() {
     return;
   }
 
-  // หน้าอื่นๆ (home, history) ต้อง login (Admin) ก่อน
+  // หน้าอื่นๆ (home, history, stats, summary) ต้อง login (Admin) ก่อน
   if (!authed) {
     // ถ้าไม่มีสิทธิ์ admin แต่มีสิทธิ์ manager ให้ไปหน้า manager home แทน
     if (isManagerAuthed() && (parts[0] === "" || parts[0] === "history")) {
       location.hash = "#/m-home";
       return;
     }
-    showView("login");
-    return;
+    // manager สามารถเข้า summary & stats ได้
+    if (isManagerAuthed() && (parts[0] === "admin-summary" || parts[0] === "personal-stats")) {
+      // allow
+    } else {
+      showView("login");
+      return;
+    }
   }
 
   if (parts[0] === "history") {
     showView("history");
     loadHistory();
+  } else if (parts[0] === "personal-stats") {
+    showView("personal-stats");
+  } else if (parts[0] === "admin-summary") {
+    showView("admin-summary");
+    loadAdminSummaryData($("fldAdminSummaryFilter").value);
   } else {
     showView("home");
     loadRecentSessions();
@@ -473,6 +506,14 @@ $("btnManagerLogout")?.addEventListener("click", () => {
   localStorage.removeItem(AUTH_KEY); // In case they were admin too
   location.hash = "#/";
   route();
+});
+
+// Manager Nav Buttons
+$("btnGotoAdminSummary")?.addEventListener("click", () => {
+  location.hash = "#/admin-summary";
+});
+$("btnGotoPersonalStats")?.addEventListener("click", () => {
+  location.hash = "#/personal-stats";
 });
 
 // Admin Logout
@@ -1268,8 +1309,9 @@ function renderMembers() {
   });
 }
 
-function calcTotals() {
-  const s = currentSession;
+function calcTotals(sessionObj) {
+  const s = sessionObj || currentSession;
+  if (!s) return { totalShuttles: 0, totalShuttleCost: 0, totalCourtCost: 0, totalOtherCost: 0, totalAll: 0, perMember: [], matchShuttlesMap: {} };
   const members = s.members || [];
   const matches = s.matches || [];
   const N = members.length;
@@ -3022,6 +3064,192 @@ window.addEventListener("appinstalled", () => {
 
 // Check on page load (after a short delay for iOS detection)
 setTimeout(updateInstallBanner, 1000);
+
+// ============================================================
+// ADMIN SUMMARY & PERSONAL STATS
+// ============================================================
+
+// --- Admin Summary ---
+async function loadAdminSummaryData(filterType) {
+  const container = $("adminSummaryResult");
+  if (!container) return;
+  
+  container.classList.add("hidden");
+  $("asPeriod").textContent = "กำลังคำนวณ...";
+  container.classList.remove("hidden");
+
+  try {
+    const snap = await getDocs(SESSIONS);
+    let totalCourt = 0, totalShuttle = 0, totalOther = 0;
+    let actualCost = 0, expectedCollection = 0, unpaid = 0;
+    const now = new Date();
+    const currYear = String(now.getFullYear());
+    const currMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+    snap.forEach(doc => {
+      const s = doc.data();
+      if (!s.date) return;
+      
+      let match = false;
+      if (filterType === 'all') match = true;
+      else if (filterType === 'year' && s.date.startsWith(currYear)) match = true;
+      else if (filterType === 'month' && s.date.startsWith(`${currYear}-${currMonth}`)) match = true;
+
+      if (match) {
+        const totals = calcTotals(s);
+        totalCourt += totals.totalCourtCost || 0;
+        totalShuttle += totals.totalShuttleCost || 0;
+        totalOther += totals.totalOtherCost || 0;
+        
+        // Expected collection is sum of what every member owes
+        const sessionExpected = (totals.perMember || []).reduce((sum, cost) => sum + cost, 0);
+        expectedCollection += sessionExpected;
+
+        // Unpaid is sum of what unpaid members owe
+        let sessionUnpaid = 0;
+        (s.members || []).forEach((m, idx) => {
+          if (!m.isPaid) sessionUnpaid += (totals.perMember[idx] || 0);
+        });
+        unpaid += sessionUnpaid;
+      }
+    });
+
+    actualCost = totalCourt + totalShuttle + totalOther;
+
+    $("asTotalCourt").textContent = fmt(totalCourt) + " ฿";
+    $("asTotalShuttle").textContent = fmt(totalShuttle) + " ฿";
+    $("asTotalOther").textContent = fmt(totalOther) + " ฿";
+    $("asActualCost").textContent = fmt(actualCost) + " ฿";
+    $("asExpectedCollection").textContent = fmt(expectedCollection) + " ฿";
+    $("asUnpaid").textContent = fmt(unpaid) + " ฿";
+
+    let periodLabel = "ทั้งหมด (All Time)";
+    if (filterType === 'month') periodLabel = `เดือน ${currMonth}/${currYear}`;
+    else if (filterType === 'year') periodLabel = `ปี ${currYear}`;
+    $("asPeriod").textContent = `ข้อมูล: ${periodLabel}`;
+
+  } catch (err) {
+    console.error(err);
+    $("asPeriod").textContent = "เกิดข้อผิดพลาดในการโหลดข้อมูล";
+  }
+}
+
+$("btnLoadAdminSummary")?.addEventListener("click", () => {
+  loadAdminSummaryData($("fldAdminSummaryFilter").value);
+});
+
+// --- Personal Stats ---
+async function loadPersonalStatsData(playerName, filterType) {
+  const container = $("personalStatsResult");
+  const nameToSearch = (playerName || "").trim().toLowerCase();
+  
+  if (!nameToSearch) {
+    toast("กรุณาใส่ชื่อผู้เล่น");
+    return;
+  }
+  
+  container.classList.add("hidden");
+  $("psPeriod").textContent = "กำลังคำนวณ...";
+  container.classList.remove("hidden");
+  $("psName").textContent = playerName;
+
+  try {
+    const snap = await getDocs(query(SESSIONS, orderBy("date", "desc")));
+    let sessionsCount = 0, gamesPlayed = 0, shuttlesUsed = 0, totalCost = 0;
+    const historyList = [];
+    const now = new Date();
+    const currYear = String(now.getFullYear());
+    const currMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+    snap.forEach(doc => {
+      const s = doc.data();
+      if (!s.date || !s.members) return;
+      
+      let match = false;
+      if (filterType === 'all') match = true;
+      else if (filterType === 'year' && s.date.startsWith(currYear)) match = true;
+      else if (filterType === 'month' && s.date.startsWith(`${currYear}-${currMonth}`)) match = true;
+
+      if (!match) return;
+
+      const memberIdx = s.members.findIndex(m => (m.name || "").toLowerCase() === nameToSearch);
+      if (memberIdx >= 0) {
+        sessionsCount++;
+        const m = s.members[memberIdx];
+        const totals = calcTotals(s);
+        
+        // Count games for this player
+        let pGames = 0;
+        (s.matches || []).forEach(matchObj => {
+          const pIds = matchObj.players || [matchObj.a1, matchObj.a2, matchObj.b1, matchObj.b2].filter(Boolean);
+          if (pIds.includes(m.id)) pGames++;
+        });
+        gamesPlayed += pGames;
+
+        // Shuttles
+        const pShuttles = (m.shuttlesUsed || 0) + (totals.matchShuttlesMap ? totals.matchShuttlesMap[m.id] || 0 : 0);
+        shuttlesUsed += pShuttles;
+
+        // Cost
+        const pCost = totals.perMember[memberIdx] || 0;
+        totalCost += pCost;
+        
+        if (historyList.length < 10) {
+          historyList.push({
+            date: s.date,
+            location: s.location,
+            cost: pCost,
+            paid: m.isPaid
+          });
+        }
+      }
+    });
+
+    $("psSessions").textContent = sessionsCount;
+    $("psGames").textContent = gamesPlayed;
+    $("psShuttles").textContent = shuttlesUsed;
+    $("psTotalCost").textContent = fmt(totalCost) + " ฿";
+
+    const histContainer = $("psHistoryList");
+    if (historyList.length === 0) {
+      histContainer.innerHTML = `<p class="text-slate-400 text-sm text-center py-2">ไม่พบประวัติการเล่นในช่วงเวลานี้</p>`;
+    } else {
+      histContainer.innerHTML = historyList.map(h => {
+        const d = new Date(h.date);
+        const dateStr = isNaN(d) ? h.date : d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        return `
+        <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg text-sm">
+          <div>
+            <div class="font-bold text-slate-700 dark:text-slate-300">${dateStr}</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">${escapeHtml(h.location || 'ไม่ระบุสถานที่')}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold ${h.paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${fmt(h.cost)} ฿</div>
+            <div class="text-[10px] ${h.paid ? 'text-emerald-500' : 'text-rose-500'}">${h.paid ? 'จ่ายแล้ว' : 'ค้างจ่าย'}</div>
+          </div>
+        </div>
+      `}).join("");
+    }
+
+    let periodLabel = "ทั้งหมด (All Time)";
+    if (filterType === 'month') periodLabel = `เดือน ${currMonth}/${currYear}`;
+    else if (filterType === 'year') periodLabel = `ปี ${currYear}`;
+    $("psPeriod").textContent = `ข้อมูล: ${periodLabel}`;
+
+  } catch (err) {
+    console.error(err);
+    $("psPeriod").textContent = "เกิดข้อผิดพลาดในการโหลดข้อมูล";
+  }
+}
+
+$("btnLoadPersonalStats")?.addEventListener("click", () => {
+  loadPersonalStatsData($("fldStatsPlayerName").value, $("fldStatsFilter").value);
+});
+$("fldStatsPlayerName")?.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    loadPersonalStatsData($("fldStatsPlayerName").value, $("fldStatsFilter").value);
+  }
+});
 
 // ============================================================
 // Init

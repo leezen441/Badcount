@@ -17,6 +17,11 @@
   <meta name="apple-mobile-web-app-title" content="BadCount" />
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Sarabun", "Noto Sans Thai", sans-serif; }
     .view { display: none; }
@@ -25,8 +30,9 @@
     input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     input[type="number"] { -moz-appearance: textfield; }
   </style>
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-20">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen pb-20 transition-colors duration-200">
 
   <!-- HEADER -->
   <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-40">
@@ -35,7 +41,8 @@
         <span class="text-2xl">🏸</span>
         <span>BadCount</span>
       </a>
-      <nav id="mainNav" class="flex gap-1 text-sm">
+      <nav id="mainNav" class="flex gap-1 text-sm items-center">
+        <button id="btnThemeToggle" class="p-1.5 rounded-md hover:bg-emerald-700 text-lg leading-none" title="Toggle Theme">🌙</button>
         <a href="#/" class="px-3 py-1.5 rounded-md hover:bg-emerald-700">Home</a>
         <a id="navBack" href="javascript:void(0)" class="px-3 py-1.5 rounded-md hover:bg-emerald-700">Back</a>
       </nav>
@@ -339,9 +346,18 @@
           <!-- JS will populate this -->
           <p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>
         </div>
+
+        <div class="grid grid-cols-2 gap-3 mt-6">
+          <button id="btnGotoAdminSummary" class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold py-3 rounded-xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-center gap-2 transition-transform active:scale-95">
+            <span class="text-xl">💰</span> สรุปยอดรวม
+          </button>
+          <button id="btnGotoPersonalStats" class="bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-bold py-3 rounded-xl border border-sky-200 dark:border-sky-800 flex items-center justify-center gap-2 transition-transform active:scale-95">
+            <span class="text-xl">📈</span> สถิติส่วนตัว
+          </button>
+        </div>
       </div>
       
-      <button id="btnManagerLogout" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-4 rounded-2xl transition-colors">
+      <button id="btnManagerLogout" class="w-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-4 rounded-2xl transition-colors">
         ออกจากระบบ Manager (Log off)
       </button>
     </section>
@@ -460,9 +476,108 @@
         </div>
 
         <button id="btnShareJoinPublic"
-          class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-transform active:scale-95 text-base flex items-center justify-center gap-2">
+          class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl shadow-sm transition-transform active:scale-95 text-base flex items-center justify-center gap-2">
           <span>📤</span> แชร์ลิงก์ชวนเพื่อนมาตีด้วยกัน
         </button>
+      </div>
+    </section>
+
+    <!-- ===== PERSONAL STATS VIEW ===== -->
+    <section id="view-personal-stats" class="view">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
+        <h2 class="text-xl font-bold mb-4">📈 สถิติผู้เล่น (Personal Stats)</h2>
+        
+        <div class="flex flex-col gap-3 mb-4">
+          <input type="text" id="fldStatsPlayerName" placeholder="พิมพ์ชื่อผู้เล่น..." class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl focus:border-emerald-500 focus:outline-none" />
+          
+          <div class="flex gap-2">
+            <select id="fldStatsFilter" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl focus:border-emerald-500 focus:outline-none">
+              <option value="all">ทั้งหมด (All Time)</option>
+              <option value="month">รายเดือน (This Month)</option>
+              <option value="year">รายปี (This Year)</option>
+            </select>
+            <button id="btnLoadPersonalStats" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold">ค้นหา</button>
+          </div>
+        </div>
+
+        <div id="personalStatsResult" class="hidden mt-6 border-t border-slate-100 dark:border-slate-700 pt-6">
+          <div class="text-center mb-6">
+            <h3 id="psName" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">ชื่อผู้เล่น</h3>
+            <p id="psPeriod" class="text-sm text-slate-500 dark:text-slate-400">ช่วงเวลา</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-center">
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl">
+              <div class="text-sm text-slate-500 dark:text-slate-400 mb-1">ก๊วนที่เข้าร่วม</div>
+              <div id="psSessions" class="text-2xl font-bold">0</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl">
+              <div class="text-sm text-slate-500 dark:text-slate-400 mb-1">เกมที่ลงเล่น</div>
+              <div id="psGames" class="text-2xl font-bold">0</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl">
+              <div class="text-sm text-slate-500 dark:text-slate-400 mb-1">ลูกแบดที่ใช้</div>
+              <div id="psShuttles" class="text-2xl font-bold">0</div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900">
+              <div class="text-sm text-slate-500 dark:text-slate-400 mb-1">รวมค่าใช้จ่าย</div>
+              <div id="psTotalCost" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">0 ฿</div>
+            </div>
+          </div>
+          
+          <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <h4 class="font-bold text-sm text-slate-600 dark:text-slate-300 mb-3">ประวัติการเล่นล่าสุด</h4>
+            <div id="psHistoryList" class="space-y-2 max-h-60 overflow-y-auto"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ADMIN SUMMARY VIEW ===== -->
+    <section id="view-admin-summary" class="view">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
+        <h2 class="text-xl font-bold mb-4">💰 สรุปยอดรวม (Admin Summary)</h2>
+        
+        <div class="flex gap-2 mb-6">
+          <select id="fldAdminSummaryFilter" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl focus:border-emerald-500 focus:outline-none">
+            <option value="month">รายเดือน (This Month)</option>
+            <option value="year">รายปี (This Year)</option>
+            <option value="all">ทั้งหมด (All Time)</option>
+          </select>
+          <button id="btnLoadAdminSummary" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold">สรุปผล</button>
+        </div>
+
+        <div id="adminSummaryResult" class="hidden">
+          <p id="asPeriod" class="text-center text-sm text-slate-500 dark:text-slate-400 mb-4">ช่วงเวลา</p>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <span class="text-slate-600 dark:text-slate-300 font-medium">ค่าสนามรวม</span>
+              <span id="asTotalCourt" class="font-bold">0.00 ฿</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <span class="text-slate-600 dark:text-slate-300 font-medium">ค่าลูกแบดรวม</span>
+              <span id="asTotalShuttle" class="font-bold">0.00 ฿</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <span class="text-slate-600 dark:text-slate-300 font-medium">ค่าใช้จ่ายอื่นๆ รวม</span>
+              <span id="asTotalOther" class="font-bold">0.00 ฿</span>
+            </div>
+            <div class="border-t-2 border-slate-200 dark:border-slate-700 my-2"></div>
+            <div class="flex justify-between items-center p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
+              <span class="font-bold text-indigo-800 dark:text-indigo-300">ค่าใช้จ่ายสุทธิ (Actual Cost)</span>
+              <span id="asActualCost" class="text-xl font-bold text-indigo-700 dark:text-indigo-400">0.00 ฿</span>
+            </div>
+            <div class="flex justify-between items-center p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-100 dark:border-emerald-800 mt-2">
+              <span class="font-bold text-emerald-800 dark:text-emerald-300">ยอดที่เรียกเก็บ (Expected Collection)</span>
+              <span id="asExpectedCollection" class="text-xl font-bold text-emerald-700 dark:text-emerald-400">0.00 ฿</span>
+            </div>
+            <div class="flex justify-between items-center p-4 bg-rose-50 dark:bg-rose-900/30 rounded-xl border border-rose-100 dark:border-rose-800 mt-2">
+              <span class="font-bold text-rose-800 dark:text-rose-300">ยอดค้างจ่ายสะสม (Unpaid)</span>
+              <span id="asUnpaid" class="text-xl font-bold text-rose-700 dark:text-rose-400">0.00 ฿</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
