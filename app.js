@@ -1306,7 +1306,7 @@ function renderMembers() {
       
       <div class="flex-1 min-w-0 flex items-center justify-between pr-1 sm:pr-2">
         <div class="min-w-0 flex-1 truncate">
-          <span class="font-medium ${isPaid ? 'text-slate-400' : 'text-slate-800'}">${escapeHtml(m.name)}</span>
+          <span class="font-medium ${isPaid ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}">${escapeHtml(m.name)}</span>
           ${pStats[m.id].games > 0 
             ? `<span class="text-xs text-slate-400 ml-1" title="ล่าสุดเล่นกับ: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}">(ตี ${pStats[m.id].games} เกม • ล่าสุด: ${escapeHtml(pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', '))})</span>`
             : `<span class="text-xs text-slate-300 ml-1">(ยังไม่ได้ลงสนาม)</span>`
@@ -2221,7 +2221,7 @@ async function setupJoinView(id) {
             <li class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 pr-2">
               <div class="flex items-center gap-2 min-w-0">
                 <span class="${isPaid ? 'text-emerald-500' : 'text-rose-400'} shrink-0 text-xs">●</span>
-                <span class="${isPaid ? 'text-slate-500 line-through' : 'text-slate-800 font-medium'} truncate">${escapeHtml(m.name)}</span>
+                <span class="${isPaid ? 'text-slate-500 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100 font-medium'} truncate">${escapeHtml(m.name)}</span>
               </div>
               <div class="text-right shrink-0 ml-2">${priceBadge}</div>
             </li>
