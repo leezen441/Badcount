@@ -1527,6 +1527,81 @@ $("btnAddMatch").addEventListener("click", () => {
   $("matchModal").classList.remove("hidden");
 });
 
+// ---------- Match scoring helpers (shared by renderMatchDraft + auto-draft) ----------
+// คำนวณคะแนนของชุด N คน (ปกติ N=4) เพื่อใช้ในการแนะนำและสุ่ม
+//   balance = ผลรวมเกมส่วนเกินจาก minGames (ยิ่งน้อย = ทุกคนเล่นเท่าๆ กัน)
+//   max     = คู่ที่จับกันมากสุดในชุด (ยิ่งน้อย = ไม่สร้างคู่ที่ซ้ำหนัก)
+//   unmet   = จำนวนคู่ในชุดที่ยังไม่เคยจับกันมาก่อน (ยิ่งมาก = สร้างคู่ใหม่ๆ)
+//   sum     = ผลรวม partner overlap ทุกคู่ (tiebreaker)
+function scoreMatchCombo(ids, gamesPlayed, partnerCount, minGames) {
+  let sum = 0, max = 0, unmet = 0;
+  const n = ids.length;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const o = (partnerCount[ids[i]] && partnerCount[ids[i]][ids[j]]) || 0;
+      sum += o;
+      if (o > max) max = o;
+      if (o === 0) unmet++;
+    }
+  }
+  const balance = ids.reduce((acc, id) => acc + (gamesPlayed[id] - minGames), 0);
+  return { balance, max, unmet, sum };
+}
+
+// เปรียบเทียบ score: balance ↑ → max ↑ → unmet ↓ (มากดีกว่า) → sum ↑
+function compareScores(x, y) {
+  if (x.balance !== y.balance) return x.balance - y.balance;
+  if (x.max !== y.max) return x.max - y.max;
+  if (x.unmet !== y.unmet) return y.unmet - x.unmet;
+  return x.sum - y.sum;
+}
+
+// หา "ชุดที่ดีที่สุด" สำหรับเติมที่นั่ง slotsNeeded ที่เหลือ โดยมี fixedIds ที่ถูกเลือกไว้แล้ว
+// deterministic = true → เลือกแบบคงที่ (สำหรับ UI), false → สุ่มในกลุ่มเสมอ (สำหรับ Auto Draft)
+function findOptimalAddition(availableMembers, fixedIds, slotsNeeded, gamesPlayed, partnerCount, minGames, deterministic) {
+  if (slotsNeeded <= 0) return [];
+  const ids = availableMembers.map(m => m.id);
+  if (ids.length < slotsNeeded) return ids.slice();
+
+  const combos = [];
+  const picked = [];
+
+  function recurse(start) {
+    if (picked.length === slotsNeeded) {
+      const combined = fixedIds.concat(picked);
+      const sc = scoreMatchCombo(combined, gamesPlayed, partnerCount, minGames);
+      combos.push({ pickedIds: picked.slice(), ...sc });
+      return;
+    }
+    const remaining = slotsNeeded - picked.length;
+    for (let i = start; i <= ids.length - remaining; i++) {
+      picked.push(ids[i]);
+      recurse(i + 1);
+      picked.pop();
+    }
+  }
+  recurse(0);
+
+  combos.sort(compareScores);
+  const best = combos[0];
+  const tied = combos.filter(c =>
+    c.balance === best.balance && c.max === best.max &&
+    c.unmet === best.unmet && c.sum === best.sum
+  );
+
+  if (deterministic) {
+    // tie-break แบบคงที่ — เรียง id ที่ sort แล้วเป็น string
+    tied.sort((a, b) => {
+      const ak = a.pickedIds.slice().sort().join('|');
+      const bk = b.pickedIds.slice().sort().join('|');
+      return ak < bk ? -1 : ak > bk ? 1 : 0;
+    });
+    return tied[0].pickedIds;
+  } else {
+    return tied[Math.floor(Math.random() * tied.length)].pickedIds;
+  }
+}
+
 function renderMatchDraft() {
   const allMembers = currentSession.members || [];
   const selectedDiv = $("selectedPlayers");
@@ -1587,7 +1662,7 @@ function renderMatchDraft() {
   if (available.length === 0) {
     availableDiv.innerHTML = `<div class="text-slate-400 text-sm py-2 w-full text-center">ไม่มีผู้เล่นเหลือ</div>`;
   } else {
-    // Partner overlap กับคนที่เลือกแล้ว
+    // Partner overlap กับคนที่เลือกแล้ว (ใช้แสดง pill ในแถว)
     const overlapWithSelected = {}; // { id: { selectedId: count } }
     const totalOverlap = {};
     available.forEach(m => {
@@ -1601,20 +1676,39 @@ function renderMatchDraft() {
       totalOverlap[m.id] = total;
     });
 
-    // เรียง: games asc → totalOverlap asc → restCount desc
-    const sorted = [...available].sort((a, b) => {
+    // ✨ Joint Optimization: หาชุด "คนที่ดีที่สุดที่ควรเพิ่มเข้าที่นั่งที่เหลือ"
+    // ใช้ algorithm เดียวกับ Auto Draft → Top ① ② ③ ④ จะตรงกับ Auto Draft เสมอ
+    const minGames = Math.min(...allMembers.map(m => gamesPlayed[m.id]));
+    const slotsNeeded = 4 - matchDraftPlayers.length;
+    let topPickIds = new Set();
+    if (slotsNeeded > 0) {
+      const optimal = findOptimalAddition(
+        available, matchDraftPlayers, slotsNeeded,
+        gamesPlayed, partnerCount, minGames, true /* deterministic */
+      );
+      topPickIds = new Set(optimal);
+    }
+
+    // เรียงสำหรับการแสดงผล: games asc → totalOverlap asc → restCount desc
+    const indivSort = (a, b) => {
       if (gamesPlayed[a.id] !== gamesPlayed[b.id]) return gamesPlayed[a.id] - gamesPlayed[b.id];
       if (totalOverlap[a.id] !== totalOverlap[b.id]) return totalOverlap[a.id] - totalOverlap[b.id];
       const restA = lastMatchIndex[a.id] === -1 ? 9999 : (matchesCount - 1 - lastMatchIndex[a.id]);
       const restB = lastMatchIndex[b.id] === -1 ? 9999 : (matchesCount - 1 - lastMatchIndex[b.id]);
       return restB - restA;
-    });
+    };
 
-    const top4Ids = new Set(sorted.slice(0, 4).map(m => m.id));
+    // แยก Top picks (จาก joint optimization) ออกจาก rest
+    const topPicks = available.filter(m => topPickIds.has(m.id)).sort(indivSort);
+    const restPicks = available.filter(m => !topPickIds.has(m.id)).sort(indivSort);
 
-    const rows = sorted.map((m, idx) => {
-      const isTop = top4Ids.has(m.id);
-      const rank = idx + 1;
+    // map: id → rank ใน top picks (สำหรับ badge ① ② ③ ④)
+    const rankMap = new Map();
+    topPicks.forEach((m, idx) => rankMap.set(m.id, idx + 1));
+
+    const renderRow = (m) => {
+      const isTop = rankMap.has(m.id);
+      const rank = rankMap.get(m.id) || null;
       const games = gamesPlayed[m.id];
       const lastIdx = lastMatchIndex[m.id];
 
@@ -1685,9 +1779,20 @@ function renderMatchDraft() {
           ${partnerHtml}
         </button>
       `;
-    }).join('');
+    };
 
-    availableDiv.innerHTML = `<div class="bg-white rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">${rows}</div>`;
+    const topRowsHtml = topPicks.map(renderRow).join('');
+    const restRowsHtml = restPicks.map(renderRow).join('');
+
+    // ถ้ามีทั้ง Top และ Rest → ใส่ section header เล็กๆ คั่น
+    const restSection = restPicks.length > 0
+      ? `<div class="px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 uppercase tracking-wide border-t border-slate-200">อื่นๆ</div>${restRowsHtml}`
+      : '';
+
+    availableDiv.innerHTML = `<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div class="divide-y divide-slate-100">${topRowsHtml}</div>
+      ${restSection ? `<div class="divide-y divide-slate-100">${restSection}</div>` : ''}
+    </div>`;
   }
   
   $("btnSaveMatch").disabled = matchDraftPlayers.length !== 4;
@@ -1744,50 +1849,19 @@ $("btnAutoDraft").addEventListener("click", () => {
     }
   });
 
-  // Joint optimization:
-  // 1) enumerate ทุกชุด 4 คนจากสมาชิกทั้งหมด
-  // 2) ให้คะแนนแต่ละชุด 3 ระดับ:
-  //    a) balance — รวมเกมส่วนเกินจากค่าต่ำสุด (ยิ่งน้อยยิ่งดี = คนเล่นน้อยถูกเลือกก่อน)
-  //    b) maxOverlap — คู่ที่จับกันมากสุดในชุดนี้ (เลี่ยงสร้างคู่ที่ซ้ำหนัก)
-  //    c) sumOverlap — ผลรวม partner overlap ทุกคู่ในชุด
-  // 3) เรียงตาม balance → maxOverlap → sumOverlap แล้วสุ่มในกลุ่มที่คะแนนเสมอกัน
+  // ใช้ Joint Optimization (helper ที่ใช้ร่วมกับ Top 4 ใน renderMatchDraft)
+  // เกณฑ์การให้คะแนน: balance → maxOverlap → unmet (มากดีกว่า) → sumOverlap
+  // - balance: ทุกคนเล่นจำนวนเกมเท่าๆ กัน
+  // - maxOverlap: ไม่สร้างคู่ที่จับกันมากเกินไป (เช่น 3 ครั้ง)
+  // - unmet: รับคนที่ยังไม่เคยจับคู่กันมาก่อน → ช่วยให้ทุกคู่ได้เจอกันครบ
+  // - sumOverlap: tiebreaker สุดท้าย
   const minGames = Math.min(...members.map(m => gamesPlayed[m.id]));
-
-  function scoreCombo(ids) {
-    let sum = 0, max = 0;
-    for (let i = 0; i < 4; i++) {
-      for (let j = i + 1; j < 4; j++) {
-        const o = partnerCount[ids[i]][ids[j]] || 0;
-        sum += o;
-        if (o > max) max = o;
-      }
-    }
-    const balance = ids.reduce((acc, id) => acc + (gamesPlayed[id] - minGames), 0);
-    return { balance, max, sum };
-  }
-
-  const combos = [];
-  const n = members.length;
-  for (let a = 0; a < n - 3; a++) {
-    for (let b = a + 1; b < n - 2; b++) {
-      for (let c = b + 1; c < n - 1; c++) {
-        for (let d = c + 1; d < n; d++) {
-          const ids = [members[a].id, members[b].id, members[c].id, members[d].id];
-          const sc = scoreCombo(ids);
-          combos.push({ ids, balance: sc.balance, max: sc.max, sum: sc.sum });
-        }
-      }
-    }
-  }
-
-  combos.sort((x, y) => x.balance - y.balance || x.max - y.max || x.sum - y.sum);
-  const best = combos[0];
-  const topCombos = combos.filter(c =>
-    c.balance === best.balance && c.max === best.max && c.sum === best.sum
+  const picked = findOptimalAddition(
+    members, [], 4,
+    gamesPlayed, partnerCount, minGames, false /* random tie-break */
   );
-  const chosen = topCombos[Math.floor(Math.random() * topCombos.length)];
 
-  matchDraftPlayers = [...chosen.ids];
+  matchDraftPlayers = picked;
   renderMatchDraft();
   toast("สุ่มจัดคิวเรียบร้อย ✨");
 });
