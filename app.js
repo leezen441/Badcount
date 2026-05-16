@@ -409,15 +409,15 @@ function route() {
 
   const authed = isAuthed();
 
-  // #/m/{id} = manager link — ต้องใส่รหัส manager ก่อน (หรือเป็น admin authed อยู่แล้ว)
+  // #/m/{id} = Temporary Manager link — ต้องใส่ PIN 4 หลักก่อน (ยกเว้น admin authed)
   // #/session/{id} = admin view — แสดง nav ถ้า authed, ล็อกถ้าไม่ authed
   if ((parts[0] === "session" || parts[0] === "m") && parts[1]) {
     currentSessionId = parts[1];
     const isManagerLink = parts[0] === "m";
 
-    // Manager link: ถ้ายังไม่ผ่าน manager auth และไม่ใช่ admin → แสดงหน้าใส่รหัส
-    if (isManagerLink && !authed && !isManagerAuthed()) {
-      showView("manager-login");
+    // Manager link: ถ้ายังไม่ผ่าน Temp Manager PIN และไม่ใช่ admin/manager → แสดงหน้าใส่ PIN
+    if (isManagerLink && !authed && !isManagerAuthed() && !hasValidTempManagerPin(parts[1])) {
+      showView("manager-pin");
       return;
     }
 
@@ -843,6 +843,9 @@ function renderSession() {
 
   // ✨ NEW: Update Invite button + Toggle Registration button based on state
   updateInviteButtonState();
+
+  // 🛡️ Update Temp Manager PIN display
+  updateTempPinDisplay();
 
   renderMembers();
   renderMemberSuggestions();
@@ -2522,29 +2525,181 @@ $("btnShareJoinPublic").addEventListener("click", async () => {
   }
 });
 
+// ============================================================
+// 🛡️ Temporary Manager PIN System
+// ============================================================
+// - แต่ละ session มี PIN 4 หลัก + วันหมดอายุ (24 ชม.)
+// - ผู้รับลิงก์ #/m/{id} ต้องใส่ PIN ก่อนจัดการกลุ่ม
+// - admin/manager ที่ login → bypass
+
+const TM_PIN_TTL_MS = 24 * 60 * 60 * 1000; // 24 ชั่วโมง
+
+function generatePin() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+// Format expiry → "อีก X ชม." หรือ "อีก X น."
+function formatExpiry(expiresAt) {
+  if (!expiresAt) return "";
+  const ms = expiresAt - Date.now();
+  if (ms <= 0) return "หมดอายุ";
+  const hours = Math.floor(ms / 3600000);
+  const mins = Math.floor((ms % 3600000) / 60000);
+  if (hours > 0) return `อีก ${hours} ชม.`;
+  return `อีก ${mins} น.`;
+}
+
+// Local "ตั๋วเข้า" — เก็บใน localStorage ว่าใส่ PIN ถูกต้องแล้ว
+function setTempManagerAuth(sessionId, expiresAt) {
+  if (!sessionId || !expiresAt) return;
+  localStorage.setItem(`tmAuth_${sessionId}`, String(expiresAt));
+}
+
+function hasValidTempManagerPin(sessionId) {
+  if (!sessionId) return false;
+  const exp = parseInt(localStorage.getItem(`tmAuth_${sessionId}`) || "0", 10);
+  return exp > Date.now();
+}
+
+// อัปเดต PIN display ใต้ปุ่ม Temp Manager
+function updateTempPinDisplay() {
+  const s = currentSession;
+  const display = $("tempPinDisplay");
+  if (!s || !display) return;
+
+  const pin = s.tempManagerPin;
+  const expiresAt = s.tempManagerExpiresAt || 0;
+  const valid = pin && expiresAt > Date.now();
+
+  if (valid) {
+    display.classList.remove("hidden");
+    $("tempPinValue").textContent = pin;
+    $("tempPinExpiry").textContent = formatExpiry(expiresAt);
+  } else {
+    display.classList.add("hidden");
+  }
+}
+
+// Click ปุ่ม Temp Manager — Generate PIN (ถ้ายังไม่มีหรือหมดอายุ) + Copy ลิงก์
 $("btnShare").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
-  // ใช้ #/m/{id} เพื่อให้ผู้รับล็อกอยู่ใน session view เสมอ ไม่ว่าเครื่องเขาจะ login ไว้หรือไม่
-  const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
-  const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
 
-  if (navigator.share) {
+  const s = currentSession;
+  const expired = !s.tempManagerExpiresAt || s.tempManagerExpiresAt < Date.now();
+
+  let pin = s.tempManagerPin;
+  let expiresAt = s.tempManagerExpiresAt;
+
+  // ถ้ายังไม่มี PIN หรือหมดอายุ → Generate ใหม่
+  if (!pin || expired) {
+    pin = generatePin();
+    expiresAt = Date.now() + TM_PIN_TTL_MS;
+    await saveSession({
+      tempManagerPin: pin,
+      tempManagerExpiresAt: expiresAt
+    });
+  }
+
+  const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
+  const dateText = s.date ? formatDate(s.date) : "วันนี้";
+
+  const shareText = `🛡️ Temporary Manager — ${dateText}
+━━━━━━━━━━━━━━━
+
+📋 ลิงก์: ${managerUrl}
+🔢 PIN: ${pin}
+⏰ หมดอายุ: ${formatExpiry(expiresAt)}`;
+
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile && navigator.share) {
     try {
-      await navigator.share({
-        title: "Manager Link",
-        text: `Manager Link - ${dateText}`,
-        url: managerUrl
-      });
-      toast("แชร์ลิงก์ Manager สำเร็จ ✓");
+      await navigator.share({ text: shareText });
+      toast("แชร์ลิงก์ Temp Manager สำเร็จ ✓");
     } catch (err) {
       if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
     }
   } else {
-    navigator.clipboard.writeText(managerUrl).then(() => {
-      toast("คัดลอกลิงก์ Manager แล้ว (วางในเบราว์เซอร์ได้เลย)");
+    const textToCopy = isMobile ? shareText : managerUrl;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      toast(`คัดลอกแล้ว · PIN: ${pin} (24 ชม.)`, 4000);
     }).catch(() => {
       toast("ไม่สามารถคัดลอกได้");
     });
+  }
+
+  updateTempPinDisplay();
+});
+
+// PIN input UX — auto-submit เมื่อพิมพ์ครบ 4 หลัก + clear error ตอนพิมพ์
+$("fldManagerPin")?.addEventListener("input", (e) => {
+  const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+  e.target.value = v;
+  $("managerPinError")?.classList.add("hidden");
+  if (v.length === 4) {
+    // auto-submit เมื่อพิมพ์ครบ 4 หลัก
+    $("managerPinForm")?.dispatchEvent(new Event("submit", { cancelable: true }));
+  }
+});
+
+// PIN Entry Form — ตรวจ PIN ก่อนเข้า session
+$("managerPinForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("fldManagerPin");
+  const errorEl = $("managerPinError");
+  const pin = input.value.trim();
+
+  if (!/^\d{4}$/.test(pin)) {
+    errorEl.textContent = "PIN ต้องเป็นตัวเลข 4 หลัก";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  if (!currentSessionId) {
+    errorEl.textContent = "ไม่พบ session";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  // ตรวจกับ Firestore
+  try {
+    const ref = doc(db, "sessions", currentSessionId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      errorEl.textContent = "ไม่พบกลุ่มนี้ อาจถูกลบไปแล้ว";
+      errorEl.classList.remove("hidden");
+      return;
+    }
+
+    const data = snap.data();
+    const correctPin = data.tempManagerPin;
+    const expiresAt = data.tempManagerExpiresAt || 0;
+
+    if (!correctPin || expiresAt < Date.now()) {
+      errorEl.textContent = "ลิงก์หมดอายุแล้ว — แจ้ง Admin ขอ PIN ใหม่";
+      errorEl.classList.remove("hidden");
+      return;
+    }
+
+    if (pin !== correctPin) {
+      errorEl.textContent = "PIN ไม่ถูกต้อง";
+      errorEl.classList.remove("hidden");
+      input.value = "";
+      input.focus();
+      return;
+    }
+
+    // ✅ Pass — save auth ใน localStorage + redirect
+    setTempManagerAuth(currentSessionId, expiresAt);
+    errorEl.classList.add("hidden");
+    input.value = "";
+    toast("✅ เข้าจัดการกลุ่มได้แล้ว");
+    // Re-route เพื่อให้เข้า session view
+    route();
+  } catch (err) {
+    console.error(err);
+    errorEl.textContent = "เกิดข้อผิดพลาด: " + err.message;
+    errorEl.classList.remove("hidden");
   }
 });
 
