@@ -348,13 +348,20 @@ function trackOwnSubmit(memberId) {
 }
 
 function showView(name, opts = {}) {
-  // 🛡️ Safety check ก่อนใดๆ — ถ้า view ไม่มีอยู่ → fallback ไป home (กันหน้าขาว)
+  // 🛡️ Safety check — ถ้า view ไม่มีอยู่ → fallback ตามสิทธิ์ user (ป้องกันหน้าขาว/หลุดสิทธิ์)
   const targetView = $("view-" + name);
   if (!targetView) {
-    console.error(`[showView] view-${name} ไม่พบใน DOM — fallback ไป home`);
+    console.error(`[showView] view-${name} ไม่พบใน DOM — กำลัง fallback`);
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-    const homeView = $("view-home");
-    if (homeView) homeView.classList.add("active");
+    // เลือก fallback ตามสิทธิ์: not authed → login, manager → manager-home, admin → home
+    let fallbackName = "login";
+    if (isAuthed()) fallbackName = "home";
+    else if (isManagerAuthed()) fallbackName = "manager-home";
+    const fallbackView = $("view-" + fallbackName);
+    if (fallbackView) {
+      fallbackView.classList.add("active");
+      console.warn(`[showView] fallback ไปยัง view-${fallbackName}`);
+    }
     return;
   }
 
