@@ -348,15 +348,25 @@ function trackOwnSubmit(memberId) {
 }
 
 function showView(name, opts = {}) {
+  // 🛡️ Safety check ก่อนใดๆ — ถ้า view ไม่มีอยู่ → fallback ไป home (กันหน้าขาว)
+  const targetView = $("view-" + name);
+  if (!targetView) {
+    console.error(`[showView] view-${name} ไม่พบใน DOM — fallback ไป home`);
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    const homeView = $("view-home");
+    if (homeView) homeView.classList.add("active");
+    return;
+  }
+
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-  $("view-" + name).classList.add("active");
+  targetView.classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" });
 
-  // ซ่อน nav เมื่ออยู่หน้า join, login, manager-login
+  // ซ่อน nav เมื่ออยู่หน้า join, login, manager-login, manager-pin
   // หน้า session แบบ manager-mode: ไม่ซ่อน nav ถ้าเป็น manager ที่ login แล้ว
   const logo = $("logoLink");
   const nav = $("mainNav");
-  let shouldLockNav = name === "login" || name === "manager-login";
+  let shouldLockNav = name === "login" || name === "manager-login" || name === "manager-pin";
   if (name === "join") {
     // หน้า join ถ้าเป็น Admin/Manager ไม่ต้องซ่อนเมนูด้านล่าง
     shouldLockNav = !(isAuthed() || isManagerAuthed());
