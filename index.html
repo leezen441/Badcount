@@ -39,7 +39,6 @@
     input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     input[type="number"] { -moz-appearance: textfield; }
   </style>
-  </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 min-h-screen pb-20 transition-colors duration-200">
 
@@ -190,20 +189,35 @@
               <span id="btnToggleRegistrationLabel">เปิดรับ</span>
             </button>
           </div>
-          <button id="btnShare"
-            class="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 text-slate-600 dark:text-slate-400 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
-            <span class="text-base">📋</span> Manager Link
-          </button>
-          <button id="btnExport"
-            class="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 text-slate-600 dark:text-slate-400 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
-            <span class="text-base">📥</span> Export
-          </button>
-          <button id="btnQR"
-            class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
-            <span class="text-base">💰</span> QR Payment
-          </button>
+            <button id="btnShare"
+              class="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 text-slate-600 dark:text-slate-400 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
+              <span class="text-base">🛡️</span> Temp Manager
+            </button>
+            <button id="btnExport"
+              class="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 text-slate-600 dark:text-slate-400 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
+              <span class="text-base">📥</span> Export
+            </button>
+            <button id="btnQR"
+              class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
+              <span class="text-base">💰</span> QR Payment
+            </button>
+          </div>
+
+          <!-- Temp Manager PIN display (visible to admin) -->
+          <div id="tempPinDisplay" class="hidden mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🔢</span>
+              <div>
+                <div class="text-[10px] uppercase tracking-wider text-indigo-500 font-bold">Temp Manager PIN</div>
+                <div id="tempPinValue" class="text-xl font-black text-indigo-700 dark:text-indigo-300 tracking-widest">----</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Expires</div>
+              <div id="tempPinExpiry" class="text-xs font-bold text-slate-600 dark:text-slate-400">--:--</div>
+            </div>
+          </div>
         </div>
-      </div>
 
       <!-- Courts card -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
@@ -379,6 +393,32 @@
       <button id="btnManagerLogout" class="w-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-300 font-bold py-4 rounded-2xl transition-colors">
         ออกจากระบบ Manager (Log off)
       </button>
+    </section>
+
+    <!-- ===== TEMP MANAGER PIN VIEW ===== -->
+    <section id="view-manager-pin" class="view">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-8 max-w-sm mx-auto text-center">
+        <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+          🛡️
+        </div>
+        <h2 class="text-xl font-bold mb-2">Temporary Manager</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">กรุณาใส่ PIN 4 หลักเพื่อเข้าจัดการก๊วนนี้</p>
+
+        <form id="managerPinForm" class="space-y-4">
+          <input id="fldManagerPin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="◦ ◦ ◦ ◦"
+            class="w-full text-center text-3xl tracking-[1em] font-black py-4 border-2 border-slate-200 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:outline-none bg-slate-50 dark:bg-slate-900 transition-all" />
+          
+          <p id="managerPinError" class="hidden text-rose-500 text-sm font-medium">PIN ไม่ถูกต้อง ลองใหม่อีกครั้ง</p>
+          
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">
+            ยืนยัน PIN
+          </button>
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <p class="text-xs text-slate-400">สิทธิ์การจัดการชั่วคราวจะหมดอายุภายใน 24 ชม.<br>หากลืม PIN กรุณาติดต่อ Admin ผู้สร้างก๊วน</p>
+        </div>
+      </div>
     </section>
 
     <!-- ===== LOGIN VIEW ===== -->
@@ -683,6 +723,7 @@
   </div>
 
   <!-- App scripts -->
+  <script src="./qrcode.min.js"></script>
   <script type="module" src="./firebase-config.js"></script>
   <script type="module" src="./app.js"></script>
 </body>

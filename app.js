@@ -412,15 +412,18 @@ function route() {
   // #/m/{id} = Temporary Manager link — ต้องใส่ PIN 4 หลักก่อน (ยกเว้น admin authed)
   // #/session/{id} = admin view — แสดง nav ถ้า authed, ล็อกถ้าไม่ authed
   if ((parts[0] === "session" || parts[0] === "m") && parts[1]) {
+    console.log("[Router] Session/Manager route matched:", parts[0], parts[1]);
     currentSessionId = parts[1];
     const isManagerLink = parts[0] === "m";
 
     // Manager link: ถ้ายังไม่ผ่าน Temp Manager PIN และไม่ใช่ admin/manager → แสดงหน้าใส่ PIN
     if (isManagerLink && !authed && !isManagerAuthed() && !hasValidTempManagerPin(parts[1])) {
+      console.log("[Router] Showing Manager PIN view");
       showView("manager-pin");
       return;
     }
 
+    console.log("[Router] Showing Session view");
     showView("session", { lockNav: isManagerLink || !authed });
     subscribeSession(currentSessionId);
     return;
@@ -1957,55 +1960,51 @@ $("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.ad
 $("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal") $("matchModal").classList.add("hidden"); });
 
 // ---------- Auto Draft (สุ่มจัดคิว) ----------
-$("btnAutoDraft").addEventListener("click", () => {
-  const members = (currentSession && currentSession.members) || [];
-  if (members.length < 4) {
-    return toast("ต้องมีสมาชิกอย่างน้อย 4 คน");
-  }
+const autoDraftBtn = $("btnAutoDraft");
+if (autoDraftBtn) {
+  autoDraftBtn.addEventListener("click", () => {
+    const members = (currentSession && currentSession.members) || [];
+    if (members.length < 4) {
+      return toast("ต้องมีสมาชิกอย่างน้อย 4 คน");
+    }
 
-  // ถ้ากำลังแก้ไขเกม ให้ยกเว้นเกมนั้นออกจากการนับสถิติ
-  const allMatches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
+    try {
+      const allMatches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
+      const gamesPlayed = {};
+      const partnerCount = {};
+      members.forEach(m => {
+        gamesPlayed[m.id] = 0;
+        partnerCount[m.id] = {};
+      });
 
-  // นับเกมที่เล่นและจำนวนครั้งที่จับคู่กัน
-  const gamesPlayed = {};
-  const partnerCount = {};
-  members.forEach(m => {
-    gamesPlayed[m.id] = 0;
-    partnerCount[m.id] = {};
-  });
-
-  allMatches.forEach(match => {
-    const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
-    pIds.forEach(id => {
-      if (gamesPlayed[id] !== undefined) gamesPlayed[id]++;
-    });
-    for (let i = 0; i < pIds.length; i++) {
-      for (let j = i + 1; j < pIds.length; j++) {
-        const a = pIds[i], b = pIds[j];
-        if (partnerCount[a] !== undefined && partnerCount[b] !== undefined) {
-          partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
-          partnerCount[b][a] = (partnerCount[b][a] || 0) + 1;
+      allMatches.forEach(match => {
+        const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
+        pIds.forEach(id => { if (gamesPlayed[id] !== undefined) gamesPlayed[id]++; });
+        for (let i = 0; i < pIds.length; i++) {
+          for (let j = i + 1; j < pIds.length; j++) {
+            const a = pIds[i], b = pIds[j];
+            if (partnerCount[a] && partnerCount[b]) {
+              partnerCount[a][b] = (partnerCount[a][b] || 0) + 1;
+              partnerCount[b][a] = (partnerCount[b][a] || 0) + 1;
+            }
+          }
         }
+      });
+
+      const minGames = Math.min(...members.map(m => gamesPlayed[m.id]));
+      const picked = findOptimalAddition(members, [], 4, gamesPlayed, partnerCount, minGames, false);
+
+      if (picked && picked.length === 4) {
+        matchDraftPlayers = picked;
+        renderMatchDraft();
+        toast("สุ่มจัดคิวเรียบร้อย ✨");
       }
+    } catch (err) {
+      console.error("[AutoDraft] Error:", err);
+      toast("เกิดข้อผิดพลาดในการสุ่ม");
     }
   });
-
-  // ใช้ Joint Optimization (helper ที่ใช้ร่วมกับ Top 4 ใน renderMatchDraft)
-  // เกณฑ์การให้คะแนน: balance → maxOverlap → unmet (มากดีกว่า) → sumOverlap
-  // - balance: ทุกคนเล่นจำนวนเกมเท่าๆ กัน
-  // - maxOverlap: ไม่สร้างคู่ที่จับกันมากเกินไป (เช่น 3 ครั้ง)
-  // - unmet: รับคนที่ยังไม่เคยจับคู่กันมาก่อน → ช่วยให้ทุกคู่ได้เจอกันครบ
-  // - sumOverlap: tiebreaker สุดท้าย
-  const minGames = Math.min(...members.map(m => gamesPlayed[m.id]));
-  const picked = findOptimalAddition(
-    members, [], 4,
-    gamesPlayed, partnerCount, minGames, false /* random tie-break */
-  );
-
-  matchDraftPlayers = picked;
-  renderMatchDraft();
-  toast("สุ่มจัดคิวเรียบร้อย ✨");
-});
+}
 
 $("btnSaveMatch").addEventListener("click", () => {
   if (matchDraftPlayers.length !== 4) return alert("กรุณาเลือกผู้เล่นให้ครบ 4 คน");
