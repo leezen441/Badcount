@@ -348,32 +348,15 @@ function trackOwnSubmit(memberId) {
 }
 
 function showView(name, opts = {}) {
-  // 🛡️ Safety check — ถ้า view ไม่มีอยู่ → fallback ตามสิทธิ์ user (ป้องกันหน้าขาว/หลุดสิทธิ์)
-  const targetView = $("view-" + name);
-  if (!targetView) {
-    console.error(`[showView] view-${name} ไม่พบใน DOM — กำลัง fallback`);
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-    // เลือก fallback ตามสิทธิ์: not authed → login, manager → manager-home, admin → home
-    let fallbackName = "login";
-    if (isAuthed()) fallbackName = "home";
-    else if (isManagerAuthed()) fallbackName = "manager-home";
-    const fallbackView = $("view-" + fallbackName);
-    if (fallbackView) {
-      fallbackView.classList.add("active");
-      console.warn(`[showView] fallback ไปยัง view-${fallbackName}`);
-    }
-    return;
-  }
-
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-  targetView.classList.add("active");
+  $("view-" + name).classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" });
 
-  // ซ่อน nav เมื่ออยู่หน้า join, login, manager-login, manager-pin
+  // ซ่อน nav เมื่ออยู่หน้า join, login, manager-login
   // หน้า session แบบ manager-mode: ไม่ซ่อน nav ถ้าเป็น manager ที่ login แล้ว
   const logo = $("logoLink");
   const nav = $("mainNav");
-  let shouldLockNav = name === "login" || name === "manager-login" || name === "manager-pin";
+  let shouldLockNav = name === "login" || name === "manager-login";
   if (name === "join") {
     // หน้า join ถ้าเป็น Admin/Manager ไม่ต้องซ่อนเมนูด้านล่าง
     shouldLockNav = !(isAuthed() || isManagerAuthed());
