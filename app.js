@@ -2560,10 +2560,9 @@ function hasValidTempManagerPin(sessionId) {
   return exp > Date.now();
 }
 
-// อัปเดต PIN display ใต้ปุ่ม Temp Manager
 function updateTempPinDisplay() {
   const s = currentSession;
-  const display = $("tempPinDisplay");
+  const display = $("tempPinSmallDisplay");
   if (!s || !display) return;
 
   const pin = s.tempManagerPin;
@@ -2572,8 +2571,8 @@ function updateTempPinDisplay() {
 
   if (valid) {
     display.classList.remove("hidden");
-    $("tempPinValue").textContent = pin;
-    $("tempPinExpiry").textContent = formatExpiry(expiresAt);
+    $("tempPinValueSmall").textContent = pin;
+    $("tempPinExpirySmall").textContent = formatExpiry(expiresAt);
   } else {
     display.classList.add("hidden");
   }
