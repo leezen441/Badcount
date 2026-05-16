@@ -2443,7 +2443,8 @@ function buildShareText(session, joinUrl) {
   let text = buildShareStatusHeader(session);
 
   // ===== Body Header =====
-  if (courtClosed) {
+  // ใส่ "Register" เฉพาะตอนเปิดรับเท่านั้น
+  if (courtClosed || regClosed) {
     text += `🏸 ตีแบดวันที่ ${dateText}\n`;
   } else {
     text += `🏸 Register ตีแบดวันที่ ${dateText}\n`;
