@@ -49,11 +49,13 @@
         <span class="text-2xl">🏸</span>
         <span>BadCount</span>
       </a>
-      <nav id="mainNav" class="flex gap-1 text-sm items-center">
-        <button id="btnThemeToggle" class="p-1.5 rounded-md hover:bg-emerald-700 text-lg leading-none" title="Toggle Theme">🌙</button>
-        <a href="#/" class="px-3 py-1.5 rounded-md hover:bg-emerald-700">Home</a>
-        <a id="navBack" href="javascript:void(0)" class="px-3 py-1.5 rounded-md hover:bg-emerald-700">Back</a>
-      </nav>
+      <div class="flex items-center gap-2">
+        <button id="btnThemeToggle" class="p-1.5 rounded-md hover:bg-emerald-700 text-lg leading-none transition-colors" title="Toggle Theme">🌙</button>
+        <nav id="mainNav" class="flex gap-1 text-sm items-center">
+          <a href="#/" class="px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors">Home</a>
+          <a id="navBack" href="javascript:void(0)" class="px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors">Back</a>
+        </nav>
+      </div>
     </div>
   </header>
 
@@ -361,7 +363,6 @@
       </div>
     </section>
 
-    <!-- ===== MANAGER HOME VIEW ===== -->
     <!-- ===== MANAGER HOME VIEW ===== -->
     <section id="view-manager-home" class="view">
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 mb-4">

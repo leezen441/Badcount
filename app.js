@@ -129,6 +129,12 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---------- Dark Mode Init ----------
+function updateThemeIcon() {
+  const btn = $("btnThemeToggle");
+  if (!btn) return;
+  btn.textContent = document.documentElement.classList.contains("dark") ? "☀️" : "🌙";
+}
+
 function initTheme() {
   const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
   if (isDark) {
@@ -136,6 +142,7 @@ function initTheme() {
   } else {
     document.documentElement.classList.remove('dark');
   }
+  updateThemeIcon();
 }
 initTheme();
 
@@ -143,11 +150,9 @@ const btnThemeToggle = $("btnThemeToggle");
 if (btnThemeToggle) {
   btnThemeToggle.addEventListener("click", () => {
     document.documentElement.classList.toggle("dark");
-    if (document.documentElement.classList.contains("dark")) {
-      localStorage.setItem("theme", "dark");
-    } else {
-      localStorage.setItem("theme", "light");
-    }
+    const isDark = document.documentElement.classList.contains("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+    updateThemeIcon();
   });
 }
 
