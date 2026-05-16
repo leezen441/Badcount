@@ -179,10 +179,17 @@
         </div>
 
         <div class="grid grid-cols-4 gap-2 text-xs sm:text-sm mt-3">
-          <button id="btnShareJoin"
-            class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
-            <span class="text-base">✉️</span> Invite
-          </button>
+          <div class="flex flex-col gap-1.5">
+            <button id="btnShareJoin"
+              class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1 transition-colors">
+              <span class="text-base">✉️</span> Invite
+            </button>
+            <button id="btnToggleRegistration"
+              class="bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-600 dark:text-slate-400 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 transition-colors">
+              <span id="btnToggleRegistrationIcon">✅</span>
+              <span id="btnToggleRegistrationLabel">เปิดรับ</span>
+            </button>
+          </div>
           <button id="btnShare"
             class="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 text-slate-600 dark:text-slate-400 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
             <span class="text-base">📋</span> Manager Link

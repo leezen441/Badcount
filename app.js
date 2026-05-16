@@ -671,6 +671,7 @@ $("btnCreateSession").addEventListener("click", async () => {
       courts: [],
       bankQR: defaultBankQR || null,
       status: "open",
+      registrationClosed: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -739,6 +740,7 @@ $("btnCreateRecurring").addEventListener("click", async () => {
       members: [],   // ❌ ไม่ copy
       matches: [],   // ❌ ไม่ copy
       status: "open",
+      registrationClosed: false,   // เริ่มต้นด้วย เปิดรับสมาชิก
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -839,6 +841,9 @@ function renderSession() {
     btnClose.className = "flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg font-medium transition-colors";
   }
 
+  // ✨ NEW: Update Invite button + Toggle Registration button based on state
+  updateInviteButtonState();
+
   renderMembers();
   renderMemberSuggestions();
   renderMatches();
@@ -846,6 +851,61 @@ function renderSession() {
   renderCourts();
   updatePaymentReminder();
 }
+
+// 🎨 Update สีปุ่ม Invite + Label ปุ่ม ปิดรับ/เปิดรับ ตามสถานะ
+function updateInviteButtonState() {
+  const s = currentSession;
+  if (!s) return;
+  const inviteBtn = $("btnShareJoin");
+  const toggleBtn = $("btnToggleRegistration");
+  const toggleIcon = $("btnToggleRegistrationIcon");
+  const toggleLabel = $("btnToggleRegistrationLabel");
+  if (!inviteBtn || !toggleBtn) return;
+
+  const courtClosed = s.status === "closed";
+  const regClosed = !!s.registrationClosed || courtClosed;  // court closed = reg auto closed
+
+  // ===== Invite Button Color =====
+  if (courtClosed) {
+    // 🔴 แดง
+    inviteBtn.className = "bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-700 dark:text-rose-400 py-2.5 rounded-lg font-medium border border-rose-300 dark:border-rose-700 flex flex-col items-center justify-center gap-1 transition-colors";
+  } else if (regClosed) {
+    // 🟡 เหลือง
+    inviteBtn.className = "bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-800 dark:text-amber-400 py-2.5 rounded-lg font-medium border border-amber-300 dark:border-amber-700 flex flex-col items-center justify-center gap-1 transition-colors";
+  } else {
+    // 🟢 เขียว (default)
+    inviteBtn.className = "bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1 transition-colors";
+  }
+
+  // ===== Toggle Registration Button =====
+  if (courtClosed) {
+    // Disabled (court closed → can't toggle)
+    toggleBtn.disabled = true;
+    toggleIcon.textContent = "🔒";
+    toggleLabel.textContent = "ปิดรับ";
+    toggleBtn.className = "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 cursor-not-allowed opacity-60";
+  } else if (regClosed) {
+    // Registration closed (active state — yellow)
+    toggleBtn.disabled = false;
+    toggleIcon.textContent = "🔒";
+    toggleLabel.textContent = "ปิดรับ";
+    toggleBtn.className = "bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 text-amber-800 dark:text-amber-300 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-amber-300 dark:border-amber-700 flex items-center justify-center gap-1 transition-colors";
+  } else {
+    // Open (default — show "เปิดรับ")
+    toggleBtn.disabled = false;
+    toggleIcon.textContent = "✅";
+    toggleLabel.textContent = "เปิดรับ";
+    toggleBtn.className = "bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-600 dark:text-slate-400 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 transition-colors";
+  }
+}
+
+// Toggle Registration handler
+$("btnToggleRegistration")?.addEventListener("click", () => {
+  if (!currentSession || currentSession.status === "closed") return;
+  const newValue = !currentSession.registrationClosed;
+  saveSession({ registrationClosed: newValue });
+  toast(newValue ? "🔒 ปิดรับสมาชิกแล้ว" : "✅ เปิดรับสมาชิกอีกครั้ง");
+});
 
 // ---------- Courts ----------
 function renderCourts() {
@@ -2138,24 +2198,20 @@ async function setupJoinView(id) {
       $("joinCount").textContent = mems.length;
 
       const isClosed = s.status === "closed";
+      const regClosed = !!s.registrationClosed && !isClosed;  // ปิดรับเฉยๆ (Court ยังเปิด)
       const totals = calcSessionTotals(s);
 
-      // Toggle banner ปิดก๊วน
       const closedBanner = $("joinClosedBanner");
-      if (closedBanner) closedBanner.classList.toggle("hidden", !isClosed);
-
-      // Toggle payment section (total + QR) — แสดงเฉพาะตอนปิดก๊วน
       const paySection = $("joinPaymentSection");
       const totalDueBox = $("joinTotalDueBox");
       const qrWrap = $("joinQRWrap");
       const qrImg = $("joinQRImg");
-
-      // Hide join form when session is closed (no more registration allowed)
       const formSection = $("joinFormSection");
       const btnJoinAnother = $("btnJoinAnother");
 
+      // ===== State 3: ปิด Court แล้ว =====
       if (isClosed) {
-        // ซ่อน form ลงชื่อ + ปุ่ม "+ ลงชื่อให้คนอื่นเพิ่ม"
+        if (closedBanner) closedBanner.classList.remove("hidden");
         formSection?.classList.add("hidden");
         btnJoinAnother?.classList.add("hidden");
 
@@ -2163,32 +2219,25 @@ async function setupJoinView(id) {
         const allPaid = mems.length > 0 && unpaidCount === 0;
 
         if (allPaid) {
-          // ✅ ทุกคนจ่ายครบ — ซ่อน QR/ยอด, เปลี่ยน banner เป็นสไตล์ดีใจ
           paySection?.classList.add("hidden");
           totalDueBox?.classList.add("hidden");
           qrWrap?.classList.add("hidden");
-
           if (closedBanner) {
             closedBanner.textContent = "✅ ปิด Court แล้ว — ทุกคนจ่ายครบ 🎉";
             closedBanner.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
           }
         } else {
-          // ⏳ ยังมีคนค้าง — โชว์ banner เตือน + QR + จำนวนคนค้าง
           paySection?.classList.remove("hidden");
-
           if (closedBanner) {
             closedBanner.textContent = "🔒 ปิดแล้ว — ดูยอดที่ต้องจ่ายและ QR โอนเงินด้านล่าง";
             closedBanner.className = "bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
           }
-
           if (unpaidCount > 0) {
             totalDueBox?.classList.remove("hidden");
             $("joinUnpaidCount").textContent = unpaidCount;
           } else {
             totalDueBox?.classList.add("hidden");
           }
-
-          // แสดง QR ถ้ามี
           if (s.bankQR && qrImg && qrWrap) {
             qrImg.src = s.bankQR;
             qrWrap.classList.remove("hidden");
@@ -2196,12 +2245,28 @@ async function setupJoinView(id) {
             qrWrap?.classList.add("hidden");
           }
         }
-      } else {
+      }
+      // ===== State 2: ปิดรับสมาชิกแล้ว (Court ยังเปิดอยู่) =====
+      else if (regClosed) {
+        if (closedBanner) {
+          closedBanner.classList.remove("hidden");
+          closedBanner.textContent = "🔒 ปิดรับสมาชิกแล้ว";
+          closedBanner.className = "bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
+        }
+        // ซ่อน form + ปุ่มลงชื่อให้คนอื่น
+        formSection?.classList.add("hidden");
+        btnJoinAnother?.classList.add("hidden");
+        // ไม่แสดงยอด/QR (Court ยังเปิดอยู่)
         paySection?.classList.add("hidden");
         totalDueBox?.classList.add("hidden");
         qrWrap?.classList.add("hidden");
-
-        // กลับมาแสดง form ตอนเปิดก๊วน (เผื่อเปิดใหม่หลังปิด)
+      }
+      // ===== State 1: เปิดรับ + เปิด Court =====
+      else {
+        if (closedBanner) closedBanner.classList.add("hidden");
+        paySection?.classList.add("hidden");
+        totalDueBox?.classList.add("hidden");
+        qrWrap?.classList.add("hidden");
         formSection?.classList.remove("hidden");
         btnJoinAnother?.classList.remove("hidden");
       }
@@ -2258,6 +2323,17 @@ $("btnSubmitJoin").addEventListener("click", async () => {
     if (!snap.exists()) throw new Error("ไม่พบก๊วนนี้");
 
     const s = snap.data();
+
+    // Guard: ถ้าปิดรับ/ปิด Court แล้ว ห้ามลงทะเบียนเพิ่ม (race condition safety)
+    if (s.status === "closed") {
+      toast("🔒 ก๊วนนี้ปิดแล้ว — ไม่รับสมาชิกเพิ่ม");
+      return;
+    }
+    if (s.registrationClosed) {
+      toast("🔒 ปิดรับสมาชิกแล้ว — ไม่สามารถลงชื่อได้");
+      return;
+    }
+
     const members = s.members || [];
 
     // Prevent duplicate names
@@ -2344,34 +2420,68 @@ function formatCourtsForShare(courts) {
   return lines.join("\n");
 }
 
+// 🎨 Helper: สร้าง status header สำหรับ share text (เน้นคำสำคัญด้วยเส้นแบ่ง)
+function buildShareStatusHeader(session) {
+  if (session.status === "closed") {
+    return `🔴 ปิด Court — ต้องชำระเงิน\n━━━━━━━━━━━━━━━\n\n`;
+  }
+  if (session.registrationClosed) {
+    return `🟡 ปิดรับสมาชิกแล้ว\n━━━━━━━━━━━━━━━\n\n`;
+  }
+  return `🟢 เปิดรับสมาชิก\n━━━━━━━━━━━━━━━\n\n`;
+}
+
+// 🎨 Helper: สร้าง share text แบ่งตาม state (ใช้กับ btnShareJoin + btnShareJoinPublic)
+function buildShareText(session, joinUrl) {
+  const courtClosed = session.status === "closed";
+  const regClosed = !!session.registrationClosed || courtClosed;
+  const dateText = session.date ? formatDate(session.date) : "วันนี้";
+  const members = session.members || [];
+  const courtInfo = formatCourtsForShare(session.courts);
+
+  // ===== Status Header =====
+  let text = buildShareStatusHeader(session);
+
+  // ===== Body Header =====
+  if (courtClosed) {
+    text += `🏸 ตีแบดวันที่ ${dateText}\n`;
+  } else {
+    text += `🏸 Register ตีแบดวันที่ ${dateText}\n`;
+  }
+  if (courtInfo) text += `${courtInfo}\n`;
+
+  // ===== Member List =====
+  if (members.length > 0) {
+    const memberLabel = regClosed ? "สมาชิก" : "อัปเดตคนลงชื่อแล้ว";
+    const memberEmoji = regClosed ? "" : " 🔥";
+    text += `${memberLabel} (${members.length} คน)${memberEmoji}\n`;
+    members.forEach((m, idx) => {
+      text += `${idx + 1}. ${m.name}\n`;
+    });
+  }
+
+  // ===== CTA + Link =====
+  if (courtClosed) {
+    text += `💰 คลิกลิงก์เพื่อชำระเงิน :\n${joinUrl}`;
+  } else if (regClosed) {
+    text += `👀 ดูรายชื่อสมาชิก :\n${joinUrl}`;
+  } else {
+    text += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
+  }
+
+  return text;
+}
+
 $("btnShareJoin").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
-  const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
-
-  const members = currentSession.members || [];
-  const courtInfo = formatCourtsForShare(currentSession.courts);
-
-  let shareText = `🏸 Register ตีแบดวันที่ ${dateText}\n`;
-  if (courtInfo) shareText += `${courtInfo}\n`;
-
-  if (members.length === 0) {
-    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
-  } else {
-    shareText += `อัปเดตคนลงชื่อแล้ว (${members.length} คน) 🔥\n`;
-    members.forEach((m, idx) => {
-      shareText += `${idx + 1}. ${m.name}\n`;
-    });
-    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
-  }
+  const shareText = buildShareText(currentSession, joinUrl);
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   if (isMobile && navigator.share) {
     try {
-      await navigator.share({
-        text: shareText
-      });
+      await navigator.share({ text: shareText });
       toast("แชร์ลิงก์สำเร็จ ✓");
     } catch (err) {
       if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
@@ -2390,23 +2500,7 @@ $("btnShareJoin").addEventListener("click", async () => {
 $("btnShareJoinPublic").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
   const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
-  const dateText = currentSession.date ? formatDate(currentSession.date) : "วันนี้";
-
-  const members = currentSession.members || [];
-  const courtInfo = formatCourtsForShare(currentSession.courts);
-
-  let shareText = `🏸 Register ตีแบดวันที่ ${dateText}\n`;
-  if (courtInfo) shareText += `${courtInfo}\n`;
-
-  if (members.length === 0) {
-    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
-  } else {
-    shareText += `อัปเดตคนลงชื่อแล้ว (${members.length} คน) 🔥\n`;
-    members.forEach((m, idx) => {
-      shareText += `${idx + 1}. ${m.name}\n`;
-    });
-    shareText += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${joinUrl}`;
-  }
+  const shareText = buildShareText(currentSession, joinUrl);
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
