@@ -199,17 +199,30 @@
           </button>
         </div>
 
-        <!-- Sub-row: ปิดรับ (col 1) + counter (col 2) — aligned under their parents -->
+        <!-- Sub-row: 4 ช่อง สอดคล้องกับปุ่มหลัก -->
+        <!-- col 1: ปิดรับ · col 2: temp PIN counter · col 3: ทวง · col 4: Mark all -->
         <div class="grid grid-cols-4 gap-2 mt-1.5">
           <button id="btnToggleRegistration"
-            class="bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-600 dark:text-slate-400 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 transition-colors">
+            class="col-start-1 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-600 dark:text-slate-400 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 transition-colors">
             <span id="btnToggleRegistrationIcon">✅</span>
             <span id="btnToggleRegistrationLabel">เปิดรับ</span>
           </button>
-          <div id="tempPinSmallDisplay" class="hidden bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 py-1.5 px-2 rounded-md text-[11px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center justify-center gap-1.5 transition-all">
+          <div id="tempPinSmallDisplay" class="col-start-2 hidden bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 py-1.5 px-2 rounded-md text-[11px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center justify-center gap-1.5 transition-all">
             <span>🔢</span> <span id="tempPinValueSmall">----</span>
             <span class="text-[9px] opacity-60 font-medium" id="tempPinExpirySmall">--:--</span>
           </div>
+          <button id="btnRemindUnpaid"
+            class="col-start-3 py-1.5 px-2 rounded-md text-[11px] font-semibold border flex items-center justify-center gap-1 transition-all"
+            title="ทวงเงินคนค้างจ่าย">
+            <span>🔔</span>
+            <span id="btnRemindUnpaidLabel">ทวง</span>
+          </button>
+          <button id="btnMarkAllPaid"
+            class="col-start-4 py-1.5 px-2 rounded-md text-[11px] font-semibold border flex items-center justify-center gap-1 transition-all"
+            title="ทำเครื่องหมายว่าทุกคนจ่ายครบแล้ว">
+            <span>✓</span>
+            <span id="btnMarkAllPaidLabel">Mark all</span>
+          </button>
         </div>
       </div>
 

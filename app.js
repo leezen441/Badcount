@@ -1097,6 +1097,7 @@ function updatePaymentReminder() {
   const members = currentSession.members || [];
   if (members.length === 0) {
     card.classList.add("hidden");
+    updateSubRowPaymentButtons(0);
     return;
   }
 
@@ -1117,7 +1118,63 @@ function updatePaymentReminder() {
     $("unpaidCount").textContent = unpaidCount;
     $("unpaidTotal").textContent = fmt(unpaidTotal);
   }
+
+  updateSubRowPaymentButtons(unpaidCount);
 }
+
+// ปรับสถานะปุ่ม "ทวง" + "Mark all" ใน sub-row ตามจำนวนคนค้างจ่าย
+function updateSubRowPaymentButtons(unpaidCount) {
+  const btnRemind = $("btnRemindUnpaid");
+  const btnMarkAll = $("btnMarkAllPaid");
+  const remindLabel = $("btnRemindUnpaidLabel");
+  if (!btnRemind || !btnMarkAll) return;
+
+  const hasUnpaid = unpaidCount > 0;
+
+  // ----- ปุ่ม "ทวง" -----
+  const remindBase = "col-start-3 py-1.5 px-2 rounded-md text-[11px] font-semibold border flex items-center justify-center gap-1 transition-all";
+  if (hasUnpaid) {
+    btnRemind.className = `${remindBase} bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50 cursor-pointer`;
+    btnRemind.disabled = false;
+    if (remindLabel) remindLabel.textContent = `ทวง (${unpaidCount})`;
+  } else {
+    btnRemind.className = `${remindBase} bg-slate-50 dark:bg-slate-900/30 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-800 opacity-60 cursor-not-allowed`;
+    btnRemind.disabled = true;
+    if (remindLabel) remindLabel.textContent = "ทวง";
+  }
+
+  // ----- ปุ่ม "Mark all" -----
+  const markBase = "col-start-4 py-1.5 px-2 rounded-md text-[11px] font-semibold border flex items-center justify-center gap-1 transition-all";
+  if (hasUnpaid) {
+    btnMarkAll.className = `${markBase} bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50 cursor-pointer`;
+    btnMarkAll.disabled = false;
+  } else {
+    btnMarkAll.className = `${markBase} bg-slate-50 dark:bg-slate-900/30 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-800 opacity-60 cursor-not-allowed`;
+    btnMarkAll.disabled = true;
+  }
+}
+
+// ---------- "ทวง" sub-row button — ใช้ logic เดียวกับ btnCopyDueList ----------
+$("btnRemindUnpaid").addEventListener("click", () => {
+  if ($("btnRemindUnpaid").disabled) return;
+  $("btnCopyDueList").click();
+});
+
+// ---------- "Mark all paid" sub-row button — confirm แล้วเซ็ตทุกคน isPaid: true ----------
+$("btnMarkAllPaid").addEventListener("click", () => {
+  if ($("btnMarkAllPaid").disabled) return;
+  if (!currentSession) return;
+  const members = currentSession.members || [];
+  const unpaidNames = members.filter(m => !m.isPaid).map(m => m.name);
+  if (unpaidNames.length === 0) return;
+
+  const msg = `ยืนยันว่าทุกคนจ่ายเงินครบแล้ว?\n\nจะทำเครื่องหมาย ${unpaidNames.length} คนเป็น "จ่ายแล้ว":\n${unpaidNames.map(n => `• ${n}`).join("\n")}`;
+  if (!confirm(msg)) return;
+
+  const newMembers = members.map(m => ({ ...m, isPaid: true }));
+  saveSession({ members: newMembers });
+  toast(`✓ ทำเครื่องหมายจ่ายแล้ว ${unpaidNames.length} คน`);
+});
 
 $("btnCopyDueList").addEventListener("click", () => {
   if (!currentSession) return;
