@@ -1445,32 +1445,32 @@ function renderMembers() {
     const priceColor = isPaid ? "text-emerald-500" : "text-rose-500";
     
     return `
-    <div class="py-3 flex items-center gap-2 sm:gap-3">
+    <div class="py-3 flex items-center gap-1 sm:gap-3">
       <button data-act="toggle-paid" data-idx="${idx}" class="w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-400'}" title="ทำเครื่องหมายว่าจ่ายแล้ว">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
       </button>
       
-      <div class="flex-1 min-w-0 flex items-center justify-between pr-1 sm:pr-2">
+      <div class="flex-1 min-w-0 flex items-center justify-between pr-1 sm:pr-2 gap-1.5">
         <div class="min-w-0 flex-1 truncate">
-          <span class="font-medium ${isPaid ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}">${escapeHtml(m.name)}</span>
-          ${pStats[m.id].games > 0 
-            ? `<span class="text-xs text-slate-400 ml-1" title="ล่าสุดเล่นกับ: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}">(ตี ${pStats[m.id].games} เกม • ล่าสุด: ${escapeHtml(pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', '))})</span>`
-            : `<span class="text-xs text-slate-300 ml-1">(ยังไม่ได้ลงสนาม)</span>`
+          <span class="font-medium ${isPaid ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'}">${escapeHtml(m.name)}</span>
+          ${pStats[m.id].games > 0
+            ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1">(ตี ${pStats[m.id].games} เกม • ล่าสุด: ${escapeHtml(pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', '))})</span>`
+            : `<span class="hidden sm:inline text-xs text-slate-300 ml-1">(ยังไม่ได้ลงสนาม)</span>`
           }
         </div>
-        <div class="font-bold text-lg ${priceColor} whitespace-nowrap ml-2">${fmt(totals.perMember[idx])} ฿</div>
+        <div class="font-bold text-sm sm:text-lg ${priceColor} whitespace-nowrap shrink-0">${fmt(totals.perMember[idx])} ฿</div>
       </div>
 
       ${(m.slipImage || m.slipQR) ? `
-        <button data-act="view-slip" data-idx="${idx}" class="text-lg shrink-0 px-1 hover:scale-110 transition-transform" title="ดูสลิปการโอนของ ${escapeHtml(m.name)}">
+        <button data-act="view-slip" data-idx="${idx}" class="text-base sm:text-lg shrink-0 px-0.5 sm:px-1 hover:scale-110 transition-transform" title="ดูสลิปการโอนของ ${escapeHtml(m.name)}">
           🖼️
         </button>
       ` : ''}
 
       ${!isPaid ? `
-        <button data-act="scan-qr" data-idx="${idx}" class="text-lg shrink-0 px-1 hover:scale-110 transition-transform" title="สแกน QR จากสลิปของ ${escapeHtml(m.name)}">
+        <button data-act="scan-qr" data-idx="${idx}" class="text-base sm:text-lg shrink-0 px-0.5 sm:px-1 hover:scale-110 transition-transform" title="สแกน QR จากสลิปของ ${escapeHtml(m.name)}">
           📷
         </button>
       ` : ''}
