@@ -1463,9 +1463,15 @@ function renderMembers() {
         <div class="font-bold text-lg ${priceColor} whitespace-nowrap ml-2">${fmt(totals.perMember[idx])} ฿</div>
       </div>
 
-      ${m.slipImage ? `
+      ${(m.slipImage || m.slipQR) ? `
         <button data-act="view-slip" data-idx="${idx}" class="text-lg shrink-0 px-1 hover:scale-110 transition-transform" title="ดูสลิปการโอนของ ${escapeHtml(m.name)}">
           🖼️
+        </button>
+      ` : ''}
+
+      ${!isPaid ? `
+        <button data-act="scan-qr" data-idx="${idx}" class="text-lg shrink-0 px-1 hover:scale-110 transition-transform" title="สแกน QR จากสลิปของ ${escapeHtml(m.name)}">
+          📷
         </button>
       ` : ''}
 
@@ -1488,7 +1494,13 @@ function renderMembers() {
       // view-slip = action ที่ไม่ได้ modify data → เปิด modal แล้ว return
       if (act === "view-slip") {
         const m = (currentSession.members || [])[idx];
-        if (m && m.slipImage) openSlipViewer(m.name, m.slipImage);
+        if (m && (m.slipImage || m.slipQR)) openSlipViewer(m.name, m.slipImage, m.slipQR);
+        return;
+      }
+
+      // scan-qr = เปิดกล้องสแกน QR จากสลิปบนมือถือ member
+      if (act === "scan-qr") {
+        openCameraScan(idx);
         return;
       }
 
@@ -2237,6 +2249,53 @@ $("statsModal").addEventListener("click", e => { if (e.target.id === "statsModal
 // PAYMENT QR + SLIP UPLOAD
 // ============================================================
 
+// ---------- QR decoding (jsQR) ----------
+// อ่าน QR จากไฟล์รูป (สลิปที่ user upload)
+async function decodeQRFromFile(file) {
+  return new Promise((resolve) => {
+    if (typeof window.jsQR !== "function") return resolve(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        try {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = window.jsQR(imageData.data, imageData.width, imageData.height);
+          resolve(code ? code.data : null);
+        } catch (err) {
+          console.warn("[decodeQR] failed:", err);
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+// อ่าน QR จาก video frame (live camera scan)
+function decodeQRFromVideoFrame(video, canvas) {
+  if (typeof window.jsQR !== "function") return null;
+  if (!video.videoWidth || !video.videoHeight) return null;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  try {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    return window.jsQR(imageData.data, imageData.width, imageData.height);
+  } catch (err) {
+    return null;
+  }
+}
+
 // ---------- Image compression ----------
 // ย่อรูปด้วย HTML5 Canvas → คืน base64 (JPEG)
 async function compressImage(file, maxWidth = 800, quality = 0.7) {
@@ -2311,18 +2370,36 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
   $("paymentUploading").classList.remove("hidden");
 
   try {
+    // 1) decode QR จากไฟล์ "ต้นฉบับ" (ก่อน compress) — ความละเอียดเต็มอ่านง่ายกว่า
+    const qrData = await decodeQRFromFile(file);
+
+    // 2) compress เพื่อบันทึก
     const base64 = await compressImage(file, 800, 0.7);
-    // อัปเดต member ตาม idx — ไม่ใช้ index ของ array โดยตรงเพราะอาจเปลี่ยน
-    // ใช้ id ของ member เป็น key ในการ map
+
+    // ถ้าไม่พบ QR ในรูป → confirm กับ user
+    if (!qrData) {
+      const proceed = confirm("⚠️ ไม่พบ QR Code ในรูปนี้\n\nอาจเป็นเพราะ:\n• รูปไม่ใช่สลิป\n• QR เบลอ/ไม่ชัด\n• สลิปไม่มี QR (ธนาคารบางที่)\n\nยืนยันส่งสลิปนี้?");
+      if (!proceed) {
+        $("paymentUploadLabel").classList.remove("hidden");
+        $("paymentUploading").classList.add("hidden");
+        $("paymentSlipInput").value = "";
+        return;
+      }
+    }
+
+    // 3) อัปเดต member ผ่าน id (ไม่ใช่ idx) เพื่อกัน race condition
     const targetId = currentSession.members?.[paymentMemberIdx]?.id;
     const newMembers = (currentSession.members || []).map(m =>
-      m.id === targetId ? { ...m, isPaid: true, slipImage: base64 } : m
+      m.id === targetId
+        ? { ...m, isPaid: true, slipImage: base64, slipQR: qrData || null }
+        : m
     );
     await updateDoc(doc(db, "sessions", currentSessionId), {
       members: newMembers,
       updatedAt: serverTimestamp()
     });
-    toast("✓ จ่ายเงินเรียบร้อย");
+
+    toast(qrData ? "✓ จ่ายเงินเรียบร้อย (พบ QR ✓)" : "✓ จ่ายเงินเรียบร้อย");
     closePaymentModal();
   } catch (err) {
     console.error("[Payment] Upload error:", err);
@@ -2333,9 +2410,33 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
 });
 
 // ---------- Slip Viewer Modal (Admin View) ----------
-function openSlipViewer(memberName, slipImage) {
+function openSlipViewer(memberName, slipImage, slipQR) {
   $("slipViewerName").textContent = memberName || "—";
-  $("slipViewerImg").src = slipImage || "";
+  const imgEl = $("slipViewerImg");
+  if (slipImage) {
+    imgEl.src = slipImage;
+    imgEl.classList.remove("hidden");
+  } else {
+    imgEl.src = "";
+    imgEl.classList.add("hidden");
+  }
+  // แสดง QR text (ถ้ามี) ใต้รูป
+  let qrInfoEl = $("slipViewerQRInfo");
+  if (!qrInfoEl) {
+    qrInfoEl = document.createElement("div");
+    qrInfoEl.id = "slipViewerQRInfo";
+    qrInfoEl.className = "mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg text-xs break-all";
+    imgEl.parentNode.insertBefore(qrInfoEl, imgEl.nextSibling);
+  }
+  if (slipQR) {
+    qrInfoEl.innerHTML = `
+      <div class="font-bold text-emerald-700 dark:text-emerald-300 mb-1.5">🔍 ข้อมูล QR ที่อ่านได้</div>
+      <div class="font-mono text-emerald-900 dark:text-emerald-200">${escapeHtml(slipQR)}</div>
+      <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">💡 ใช้ link/code นี้เช็คกับธนาคารเพื่อ verify สลิป</div>`;
+    qrInfoEl.classList.remove("hidden");
+  } else {
+    qrInfoEl.classList.add("hidden");
+  }
   $("slipViewerModal").classList.remove("hidden");
 }
 
@@ -2359,6 +2460,108 @@ $("btnDownloadSlip")?.addEventListener("click", () => {
   a.download = `slip_${name}_${Date.now()}.jpg`;
   a.click();
 });
+
+// ---------- Camera QR Scanner (admin/manager scan member's slip QR live) ----------
+let cameraStream = null;
+let cameraScanInterval = null;
+let cameraScanTargetId = null;
+
+async function openCameraScan(memberIdx) {
+  if (!currentSession) return;
+  const member = currentSession.members?.[memberIdx];
+  if (!member) return;
+
+  if (typeof window.jsQR !== "function") {
+    return toast("⚠️ Library อ่าน QR โหลดไม่สำเร็จ ลองรีเฟรชหน้า");
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return toast("⚠️ เบราว์เซอร์นี้ไม่รองรับกล้อง");
+  }
+
+  cameraScanTargetId = member.id;
+  $("cameraScanMemberName").textContent = member.name;
+  $("cameraScanStatus").textContent = "⏳ กำลังเปิดกล้อง...";
+  $("cameraScanModal").classList.remove("hidden");
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+    const video = $("cameraScanVideo");
+    video.srcObject = cameraStream;
+    await video.play();
+
+    $("cameraScanStatus").textContent = "🔍 กำลังสแกน QR...";
+
+    const canvas = document.createElement("canvas");
+    let scanning = true;
+
+    cameraScanInterval = setInterval(() => {
+      if (!scanning) return;
+      const code = decodeQRFromVideoFrame(video, canvas);
+      if (code && code.data) {
+        scanning = false;
+        handleCameraQRDetected(code.data);
+      }
+    }, 250);
+
+  } catch (err) {
+    console.error("[Camera] Error:", err);
+    $("cameraScanStatus").textContent = "❌ เปิดกล้องไม่ได้: " + (err.message || err);
+    setTimeout(closeCameraScan, 2500);
+  }
+}
+
+function closeCameraScan() {
+  if (cameraScanInterval) {
+    clearInterval(cameraScanInterval);
+    cameraScanInterval = null;
+  }
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  const video = $("cameraScanVideo");
+  if (video) video.srcObject = null;
+  $("cameraScanModal").classList.add("hidden");
+  cameraScanTargetId = null;
+}
+
+async function handleCameraQRDetected(qrData) {
+  if (!cameraScanTargetId || !currentSession || !currentSessionId) {
+    closeCameraScan();
+    return;
+  }
+
+  const member = (currentSession.members || []).find(m => m.id === cameraScanTargetId);
+  if (!member) {
+    closeCameraScan();
+    return;
+  }
+
+  $("cameraScanStatus").textContent = `✓ พบ QR! กำลังบันทึก...`;
+
+  try {
+    const newMembers = (currentSession.members || []).map(m =>
+      m.id === cameraScanTargetId
+        ? { ...m, isPaid: true, slipQR: qrData }
+        : m
+    );
+    await updateDoc(doc(db, "sessions", currentSessionId), {
+      members: newMembers,
+      updatedAt: serverTimestamp()
+    });
+    toast(`✓ ${member.name} จ่ายแล้ว (สแกน QR สำเร็จ)`);
+    closeCameraScan();
+  } catch (err) {
+    console.error("[CameraScan] Save error:", err);
+    $("cameraScanStatus").textContent = "❌ บันทึกไม่สำเร็จ: " + (err.message || err);
+    setTimeout(closeCameraScan, 2500);
+  }
+}
+
+$("btnCloseCameraScan")?.addEventListener("click", closeCameraScan);
 
 // ============================================================
 // JOIN VIEW
