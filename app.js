@@ -2691,6 +2691,43 @@ $("btnShare").addEventListener("click", async () => {
   updateTempPinDisplay();
 });
 
+// ---------- Click ตัว PIN counter → Reset PIN ใหม่ ----------
+$("tempPinSmallDisplay")?.addEventListener("click", async () => {
+  if (!currentSessionId || !currentSession) return;
+  const s = currentSession;
+  const currentPin = s.tempManagerPin;
+  if (!currentPin) return;
+
+  if (!confirm(`รีเซ็ต PIN ใหม่?\n\nPIN ปัจจุบัน (${currentPin}) จะใช้ไม่ได้ทันที — คนที่ถือลิงก์เดิมต้องใช้ PIN ใหม่`)) return;
+
+  const newPin = generatePin();
+  const newExpiresAt = Date.now() + TM_PIN_TTL_MS;
+  await saveSession({
+    tempManagerPin: newPin,
+    tempManagerExpiresAt: newExpiresAt
+  });
+
+  // Copy ลิงก์ + PIN ใหม่ไป clipboard (ทำเหมือนตอนกดปุ่ม Temp Manager)
+  const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
+  const dateText = s.date ? formatDate(s.date) : "วันนี้";
+  const shareText = `🛡️ Temporary Manager — ${dateText}
+━━━━━━━━━━━━━━━
+
+📋 ลิงก์: ${managerUrl}
+🔢 PIN: ${newPin}
+⏰ หมดอายุ: ${formatExpiry(newExpiresAt)}`;
+
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile && navigator.share) {
+    try { await navigator.share({ text: shareText }); } catch (err) { /* ignore */ }
+  } else {
+    try { await navigator.clipboard.writeText(shareText); } catch (err) { /* ignore */ }
+  }
+
+  toast(`✓ PIN ใหม่: ${newPin}`, 4000);
+  updateTempPinDisplay();
+});
+
 // PIN input UX — auto-submit เมื่อพิมพ์ครบ 4 หลัก + clear error ตอนพิมพ์
 $("fldManagerPin")?.addEventListener("input", (e) => {
   const v = e.target.value.replace(/\D/g, "").slice(0, 4);
