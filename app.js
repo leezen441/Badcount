@@ -928,6 +928,7 @@ function renderSession() {
   renderSummary();
   renderCourts();
   updatePaymentReminder();
+  updateCleanupButton();
 }
 
 // 🎨 Update สีปุ่ม Invite + Label ปุ่ม ปิดรับ/เปิดรับ ตามสถานะ
@@ -1746,7 +1747,7 @@ async function saveSession(patch) {
     saveGlobalDefaults({ lastUsedCourts: patch.courts });
   }
   // ------------------------------------------------
-  
+
   // Optimistic local update so UI feels snappy
   Object.assign(currentSession, patch);
   renderSession();
@@ -1760,9 +1761,123 @@ async function saveSession(patch) {
       });
     } catch (err) {
       console.error(err);
-      toast("บันทึกไม่ได้: " + err.message);
+      // ถ้าเจอ "doc size > 1MB" → เสนอลบรูปสลิปอัตโนมัติ
+      if (err.message?.includes("exceeds the maximum") || err.message?.includes("size")) {
+        await handleDocSizeError(patch);
+      } else {
+        toast("บันทึกไม่ได้: " + err.message);
+      }
     }
   }, 400);
+}
+
+// ประมาณขนาด document ของ session (เพื่อโชว์เตือนก่อนจะเต็ม 1MB)
+function estimateSessionSize(session) {
+  if (!session) return 0;
+  try {
+    return new Blob([JSON.stringify(session)]).size;
+  } catch {
+    return 0;
+  }
+}
+
+// อัปเดต UI ของปุ่ม "🧹 ลดขนาด" — โชว์ปุ่มเมื่อใช้ > 70% ของ 1MB
+function updateCleanupButton() {
+  const btn = $("btnCleanupSize");
+  const label = $("cleanupSizeLabel");
+  if (!btn || !currentSession) return;
+
+  const size = estimateSessionSize(currentSession);
+  const FIRESTORE_LIMIT = 1048576;
+  const pct = Math.round((size / FIRESTORE_LIMIT) * 100);
+  const removableCount = (currentSession.members || [])
+    .filter(m => m.isPaid && m.slipQR && m.slipImage).length;
+
+  // โชว์ปุ่มเฉพาะเมื่อใช้ > 70% AND มีสลิปให้ลบได้
+  if (pct >= 70 && removableCount > 0) {
+    btn.classList.remove("hidden");
+    if (label) label.textContent = `ลดขนาด (${pct}%)`;
+    // ใช้ > 85% → เปลี่ยนสีแดงเตือน
+    if (pct >= 85) {
+      btn.classList.remove("bg-amber-50", "dark:bg-amber-900/30", "text-amber-700", "dark:text-amber-300", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100");
+      btn.classList.add("bg-rose-50", "dark:bg-rose-900/30", "text-rose-700", "dark:text-rose-300", "border-rose-200", "dark:border-rose-800/50", "hover:bg-rose-100", "animate-pulse");
+    } else {
+      btn.classList.remove("bg-rose-50", "dark:bg-rose-900/30", "text-rose-700", "dark:text-rose-300", "border-rose-200", "dark:border-rose-800/50", "hover:bg-rose-100", "animate-pulse");
+      btn.classList.add("bg-amber-50", "dark:bg-amber-900/30", "text-amber-700", "dark:text-amber-300", "border-amber-200", "dark:border-amber-800/50", "hover:bg-amber-100");
+    }
+  } else {
+    btn.classList.add("hidden");
+  }
+}
+
+$("btnCleanupSize")?.addEventListener("click", async () => {
+  if (!currentSession || !currentSessionId) return;
+  const members = currentSession.members || [];
+  const removableCount = members.filter(m => m.isPaid && m.slipQR && m.slipImage).length;
+  if (removableCount === 0) {
+    toast("ไม่มีสลิปที่ลบได้ — ต้องเป็นคนที่ verify ด้วย QR แล้ว");
+    return;
+  }
+  const size = estimateSessionSize(currentSession);
+  const sizeKB = Math.round(size / 1024);
+  if (!confirm(`ลดขนาด session?\n\n• ขนาดปัจจุบัน: ${sizeKB} KB\n• จะลบรูปสลิป ${removableCount} รูป (เฉพาะคนที่ verify QR แล้ว)\n• ยังเก็บข้อมูล QR ไว้สำหรับ verify ภายหลัง\n\nดำเนินการ?`)) return;
+
+  const cleaned = members.map(m => {
+    if (m.isPaid && m.slipQR && m.slipImage) {
+      const { slipImage, ...rest } = m;
+      return rest;
+    }
+    return m;
+  });
+  try {
+    await updateDoc(doc(db, "sessions", currentSessionId), {
+      members: cleaned,
+      updatedAt: serverTimestamp()
+    });
+    toast(`✓ ลบสลิป ${removableCount} รูปแล้ว — ลดขนาด session สำเร็จ`, 4000);
+  } catch (err) {
+    toast("ลดขนาดไม่สำเร็จ: " + err.message);
+  }
+});
+
+// แก้ปัญหา Firestore document > 1MB
+// เกิดจากรูปสลิป (base64) สะสมเยอะเกิน → ลบรูปสลิปของคนที่ verify ด้วย QR แล้ว
+async function handleDocSizeError(patch) {
+  const members = currentSession.members || [];
+  const removableCount = members.filter(m => m.isPaid && m.slipQR && m.slipImage).length;
+
+  if (removableCount === 0) {
+    toast("⚠️ ก๊วนนี้มีข้อมูลเกิน 1 MB และไม่มีสลิปที่ verify ด้วย QR ให้ลบได้", 5000);
+    alert("⚠️ ขนาดข้อมูลก๊วนเกิน 1 MB\n\nไม่สามารถลบสลิปอัตโนมัติได้เพราะยังไม่มีสลิปที่ verify ด้วย QR\n\nวิธีแก้:\n• ลบสมาชิกที่ไม่จำเป็น\n• ลบเกมเก่าที่ไม่ใช้\n• ติดต่อ admin เพื่อย้ายไปก๊วนใหม่");
+    return;
+  }
+
+  const proceed = confirm(`⚠️ ขนาดข้อมูลก๊วนเกิน 1 MB\n\nระบบสามารถลดขนาดได้โดยลบรูปสลิป ${removableCount} รูป\n(เฉพาะคนที่ verify ด้วย QR แล้ว — ยังคงเก็บข้อมูล QR ไว้)\n\nดำเนินการลบและลองบันทึกใหม่?`);
+  if (!proceed) {
+    toast("⚠️ บันทึกไม่ได้ — ยกเลิกการลบสลิป", 4000);
+    return;
+  }
+
+  // ลบ slipImage แต่เก็บ slipQR ไว้
+  const cleanedMembers = members.map(m => {
+    if (m.isPaid && m.slipQR && m.slipImage) {
+      const { slipImage, ...rest } = m;
+      return rest;
+    }
+    return m;
+  });
+
+  try {
+    await updateDoc(doc(db, "sessions", currentSessionId), {
+      members: cleanedMembers,
+      ...patch,
+      updatedAt: serverTimestamp()
+    });
+    toast(`✓ ลดขนาดสำเร็จ — ลบสลิป ${removableCount} รูป (ยังเก็บข้อมูล QR)`, 4000);
+  } catch (err2) {
+    console.error("[Cleanup] Retry failed:", err2);
+    toast("⚠️ ลดขนาดแล้วยังบันทึกไม่ได้: " + err2.message, 5000);
+  }
 }
 
 // Field listeners
@@ -2580,8 +2695,8 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
       }
     }
 
-    // 3) compress เพื่อบันทึก
-    const base64 = await compressImage(file, 800, 0.7);
+    // 3) compress เพื่อบันทึก — ใช้ aggressive compression เพราะ Firestore doc มีขีดจำกัด 1MB
+    const base64 = await compressImage(file, 600, 0.55);
 
     // 4) อัปเดต member ผ่าน id (ไม่ใช่ idx) เพื่อกัน race condition
     const targetId = currentSession.members?.[paymentMemberIdx]?.id;
