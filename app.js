@@ -1863,7 +1863,9 @@ function renderMatchDraft() {
   selectedDiv.innerHTML = selHtml;
 
   // ----- Available players (รายการแนวตั้ง) -----
-  const available = allMembers.filter(m => !matchDraftPlayers.includes(m.id));
+  // คนที่จ่ายเงินแล้ว = "ออกจากก๊วน" → ไม่อยู่ใน pool ให้เลือกจัดเกมใหม่
+  // (ประวัติเกมเก่ายังมีชื่ออยู่ ไม่กระทบ — เพราะอ่านจาก currentSession.matches โดยตรง)
+  const available = allMembers.filter(m => !matchDraftPlayers.includes(m.id) && !m.isPaid);
 
   if (available.length === 0) {
     availableDiv.innerHTML = `<div class="text-slate-400 text-sm py-2 w-full text-center">ไม่มีผู้เล่นเหลือ</div>`;
@@ -2025,16 +2027,20 @@ $("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal
 const autoDraftBtn = $("btnAutoDraft");
 if (autoDraftBtn) {
   autoDraftBtn.addEventListener("click", () => {
-    const members = (currentSession && currentSession.members) || [];
-    if (members.length < 4) {
-      return toast("ต้องมีสมาชิกอย่างน้อย 4 คน");
+    const allMembers = (currentSession && currentSession.members) || [];
+    // คนที่จ่ายเงินแล้ว = ไม่อยู่ใน pool — ใช้เฉพาะคนยังไม่จ่าย
+    const eligibleMembers = allMembers.filter(m => !m.isPaid);
+    if (eligibleMembers.length < 4) {
+      return toast("ต้องมีสมาชิกที่ยังไม่จ่ายอย่างน้อย 4 คน");
     }
 
     try {
       const allMatches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
       const gamesPlayed = {};
       const partnerCount = {};
-      members.forEach(m => {
+      // ใช้ allMembers สำหรับ initialization (เพื่อให้ score คำนวณถูกต้องถ้ามี edge case
+      // ที่คนเคยจ่ายแล้วถูก unmark หลังจัดเกม) — แต่ pool ที่เลือกจะใช้ eligibleMembers
+      allMembers.forEach(m => {
         gamesPlayed[m.id] = 0;
         partnerCount[m.id] = {};
       });
@@ -2053,8 +2059,9 @@ if (autoDraftBtn) {
         }
       });
 
-      const minGames = Math.min(...members.map(m => gamesPlayed[m.id]));
-      const picked = findOptimalAddition(members, [], 4, gamesPlayed, partnerCount, minGames, false);
+      // minGames คำนวณเฉพาะคนที่ eligible — ไม่งั้นคนจ่ายแล้วที่เล่นน้อยจะดึง balance ผิด
+      const minGames = Math.min(...eligibleMembers.map(m => gamesPlayed[m.id]));
+      const picked = findOptimalAddition(eligibleMembers, [], 4, gamesPlayed, partnerCount, minGames, false);
 
       if (picked && picked.length === 4) {
         matchDraftPlayers = picked;
