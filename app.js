@@ -1394,7 +1394,27 @@ $("btnCopyDueList").addEventListener("click", () => {
 function renderMembers() {
   const list = $("membersList");
   const members = currentSession.members || [];
-  $("memberCount").textContent = members.length;
+  // แสดงเป็น "ยังไม่จ่าย/ทั้งหมด" — เช่น 8/11
+  // - ยังไม่มีสมาชิก หรือยังไม่มีใครจ่าย → ตัวเลขเดียว
+  // - มีคนจ่ายบางส่วน → "unpaid/total"
+  // - ทุกคนจ่ายครบ → แสดงตัวเลขเต็ม + " All Paid" ข้าง parens
+  const unpaidCount = members.filter(m => !m.isPaid).length;
+  const anyPaid = members.some(m => m.isPaid);
+  let memberCountText;
+  let statusText = "";
+  if (members.length === 0) {
+    memberCountText = "0";
+  } else if (unpaidCount === 0) {
+    memberCountText = String(members.length);
+    statusText = "All Paid ✓";
+  } else if (anyPaid) {
+    memberCountText = `${unpaidCount}/${members.length}`;
+  } else {
+    memberCountText = String(members.length);
+  }
+  $("memberCount").textContent = memberCountText;
+  const memberStatusEl = $("memberStatus");
+  if (memberStatusEl) memberStatusEl.textContent = statusText;
 
   if (members.length === 0) {
     list.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีสมาชิก เพิ่มคนแรกได้เลย</p>`;
