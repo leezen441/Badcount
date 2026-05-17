@@ -1590,35 +1590,61 @@ function renderMatches() {
   const membersMap = {};
   (currentSession.members || []).forEach(m => membersMap[m.id] = m.name);
 
-  list.innerHTML = matches.map((m, idx) => `
-    <div class="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+  list.innerHTML = matches.map((m, idx) => {
+    const finished = !!m.finished;
+    // เกมที่ "จบแล้ว" → จางลง + ขีดทับเล็กน้อย เพื่อให้รู้ว่าผ่านไปแล้ว
+    const rowBgClass = finished
+      ? "bg-emerald-50/40 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/30 opacity-70"
+      : "bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800";
+    const titleClass = finished
+      ? "text-slate-400 dark:text-slate-500 line-through"
+      : "text-slate-700 dark:text-slate-300";
+    const playersClass = finished
+      ? "text-emerald-700/60 dark:text-emerald-400/60"
+      : "text-emerald-700 dark:text-emerald-400";
+
+    // Checkbox สำหรับ "เกมนี้จบแล้ว"
+    const finishedCheckbox = finished
+      ? `<button data-match-finish="${m.id}" class="w-6 h-6 shrink-0 rounded-md bg-emerald-500 border border-emerald-500 text-white flex items-center justify-center transition-colors" title="เกมนี้จบแล้ว — กดเพื่อยกเลิก">
+           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+           </svg>
+         </button>`
+      : `<button data-match-finish="${m.id}" class="w-6 h-6 shrink-0 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:border-emerald-400 flex items-center justify-center transition-colors" title="กดเมื่อเกมนี้จบแล้ว">
+         </button>`;
+
+    return `
+    <div class="${rowBgClass} p-3 rounded-xl border flex items-start justify-between gap-3 transition-colors">
       <div class="flex-1 text-sm min-w-0">
-        <div class="flex justify-between items-center mb-1">
-          <div class="font-bold text-slate-700 dark:text-slate-300">เกมที่ ${idx + 1}</div>
-          ${m.shuttleNumbers ? `<div class="bg-emerald-100 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>` : ''}
+        <div class="flex justify-between items-center mb-1 gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <button data-match-del="${m.id}" class="text-slate-300 dark:text-slate-600 hover:text-red-500 px-1 text-lg leading-none shrink-0" title="ลบเกมนี้">&times;</button>
+            <div class="font-bold ${titleClass}">เกมที่ ${idx + 1}</div>
+          </div>
+          ${m.shuttleNumbers ? `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>` : ''}
         </div>
-        <div class="text-emerald-700 font-medium text-xs leading-relaxed">
+        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7">
           ${(m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean)).map(pid => escapeHtml(membersMap[pid] || '?')).join(", ")}
         </div>
       </div>
-      <div class="flex flex-col items-center gap-1">
-        <button data-match-edit="${m.id}" class="text-slate-400 hover:text-emerald-600 px-1 text-sm">✏️</button>
-        <button data-match-del="${m.id}" class="text-slate-300 hover:text-red-500 px-1 py-0.5 text-xl leading-none">&times;</button>
+      <div class="flex flex-col items-center gap-1.5">
+        <button data-match-edit="${m.id}" class="text-slate-400 hover:text-emerald-600 px-1 text-sm" title="แก้ไขเกม">✏️</button>
+        ${finishedCheckbox}
       </div>
     </div>
-  `).join("");
+  `}).join("");
 
   list.querySelectorAll("button[data-match-edit]").forEach(btn => {
     btn.addEventListener("click", () => {
       const matchId = btn.dataset.matchEdit;
       const match = (currentSession.matches || []).find(x => x.id === matchId);
       if (!match) return;
-      
+
       editingMatchId = matchId;
       matchDraftPlayers = [...(match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean))];
       $("fldMatchShuttles").value = match.shuttleNumbers || "";
       $("matchModalTitle").textContent = "✏️ แก้ไขเกม";
-      
+
       renderMatchDraft();
       $("matchModal").classList.remove("hidden");
     });
@@ -1628,6 +1654,17 @@ function renderMatches() {
     btn.addEventListener("click", () => {
       if (!confirm("ลบเกมนี้?")) return;
       const newMatches = (currentSession.matches || []).filter(x => x.id !== btn.dataset.matchDel);
+      saveSession({ matches: newMatches });
+    });
+  });
+
+  // Checkbox "เกมนี้จบแล้ว" → toggle field `finished` ของเกมนั้น
+  list.querySelectorAll("button[data-match-finish]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const matchId = btn.dataset.matchFinish;
+      const newMatches = (currentSession.matches || []).map(m =>
+        m.id === matchId ? { ...m, finished: !m.finished } : m
+      );
       saveSession({ matches: newMatches });
     });
   });
