@@ -1854,12 +1854,52 @@ function findOptimalAddition(availableMembers, fixedIds, slotsNeeded, gamesPlaye
   }
 }
 
+// อัปเดต info badges ใน header ของ match modal — เกมที่ X + ลูกล่าสุด #Y
+function updateMatchModalInfo() {
+  const allMatches = currentSession?.matches || [];
+
+  // คำนวณ "เกมที่ X"
+  // - สร้างใหม่ → matches.length + 1
+  // - แก้ไข → index ของเกมนั้น + 1
+  let gameNum;
+  if (editingMatchId) {
+    const idx = allMatches.findIndex(m => m.id === editingMatchId);
+    gameNum = idx >= 0 ? idx + 1 : allMatches.length;
+  } else {
+    gameNum = allMatches.length + 1;
+  }
+  const gameNumEl = $("matchModalGameNum");
+  if (gameNumEl) gameNumEl.textContent = gameNum;
+
+  // หาเบอร์ลูกล่าสุดที่เคยใช้ (max number ในเกมทั้งหมด ยกเว้นเกมที่กำลังแก้)
+  const otherMatches = allMatches.filter(m => m.id !== editingMatchId);
+  let maxShuttle = null;
+  otherMatches.forEach(m => {
+    const nums = listShuttleNumbers(m.shuttleNumbers || "");
+    nums.forEach(n => {
+      if (maxShuttle === null || n > maxShuttle) maxShuttle = n;
+    });
+  });
+
+  const lastShuttleWrap = $("matchModalLastShuttle");
+  const lastShuttleNumEl = $("matchModalLastShuttleNum");
+  if (maxShuttle !== null && lastShuttleWrap && lastShuttleNumEl) {
+    lastShuttleNumEl.textContent = maxShuttle;
+    lastShuttleWrap.classList.remove("hidden");
+  } else {
+    lastShuttleWrap?.classList.add("hidden");
+  }
+}
+
 function renderMatchDraft() {
   const allMembers = currentSession.members || [];
   const selectedDiv = $("selectedPlayers");
   const availableDiv = $("availablePlayers");
 
   $("selPlayerCount").textContent = matchDraftPlayers.length;
+
+  // อัปเดต header info ทุกครั้งที่ render
+  updateMatchModalInfo();
 
   // ----- Compute stats (ยกเว้นเกมที่กำลังแก้ไข) -----
   const matches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
