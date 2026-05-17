@@ -2733,8 +2733,6 @@ async function setupJoinView(id) {
       const closedBanner = $("joinClosedBanner");
       const paySection = $("joinPaymentSection");
       const totalDueBox = $("joinTotalDueBox");
-      const qrWrap = $("joinQRWrap");
-      const qrImg = $("joinQRImg");
       const formSection = $("joinFormSection");
       const btnJoinAnother = $("btnJoinAnother");
 
@@ -2750,7 +2748,6 @@ async function setupJoinView(id) {
         if (allPaid) {
           paySection?.classList.add("hidden");
           totalDueBox?.classList.add("hidden");
-          qrWrap?.classList.add("hidden");
           if (closedBanner) {
             closedBanner.textContent = "✅ ปิด Court แล้ว — ทุกคนจ่ายครบ 🎉";
             closedBanner.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
@@ -2758,7 +2755,7 @@ async function setupJoinView(id) {
         } else {
           paySection?.classList.remove("hidden");
           if (closedBanner) {
-            closedBanner.textContent = "🔒 ปิดแล้ว — ดูยอดที่ต้องจ่ายและ QR โอนเงินด้านล่าง";
+            closedBanner.textContent = "🔒 ปิดแล้ว — กดปุ่ม 💰 จ่ายเงิน ที่ชื่อของคุณเพื่อดู QR";
             closedBanner.className = "bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl mb-4 text-center text-sm font-semibold";
           }
           if (unpaidCount > 0) {
@@ -2766,12 +2763,6 @@ async function setupJoinView(id) {
             $("joinUnpaidCount").textContent = unpaidCount;
           } else {
             totalDueBox?.classList.add("hidden");
-          }
-          if (s.bankQR && qrImg && qrWrap) {
-            qrImg.src = s.bankQR;
-            qrWrap.classList.remove("hidden");
-          } else {
-            qrWrap?.classList.add("hidden");
           }
         }
       }
@@ -2785,17 +2776,15 @@ async function setupJoinView(id) {
         // ซ่อน form + ปุ่มลงชื่อให้คนอื่น
         formSection?.classList.add("hidden");
         btnJoinAnother?.classList.add("hidden");
-        // ไม่แสดงยอด/QR (Court ยังเปิดอยู่)
+        // ไม่แสดงยอด (Court ยังเปิดอยู่)
         paySection?.classList.add("hidden");
         totalDueBox?.classList.add("hidden");
-        qrWrap?.classList.add("hidden");
       }
       // ===== State 1: เปิดรับ + เปิด Court =====
       else {
         if (closedBanner) closedBanner.classList.add("hidden");
         paySection?.classList.add("hidden");
         totalDueBox?.classList.add("hidden");
-        qrWrap?.classList.add("hidden");
         formSection?.classList.remove("hidden");
         btnJoinAnother?.classList.remove("hidden");
       }
