@@ -543,6 +543,73 @@ window.addEventListener("hashchange", () => {
   route();
 });
 
+// ============================================================
+// REALTIME SYNC RESILIENCE
+// ============================================================
+// แก้ปัญหา onSnapshot ของ Firestore หยุดรับ update เวลาที่:
+//   1. มือถือ freeze tab ที่อยู่ background นาน (เพื่อประหยัด battery)
+//   2. Network drop ชั่วครู่แล้วกลับมา (เช่น cellular handoff)
+//   3. เครื่องเข้า sleep แล้วตื่นมา
+// → เมื่อเหตุการณ์เหล่านี้เกิด ระบบจะ force re-subscribe โดยอัตโนมัติ
+
+let lastVisibleAt = Date.now();
+const RESYNC_HIDDEN_THRESHOLD_MS = 10 * 1000; // 10 วินาที
+
+function forceResyncFirestore(reason = "") {
+  const hash = location.hash || "#/";
+  const parts = hash.replace(/^#\/?/, "").split("/");
+
+  console.log(`[Sync] Force resync${reason ? " — " + reason : ""}`);
+
+  if ((parts[0] === "session" || parts[0] === "m") && parts[1]) {
+    if (unsubscribeSession) { unsubscribeSession(); unsubscribeSession = null; }
+    subscribeSession(parts[1]);
+  } else if (parts[0] === "join" && parts[1]) {
+    if (joinUnsubscribe) { joinUnsubscribe(); joinUnsubscribe = null; }
+    setupJoinView(parts[1]);
+  } else if (parts[0] === "" || parts[0] === undefined || parts[0] === "history") {
+    // home / history — re-route จะ refresh list
+    route();
+  }
+}
+
+// เมื่อ tab กลับมา visible หลังจากซ่อนไปนาน → re-subscribe
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    const hiddenDuration = Date.now() - lastVisibleAt;
+    if (hiddenDuration > RESYNC_HIDDEN_THRESHOLD_MS) {
+      forceResyncFirestore(`tab กลับมาหลังหายไป ${Math.round(hiddenDuration / 1000)}s`);
+    }
+  }
+  lastVisibleAt = Date.now();
+});
+
+// เมื่อ network กลับมา online → re-subscribe ทันที
+window.addEventListener("online", () => {
+  forceResyncFirestore("network กลับมา online");
+  toast("🌐 เชื่อมต่ออินเทอร์เน็ตได้แล้ว — กำลังโหลดข้อมูลใหม่");
+});
+
+// แจ้งเตือนเมื่อ offline
+window.addEventListener("offline", () => {
+  toast("⚠️ ไม่มีอินเทอร์เน็ต — ข้อมูลอาจไม่อัปเดต", 4000);
+});
+
+// ปุ่ม 🔄 manual refresh ในหัวเว็บ — ให้ user กดเองได้เมื่อสงสัยว่าข้อมูล stale
+$("btnRefresh")?.addEventListener("click", () => {
+  const btn = $("btnRefresh");
+  // หมุน icon ระหว่าง refresh
+  btn.style.transition = "transform 0.6s";
+  btn.style.transform = "rotate(360deg)";
+  setTimeout(() => {
+    btn.style.transition = "";
+    btn.style.transform = "";
+  }, 600);
+
+  forceResyncFirestore("manual refresh");
+  toast("🔄 โหลดข้อมูลใหม่แล้ว");
+});
+
 // ---------- Back Navigation ----------
 const navBackBtn = $("navBack");
 if (navBackBtn) {
