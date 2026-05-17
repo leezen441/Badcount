@@ -723,6 +723,64 @@
     </div>
   </div>
 
+  <!-- ===== PAYMENT MODAL (Join View — สำหรับสมาชิกจ่ายเงิน) ===== -->
+  <div id="paymentModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">💰 จ่ายค่าก๊วน</h3>
+        <button id="btnClosePaymentModal" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+
+      <!-- Member info -->
+      <div class="bg-emerald-50 dark:bg-emerald-900/30 rounded-xl p-4 mb-4 text-center">
+        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wide font-semibold">ผู้จ่าย</div>
+        <div id="paymentMemberName" class="text-xl font-bold text-emerald-800 dark:text-emerald-200 mt-1">—</div>
+        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wide font-semibold mt-3">ยอดที่ต้องจ่าย</div>
+        <div id="paymentAmount" class="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mt-1">— ฿</div>
+      </div>
+
+      <!-- QR -->
+      <div id="paymentQRWrap" class="hidden bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mb-4 text-center">
+        <div class="text-xs text-slate-500 dark:text-slate-400 mb-2 font-semibold">📱 สแกน QR แล้วใส่ยอดตามด้านบน</div>
+        <img id="paymentQRImg" src="" alt="QR Code" class="w-full max-w-[220px] mx-auto rounded-lg" />
+        <p class="text-[10px] text-slate-400 mt-2">แตะค้างที่รูปเพื่อบันทึก/สแกน</p>
+      </div>
+
+      <!-- No QR fallback -->
+      <div id="paymentNoQR" class="hidden bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 mb-4 text-center">
+        <p class="text-xs text-amber-700 dark:text-amber-300">ผู้จัดยังไม่ได้ตั้ง QR — โอนเงินตามวิธีอื่นแล้วแนบสลิป</p>
+      </div>
+
+      <!-- Upload slip -->
+      <label id="paymentUploadLabel" class="block cursor-pointer">
+        <input type="file" id="paymentSlipInput" accept="image/*" class="hidden" />
+        <div class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3 px-4 rounded-xl text-center font-bold shadow-md transition-transform active:scale-95">
+          📸 แนบสลิปการโอน
+        </div>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2">แนบแล้วระบบจะทำเครื่องหมายจ่ายแล้วทันที</p>
+      </label>
+
+      <div id="paymentUploading" class="hidden text-center py-3 text-sm text-slate-500 dark:text-slate-400">
+        <span class="inline-block animate-pulse">⏳ กำลังบันทึก...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIP VIEWER MODAL (Admin View — ดูสลิปย้อนหลัง) ===== -->
+  <div id="slipViewerModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">🖼️ สลิป — <span id="slipViewerName">—</span></h3>
+        <button id="btnCloseSlipViewer" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      <img id="slipViewerImg" src="" alt="สลิปการโอน" class="w-full rounded-lg" />
+      <div class="flex gap-2 mt-4">
+        <button id="btnCloseSlipViewer2" class="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 py-2.5 rounded-lg font-medium text-sm">ปิด</button>
+        <button id="btnDownloadSlip" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium text-sm">📥 บันทึกรูป</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== STATS MODAL ===== -->
   <div id="statsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 max-w-sm w-full max-h-[90vh] overflow-y-auto flex flex-col">

@@ -1462,7 +1462,13 @@ function renderMembers() {
         </div>
         <div class="font-bold text-lg ${priceColor} whitespace-nowrap ml-2">${fmt(totals.perMember[idx])} ฿</div>
       </div>
-      
+
+      ${m.slipImage ? `
+        <button data-act="view-slip" data-idx="${idx}" class="text-lg shrink-0 px-1 hover:scale-110 transition-transform" title="ดูสลิปการโอนของ ${escapeHtml(m.name)}">
+          🖼️
+        </button>
+      ` : ''}
+
       <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shrink-0">
         <button data-act="dec" data-idx="${idx}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">−</button>
         <div class="w-7 sm:w-10 text-center font-semibold text-sm" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
@@ -1478,8 +1484,16 @@ function renderMembers() {
     btn.addEventListener("click", () => {
       const act = btn.dataset.act;
       const idx = parseInt(btn.dataset.idx, 10);
+
+      // view-slip = action ที่ไม่ได้ modify data → เปิด modal แล้ว return
+      if (act === "view-slip") {
+        const m = (currentSession.members || [])[idx];
+        if (m && m.slipImage) openSlipViewer(m.name, m.slipImage);
+        return;
+      }
+
       const members = [...(currentSession.members || [])];
-      
+
       if (act === "inc") members[idx].shuttlesUsed = (members[idx].shuttlesUsed || 0) + 1;
       else if (act === "dec") members[idx].shuttlesUsed = Math.max(0, (members[idx].shuttlesUsed || 0) - 1);
       else if (act === "toggle-paid") members[idx].isPaid = !members[idx].isPaid;
@@ -1487,7 +1501,7 @@ function renderMembers() {
         if (!confirm(`ลบ "${members[idx].name}" ออกจากก๊วน?`)) return;
         members.splice(idx, 1);
       }
-      
+
       saveSession({ members });
     });
   });
@@ -2220,6 +2234,133 @@ $("btnCloseStats").addEventListener("click", () => $("statsModal").classList.add
 $("statsModal").addEventListener("click", e => { if (e.target.id === "statsModal") $("statsModal").classList.add("hidden"); });
 
 // ============================================================
+// PAYMENT QR + SLIP UPLOAD
+// ============================================================
+
+// ---------- Image compression ----------
+// ย่อรูปด้วย HTML5 Canvas → คืน base64 (JPEG)
+async function compressImage(file, maxWidth = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("อ่านไฟล์ไม่สำเร็จ"));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("โหลดรูปไม่สำเร็จ"));
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---------- Payment Modal (Join View) ----------
+let paymentMemberIdx = null;
+
+function openPaymentModal(memberIdx) {
+  if (!currentSession) return;
+  const members = currentSession.members || [];
+  const m = members[memberIdx];
+  if (!m) return;
+
+  paymentMemberIdx = memberIdx;
+
+  const totals = calcSessionTotals(currentSession);
+  const cost = totals.perMember?.[memberIdx] ?? 0;
+
+  $("paymentMemberName").textContent = m.name || "—";
+  $("paymentAmount").textContent = fmt(cost) + " ฿";
+
+  if (currentSession.bankQR) {
+    $("paymentQRImg").src = currentSession.bankQR;
+    $("paymentQRWrap").classList.remove("hidden");
+    $("paymentNoQR").classList.add("hidden");
+  } else {
+    $("paymentQRWrap").classList.add("hidden");
+    $("paymentNoQR").classList.remove("hidden");
+  }
+
+  $("paymentSlipInput").value = "";
+  $("paymentUploadLabel").classList.remove("hidden");
+  $("paymentUploading").classList.add("hidden");
+  $("paymentModal").classList.remove("hidden");
+}
+
+function closePaymentModal() {
+  $("paymentModal").classList.add("hidden");
+  paymentMemberIdx = null;
+}
+
+$("btnClosePaymentModal")?.addEventListener("click", closePaymentModal);
+$("paymentModal")?.addEventListener("click", (e) => {
+  if (e.target.id === "paymentModal") closePaymentModal();
+});
+
+$("paymentSlipInput")?.addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file || paymentMemberIdx === null || !currentSession || !currentSessionId) return;
+
+  $("paymentUploadLabel").classList.add("hidden");
+  $("paymentUploading").classList.remove("hidden");
+
+  try {
+    const base64 = await compressImage(file, 800, 0.7);
+    // อัปเดต member ตาม idx — ไม่ใช้ index ของ array โดยตรงเพราะอาจเปลี่ยน
+    // ใช้ id ของ member เป็น key ในการ map
+    const targetId = currentSession.members?.[paymentMemberIdx]?.id;
+    const newMembers = (currentSession.members || []).map(m =>
+      m.id === targetId ? { ...m, isPaid: true, slipImage: base64 } : m
+    );
+    await updateDoc(doc(db, "sessions", currentSessionId), {
+      members: newMembers,
+      updatedAt: serverTimestamp()
+    });
+    toast("✓ จ่ายเงินเรียบร้อย");
+    closePaymentModal();
+  } catch (err) {
+    console.error("[Payment] Upload error:", err);
+    toast("เกิดข้อผิดพลาดในการอัปโหลด: " + (err.message || err));
+    $("paymentUploadLabel").classList.remove("hidden");
+    $("paymentUploading").classList.add("hidden");
+  }
+});
+
+// ---------- Slip Viewer Modal (Admin View) ----------
+function openSlipViewer(memberName, slipImage) {
+  $("slipViewerName").textContent = memberName || "—";
+  $("slipViewerImg").src = slipImage || "";
+  $("slipViewerModal").classList.remove("hidden");
+}
+
+function closeSlipViewer() {
+  $("slipViewerModal").classList.add("hidden");
+  $("slipViewerImg").src = "";
+}
+
+$("btnCloseSlipViewer")?.addEventListener("click", closeSlipViewer);
+$("btnCloseSlipViewer2")?.addEventListener("click", closeSlipViewer);
+$("slipViewerModal")?.addEventListener("click", (e) => {
+  if (e.target.id === "slipViewerModal") closeSlipViewer();
+});
+
+$("btnDownloadSlip")?.addEventListener("click", () => {
+  const img = $("slipViewerImg");
+  const name = $("slipViewerName").textContent || "slip";
+  if (!img.src) return;
+  const a = document.createElement("a");
+  a.href = img.src;
+  a.download = `slip_${name}_${Date.now()}.jpg`;
+  a.click();
+});
+
+// ============================================================
 // JOIN VIEW
 // ============================================================
 let joinUnsubscribe = null;
@@ -2371,15 +2512,26 @@ async function setupJoinView(id) {
         if (isClosed) {
           const cost = totals.perMember?.[idx] ?? 0;
           const priceBadge = isPaid
-            ? `<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">✓ จ่ายแล้ว</span>`
-            : `<span class="text-sm font-bold text-rose-600">${fmt(cost)} ฿</span>`;
+            ? `<span class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded">✓ จ่ายแล้ว</span>`
+            : `<span class="text-sm font-bold text-rose-600 dark:text-rose-400">${fmt(cost)} ฿</span>`;
+
+          // ปุ่ม "💰 จ่ายเงิน" — แสดงเฉพาะคนยังไม่จ่าย
+          const payBtn = isPaid ? "" : `
+            <button data-pay-member-idx="${idx}"
+              class="ml-2 shrink-0 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-sm transition-transform active:scale-95">
+              💰 จ่ายเงิน
+            </button>`;
+
           return `
             <li class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 pr-2">
-              <div class="flex items-center gap-2 min-w-0">
+              <div class="flex items-center gap-2 min-w-0 flex-1">
                 <span class="${isPaid ? 'text-emerald-500' : 'text-rose-400'} shrink-0 text-xs">●</span>
                 <span class="${isPaid ? 'text-slate-500 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100 font-medium'} truncate">${escapeHtml(m.name)}</span>
               </div>
-              <div class="text-right shrink-0 ml-2">${priceBadge}</div>
+              <div class="flex items-center shrink-0 ml-2">
+                ${priceBadge}
+                ${payBtn}
+              </div>
             </li>
           `;
         }
@@ -2392,6 +2544,14 @@ async function setupJoinView(id) {
           </li>
         `;
       }).join("");
+
+      // Wire up "💰 จ่ายเงิน" buttons
+      $("joinMembersList").querySelectorAll("button[data-pay-member-idx]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.dataset.payMemberIdx, 10);
+          if (!isNaN(idx)) openPaymentModal(idx);
+        });
+      });
       // --- สิ้นสุด ---
     });
   } catch (e) {
