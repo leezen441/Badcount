@@ -1494,7 +1494,7 @@ function renderMembers() {
       // view-slip = action ที่ไม่ได้ modify data → เปิด modal แล้ว return
       if (act === "view-slip") {
         const m = (currentSession.members || [])[idx];
-        if (m && (m.slipImage || m.slipQR)) openSlipViewer(m.name, m.slipImage, m.slipQR);
+        if (m && (m.slipImage || m.slipQR)) openSlipViewer(m.name, m.slipImage, m.slipQR, m.slipQRAmount);
         return;
       }
 
@@ -2280,6 +2280,33 @@ async function decodeQRFromFile(file) {
   });
 }
 
+// Parse EMVCo TLV string เพื่อหายอดเงิน (tag 54)
+// คืน number ถ้าเจอ, null ถ้าไม่ใช่ format นี้หรือไม่มี tag 54
+function parseAmountFromEMVQR(qrString) {
+  if (!qrString || typeof qrString !== "string") return null;
+  // EMVCo TLV ต้องเริ่มด้วย "0002" (Payload Format Indicator tag) + "01" (value length=2)
+  // ตามด้วย "01" (value = format version)
+  if (!/^00020[12]/.test(qrString)) return null;
+
+  let pos = 0;
+  let safetyCounter = 0;
+  while (pos < qrString.length - 4 && safetyCounter < 100) {
+    safetyCounter++;
+    const tag = qrString.substr(pos, 2);
+    const lenStr = qrString.substr(pos + 2, 2);
+    const len = parseInt(lenStr, 10);
+    if (isNaN(len) || len < 0) break;
+    const value = qrString.substr(pos + 4, len);
+    if (tag === "54") {
+      // tag 54 = Transaction Amount
+      const amount = parseFloat(value);
+      return isNaN(amount) ? null : amount;
+    }
+    pos += 4 + len;
+  }
+  return null;
+}
+
 // อ่าน QR จาก video frame (live camera scan)
 function decodeQRFromVideoFrame(video, canvas) {
   if (typeof window.jsQR !== "function") return null;
@@ -2373,10 +2400,23 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
     // 1) decode QR จากไฟล์ "ต้นฉบับ" (ก่อน compress) — ความละเอียดเต็มอ่านง่ายกว่า
     const qrData = await decodeQRFromFile(file);
 
-    // 2) compress เพื่อบันทึก
-    const base64 = await compressImage(file, 800, 0.7);
+    // 2) เช็คยอดเงินจาก QR (EMVCo tag 54)
+    const totals = calcSessionTotals(currentSession);
+    const expectedAmount = totals.perMember?.[paymentMemberIdx] ?? 0;
+    const qrAmount = parseAmountFromEMVQR(qrData);
 
-    // ถ้าไม่พบ QR ในรูป → confirm กับ user
+    // ตรวจสอบ 3 case:
+    // (a) QR มียอด + ยอดไม่ตรง → Reject ทันที
+    // (b) QR ไม่มียอด → confirm กับ user
+    // (c) QR มียอด + ตรง → ผ่านอัตโนมัติ
+    if (qrAmount !== null && Math.abs(qrAmount - expectedAmount) > 0.01) {
+      alert(`❌ ยอดเงินในสลิปไม่ตรง\n\n• ยอดในสลิป: ${qrAmount.toFixed(2)} ฿\n• ยอดที่ต้องจ่าย: ${expectedAmount.toFixed(2)} ฿\n\nกรุณาตรวจสอบและส่งสลิปที่ถูกต้อง`);
+      $("paymentUploadLabel").classList.remove("hidden");
+      $("paymentUploading").classList.add("hidden");
+      $("paymentSlipInput").value = "";
+      return;
+    }
+
     if (!qrData) {
       const proceed = confirm("⚠️ ไม่พบ QR Code ในรูปนี้\n\nอาจเป็นเพราะ:\n• รูปไม่ใช่สลิป\n• QR เบลอ/ไม่ชัด\n• สลิปไม่มี QR (ธนาคารบางที่)\n\nยืนยันส่งสลิปนี้?");
       if (!proceed) {
@@ -2385,13 +2425,31 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
         $("paymentSlipInput").value = "";
         return;
       }
+    } else if (qrAmount === null) {
+      // มี QR แต่ไม่มียอด (URL หรือ format อื่น) — confirm
+      const proceed = confirm(`⚠️ พบ QR แต่อ่านยอดเงินไม่ได้\n\n(สลิปบางธนาคารใส่แค่ link/reference ไม่ใส่ยอด)\n\nคุณยืนยันว่าโอน ${expectedAmount.toFixed(2)} ฿ ถูกต้องแล้ว?`);
+      if (!proceed) {
+        $("paymentUploadLabel").classList.remove("hidden");
+        $("paymentUploading").classList.add("hidden");
+        $("paymentSlipInput").value = "";
+        return;
+      }
     }
 
-    // 3) อัปเดต member ผ่าน id (ไม่ใช่ idx) เพื่อกัน race condition
+    // 3) compress เพื่อบันทึก
+    const base64 = await compressImage(file, 800, 0.7);
+
+    // 4) อัปเดต member ผ่าน id (ไม่ใช่ idx) เพื่อกัน race condition
     const targetId = currentSession.members?.[paymentMemberIdx]?.id;
     const newMembers = (currentSession.members || []).map(m =>
       m.id === targetId
-        ? { ...m, isPaid: true, slipImage: base64, slipQR: qrData || null }
+        ? {
+            ...m,
+            isPaid: true,
+            slipImage: base64,
+            slipQR: qrData || null,
+            slipQRAmount: qrAmount !== null ? qrAmount : null
+          }
         : m
     );
     await updateDoc(doc(db, "sessions", currentSessionId), {
@@ -2399,7 +2457,13 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
       updatedAt: serverTimestamp()
     });
 
-    toast(qrData ? "✓ จ่ายเงินเรียบร้อย (พบ QR ✓)" : "✓ จ่ายเงินเรียบร้อย");
+    if (qrAmount !== null) {
+      toast(`✓ จ่ายเงินเรียบร้อย (ยอดตรง ${qrAmount.toFixed(2)} ฿ ✓)`);
+    } else if (qrData) {
+      toast("✓ จ่ายเงินเรียบร้อย (พบ QR ✓)");
+    } else {
+      toast("✓ จ่ายเงินเรียบร้อย");
+    }
     closePaymentModal();
   } catch (err) {
     console.error("[Payment] Upload error:", err);
@@ -2410,7 +2474,7 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
 });
 
 // ---------- Slip Viewer Modal (Admin View) ----------
-function openSlipViewer(memberName, slipImage, slipQR) {
+function openSlipViewer(memberName, slipImage, slipQR, slipQRAmount) {
   $("slipViewerName").textContent = memberName || "—";
   const imgEl = $("slipViewerImg");
   if (slipImage) {
@@ -2429,9 +2493,13 @@ function openSlipViewer(memberName, slipImage, slipQR) {
     imgEl.parentNode.insertBefore(qrInfoEl, imgEl.nextSibling);
   }
   if (slipQR) {
+    const amountBadge = (slipQRAmount !== null && slipQRAmount !== undefined)
+      ? `<div class="mb-2 inline-block bg-emerald-200 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100 px-2 py-1 rounded font-bold text-sm">💰 ยอดในสลิป: ${Number(slipQRAmount).toFixed(2)} ฿ ✓</div>`
+      : "";
     qrInfoEl.innerHTML = `
       <div class="font-bold text-emerald-700 dark:text-emerald-300 mb-1.5">🔍 ข้อมูล QR ที่อ่านได้</div>
-      <div class="font-mono text-emerald-900 dark:text-emerald-200">${escapeHtml(slipQR)}</div>
+      ${amountBadge}
+      <div class="font-mono text-emerald-900 dark:text-emerald-200 text-[10px]">${escapeHtml(slipQR)}</div>
       <div class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">💡 ใช้ link/code นี้เช็คกับธนาคารเพื่อ verify สลิป</div>`;
     qrInfoEl.classList.remove("hidden");
   } else {
@@ -2540,19 +2608,45 @@ async function handleCameraQRDetected(qrData) {
     return;
   }
 
-  $("cameraScanStatus").textContent = `✓ พบ QR! กำลังบันทึก...`;
+  // เช็คยอดเงินจาก QR
+  const memberIdx = (currentSession.members || []).findIndex(m => m.id === cameraScanTargetId);
+  const totals = calcSessionTotals(currentSession);
+  const expectedAmount = totals.perMember?.[memberIdx] ?? 0;
+  const qrAmount = parseAmountFromEMVQR(qrData);
 
+  // กรณียอดไม่ตรง — ขอ confirm จาก admin (เพราะ admin scan เอง สามารถตัดสินใจได้)
+  if (qrAmount !== null && Math.abs(qrAmount - expectedAmount) > 0.01) {
+    closeCameraScan();
+    const proceed = confirm(`⚠️ ยอดเงินไม่ตรง\n\n• ยอดในสลิป: ${qrAmount.toFixed(2)} ฿\n• ยอดที่ต้องจ่าย: ${expectedAmount.toFixed(2)} ฿\n\nยืนยันรับชำระจาก ${member.name} หรือไม่?`);
+    if (!proceed) {
+      toast("ยกเลิก — ยอดไม่ตรง");
+      return;
+    }
+    // admin ยืนยันแล้ว → ดำเนินการต่อ
+    await saveCameraScanResult(member, qrData, qrAmount);
+    return;
+  }
+
+  $("cameraScanStatus").textContent = qrAmount !== null
+    ? `✓ พบ QR — ยอด ${qrAmount.toFixed(2)} ฿ ตรง! กำลังบันทึก...`
+    : `✓ พบ QR! กำลังบันทึก...`;
+
+  await saveCameraScanResult(member, qrData, qrAmount);
+}
+
+async function saveCameraScanResult(member, qrData, qrAmount) {
   try {
     const newMembers = (currentSession.members || []).map(m =>
-      m.id === cameraScanTargetId
-        ? { ...m, isPaid: true, slipQR: qrData }
+      m.id === member.id
+        ? { ...m, isPaid: true, slipQR: qrData, slipQRAmount: qrAmount !== null ? qrAmount : null }
         : m
     );
     await updateDoc(doc(db, "sessions", currentSessionId), {
       members: newMembers,
       updatedAt: serverTimestamp()
     });
-    toast(`✓ ${member.name} จ่ายแล้ว (สแกน QR สำเร็จ)`);
+    const amountMsg = qrAmount !== null ? ` · ยอด ${qrAmount.toFixed(2)} ฿ ✓` : "";
+    toast(`✓ ${member.name} จ่ายแล้ว${amountMsg}`);
     closeCameraScan();
   } catch (err) {
     console.error("[CameraScan] Save error:", err);
