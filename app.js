@@ -2622,6 +2622,11 @@ function hasValidTempManagerPin(sessionId) {
   return exp > Date.now();
 }
 
+// เช็คว่าตอนนี้ user กำลังดู session ผ่าน manager link หรือไม่
+function isInManagerLinkView() {
+  return (location.hash || "").startsWith("#/m/");
+}
+
 function updateTempPinDisplay() {
   const s = currentSession;
   const display = $("tempPinSmallDisplay");
@@ -2635,6 +2640,22 @@ function updateTempPinDisplay() {
     display.classList.remove("hidden");
     $("tempPinValueSmall").textContent = pin;
     $("tempPinExpirySmall").textContent = formatExpiry(expiresAt);
+
+    // ใน manager link view — ห้าม reset PIN
+    const inMgrView = isInManagerLinkView();
+    const resetIcon = $("tempPinResetIcon");
+    display.disabled = inMgrView;
+    if (inMgrView) {
+      display.classList.remove("cursor-pointer", "hover:bg-indigo-100", "dark:hover:bg-indigo-800/40", "active:scale-95");
+      display.classList.add("cursor-default");
+      display.title = "PIN สำหรับ Temp Manager (ดูได้อย่างเดียว)";
+      if (resetIcon) resetIcon.classList.add("hidden");
+    } else {
+      display.classList.add("cursor-pointer", "hover:bg-indigo-100", "dark:hover:bg-indigo-800/40", "active:scale-95");
+      display.classList.remove("cursor-default");
+      display.title = "กดเพื่อรีเซ็ต PIN ใหม่";
+      if (resetIcon) resetIcon.classList.remove("hidden");
+    }
   } else {
     display.classList.add("hidden");
   }
@@ -2694,6 +2715,8 @@ $("btnShare").addEventListener("click", async () => {
 // ---------- Click ตัว PIN counter → Reset PIN ใหม่ ----------
 $("tempPinSmallDisplay")?.addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
+  // Manager link view ห้าม reset
+  if (isInManagerLinkView()) return;
   const s = currentSession;
   const currentPin = s.tempManagerPin;
   if (!currentPin) return;
