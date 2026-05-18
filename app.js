@@ -7,7 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc,
-  deleteDoc, onSnapshot, query, orderBy, limit, getDocs, serverTimestamp
+  deleteDoc, onSnapshot, query, orderBy, limit, getDocs, serverTimestamp,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -1956,9 +1957,28 @@ function renderMembers() {
   });
 }
 
+// 🚀 Memoize cache — เก็บผล calcTotals ถ้าข้อมูลไม่เปลี่ยน
+let __calcTotalsCache = { key: null, result: null };
+
+function __makeTotalsKey(s) {
+  if (!s) return "";
+  // สร้าง fingerprint แบบเร็ว (ไม่ใช้ JSON.stringify เพราะช้า)
+  const mems = s.members || [];
+  const mKey = mems.map(m => `${m.id}|${m.shuttlesUsed || 0}|${m.isPaid ? 1 : 0}`).join(";");
+  const matchKey = (s.matches || []).map(m => `${m.id}:${m.shuttleNumbers || ""}`).join(",");
+  return `${s.courtFee}|${s.courtFeeType}|${s.shuttlePrice}|${s.otherCost}|${s.otherCostType}|${mKey}|${matchKey}`;
+}
+
 function calcTotals(sessionObj) {
   const s = sessionObj || currentSession;
   if (!s) return { totalShuttles: 0, totalShuttleCost: 0, totalCourtCost: 0, totalOtherCost: 0, totalAll: 0, perMember: [], matchShuttlesMap: {} };
+
+  // 🚀 Memoize: ถ้าข้อมูลไม่เปลี่ยน → คืน cache ทันที (ไม่คำนวณซ้ำ)
+  const key = __makeTotalsKey(s);
+  if (key === __calcTotalsCache.key && __calcTotalsCache.result) {
+    return __calcTotalsCache.result;
+  }
+
   const members = s.members || [];
   const matches = s.matches || [];
   const N = members.length;
@@ -2001,7 +2021,9 @@ function calcTotals(sessionObj) {
   
   const totalAll = totalCourtCost + totalShuttleCost + totalOtherCost;
 
-  return { totalShuttles, totalShuttleCost, totalCourtCost, totalOtherCost, totalAll, perMember, matchShuttlesMap };
+  const result = { totalShuttles, totalShuttleCost, totalCourtCost, totalOtherCost, totalAll, perMember, matchShuttlesMap };
+  __calcTotalsCache = { key, result };
+  return result;
 }
 
 function renderSummary() {
@@ -2876,7 +2898,7 @@ function renderMatchDraft() {
             return `<span class="${color} px-1.5 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap">${escapeHtml(partnerName)}·${cnt}</span>`;
           })
           .join('');
-        partnerHtml = `<span class="flex items-center gap-1 flex-wrap pl-2 ml-1 border-l border-slate-200 dark:border-slate-700">${pills}</span>`;
+        partnerHtml = `<div class="flex flex-wrap items-center gap-1 w-full pl-8 mt-1.5">${pills}</div>`;
       }
 
       const rowClass = isTop
@@ -2894,29 +2916,31 @@ function renderMatchDraft() {
         : '';
 
       return `
-        <div class="w-full px-3 py-2 flex flex-wrap items-center justify-between gap-1 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${rowClass}">
-          <button data-draft-id="${m.id}" class="flex-1 text-left flex items-center gap-2 min-w-0 py-1">
-            ${rankBadge}
-            <span class="${nameClass} truncate">${escapeHtml(m.name)}</span>
-            ${(() => {
-              const buddy = m.buddyId 
-                ? allMembers.find(x => x.id === m.buddyId) 
-                : allMembers.find(x => x.buddyId === m.id);
-              if (buddy) {
-                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
-              }
-              return "";
-            })()}
-          </button>
-          
-          <div class="flex items-center gap-1.5 shrink-0">
-            ${editSkillBadge}
+        <div class="w-full px-3 py-2 flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${rowClass}">
+          <div class="w-full flex items-center justify-between gap-2">
+            <button data-draft-id="${m.id}" class="flex-1 text-left flex items-center gap-2 min-w-0 py-1">
+              ${rankBadge}
+              <span class="${nameClass} truncate">${escapeHtml(m.name)}</span>
+              ${(() => {
+                const buddy = m.buddyId 
+                  ? allMembers.find(x => x.id === m.buddyId) 
+                  : allMembers.find(x => x.buddyId === m.id);
+                if (buddy) {
+                  return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
+                }
+                return "";
+              })()}
+            </button>
             
-            <span class="flex items-center gap-0.5 text-xs text-slate-400">
-              <span>🏸</span>
-              <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums w-4 text-right">${games}</span>
-            </span>
-            <span class="flex items-center text-xs shrink-0">${restHtml}</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${editSkillBadge}
+              
+              <span class="flex items-center gap-0.5 text-xs text-slate-400">
+                <span>🏸</span>
+                <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums w-4 text-right">${games}</span>
+              </span>
+              <span class="flex items-center text-xs shrink-0">${restHtml}</span>
+            </div>
           </div>
           ${partnerHtml}
         </div>
@@ -3303,7 +3327,19 @@ async function compressImage(file, maxWidth = 800, quality = 0.7) {
         canvas.height = Math.round(img.height * scale);
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+
+        // 🚀 Adaptive compression — ถ้ายังใหญ่เกิน 700KB → ลด quality ไปเรื่อยๆ
+        const TARGET_SIZE = 700 * 1024;  // 700KB
+        const MIN_QUALITY = 0.3;
+        let currentQuality = quality;
+        let dataUrl = canvas.toDataURL("image/jpeg", currentQuality);
+
+        // ขนาด data URL ≈ base64 size * 0.75 ~= file size
+        while (dataUrl.length * 0.75 > TARGET_SIZE && currentQuality > MIN_QUALITY) {
+          currentQuality = Math.max(MIN_QUALITY, currentQuality - 0.1);
+          dataUrl = canvas.toDataURL("image/jpeg", currentQuality);
+        }
+        resolve(dataUrl);
       };
       img.src = e.target.result;
     };
