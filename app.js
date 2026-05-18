@@ -17,6 +17,137 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SESSIONS = collection(db, "sessions");
 
+// ============================================================
+// 💰 PromptPay Dynamic QR — EMVCo Standard (Thailand)
+// ============================================================
+// สร้าง payload สำหรับ QR Code ที่ lock ยอดเงิน
+// Usage: generatePromptPayPayload("0812345678", { amount: 150, type: "phone" })
+
+function generatePromptPayPayload(promptpayId, opts = {}) {
+  const { amount, type = "auto" } = opts;
+  if (!promptpayId) return null;
+
+  const cleanId = String(promptpayId).replace(/\D/g, "");
+  if (!cleanId) return null;
+
+  // Detect type or use explicit
+  let merchantTag, merchantValue;
+  const isPhone = type === "phone" || (type === "auto" && cleanId.length === 10);
+  const isId    = type === "id"    || (type === "auto" && cleanId.length === 13);
+
+  if (isPhone) {
+    merchantTag = "01";
+    // Phone: drop leading 0, prefix "0066" (country code 66 + 00 padding)
+    const phoneDigits = cleanId.startsWith("0") ? cleanId.substring(1) : cleanId;
+    merchantValue = "0066" + phoneDigits;
+    if (merchantValue.length !== 13) return null;
+  } else if (isId) {
+    merchantTag = "02";
+    merchantValue = cleanId;
+    if (merchantValue.length !== 13) return null;
+  } else {
+    return null;
+  }
+
+  const tlv = (tag, value) => tag + String(value.length).padStart(2, "0") + value;
+  const merchantAccount = tlv("00", "A000000677010111") + tlv(merchantTag, merchantValue);
+
+  const parts = [
+    tlv("00", "01"),
+    tlv("01", amount > 0 ? "12" : "11"),
+    tlv("29", merchantAccount),
+    tlv("53", "764"),
+  ];
+  if (amount && amount > 0) parts.push(tlv("54", Number(amount).toFixed(2)));
+  parts.push(tlv("58", "TH"));
+
+  const crc16 = (data) => {
+    let crc = 0xFFFF;
+    for (let i = 0; i < data.length; i++) {
+      crc ^= data.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) {
+        crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+        crc &= 0xFFFF;
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, "0");
+  };
+
+  const payloadBeforeCrc = parts.join("") + "6304";
+  return payloadBeforeCrc + crc16(payloadBeforeCrc);
+}
+
+// Render PromptPay QR onto canvas — returns Promise<dataURL>
+async function renderPromptPayQR(canvas, promptpayId, amount, type = "auto") {
+  const payload = generatePromptPayPayload(promptpayId, { amount, type });
+  if (!payload) {
+    console.error("[PromptPay] Invalid ID — must be 10-digit phone or 13-digit ID");
+    return null;
+  }
+  return new Promise((resolve, reject) => {
+    if (typeof QRCode === "undefined") {
+      reject(new Error("qrcode.js not loaded"));
+      return;
+    }
+    QRCode.toCanvas(canvas, payload, { width: 280, margin: 2, errorCorrectionLevel: "M" }, (err) => {
+      if (err) reject(err);
+      else resolve(canvas.toDataURL("image/png"));
+    });
+  });
+}
+
+// ============================================================
+// 📁 Receipts Subcollection (sessions/{id}/receipts/{memberId})
+// ============================================================
+// แยกออกจาก main session document — กันชน 1MB limit
+// Auto-delete หลัง 30 วัน ตอนโหลด
+
+const RECEIPT_TTL_MS = 30 * 24 * 60 * 60 * 1000;  // 30 วัน
+
+async function saveReceipt(sessionId, memberId, imageDataUrl) {
+  if (!sessionId || !memberId || !imageDataUrl) return false;
+  try {
+    const ref = doc(db, "sessions", sessionId, "receipts", memberId);
+    await setDoc(ref, {
+      imageBase64: imageDataUrl,
+      uploadedAt: Date.now(),
+      autoDeleteAt: Date.now() + RECEIPT_TTL_MS
+    });
+    return true;
+  } catch (err) {
+    console.error("[Receipt] save failed:", err);
+    return false;
+  }
+}
+
+async function getReceipt(sessionId, memberId) {
+  if (!sessionId || !memberId) return null;
+  try {
+    const ref = doc(db, "sessions", sessionId, "receipts", memberId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    // Auto-delete ถ้าเก่ากว่า 30 วัน
+    if (data.autoDeleteAt && data.autoDeleteAt < Date.now()) {
+      deleteDoc(ref).catch(() => {});
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.warn("[Receipt] read failed:", err);
+    return null;
+  }
+}
+
+async function deleteReceipt(sessionId, memberId) {
+  if (!sessionId || !memberId) return;
+  try {
+    await deleteDoc(doc(db, "sessions", sessionId, "receipts", memberId));
+  } catch (err) {
+    console.warn("[Receipt] delete failed:", err);
+  }
+}
+
 // ---------- App State ----------
 let currentSessionId = null;
 let currentSession = null;
