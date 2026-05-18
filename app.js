@@ -1869,11 +1869,11 @@ function renderMembers() {
           </button>
           ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
           ${(() => {
-            if (m.buddyId) {
-              const buddy = members.find(x => x.id === m.buddyId);
-              if (buddy) {
-                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
-              }
+            const buddy = m.buddyId 
+              ? members.find(x => x.id === m.buddyId) 
+              : members.find(x => x.buddyId === m.id);
+            if (buddy) {
+              return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
             }
             return "";
           })()}
@@ -2496,14 +2496,19 @@ function scoreMatchCombo(ids, gamesPlayed, partnerCount, minGames, opts) {
   if (opts && opts.members && n === 4) {
     ids.forEach(id => {
       const m = (opts.members || []).find(x => x.id === id);
-      if (m && m.buddyId) {
-        // m has a buddy. Check if the buddy is registered in this session and NOT paid (eligible to play)
-        const buddyExists = (opts.members || []).some(x => x.id === m.buddyId && !x.isPaid);
-        if (buddyExists) {
-          const buddyInCombo = ids.includes(m.buddyId);
-          if (!buddyInCombo) {
-            // One buddy is selected but the other is left behind on the bench!
-            buddyImbalance += 10; // add a penalty to avoid splitting buddies
+      if (m) {
+        const buddyId = m.buddyId 
+          ? m.buddyId 
+          : (opts.members || []).find(x => x.buddyId === m.id)?.id || null;
+        if (buddyId) {
+          // m has a buddy. Check if the buddy is registered in this session and NOT paid (eligible to play)
+          const buddyExists = (opts.members || []).some(x => x.id === buddyId && !x.isPaid);
+          if (buddyExists) {
+            const buddyInCombo = ids.includes(buddyId);
+            if (!buddyInCombo) {
+              // One buddy is selected but the other is left behind on the bench!
+              buddyImbalance += 10; // add a penalty to avoid splitting buddies
+            }
           }
         }
       }
@@ -2899,11 +2904,11 @@ function renderMatchDraft() {
             ${rankBadge}
             <span class="${nameClass} truncate">${escapeHtml(m.name)}</span>
             ${(() => {
-              if (m.buddyId) {
-                const buddy = allMembers.find(x => x.id === m.buddyId);
-                if (buddy) {
-                  return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
-                }
+              const buddy = m.buddyId 
+                ? allMembers.find(x => x.id === m.buddyId) 
+                : allMembers.find(x => x.buddyId === m.id);
+              if (buddy) {
+                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
               }
               return "";
             })()}
@@ -3875,11 +3880,11 @@ async function setupJoinView(id) {
         const badgeSkill = m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold rounded shrink-0">${m.skill}</span>` : '';
         
         let badgeBuddy = '';
-        if (m.buddyId) {
-          const buddyMember = mems.find(x => x.id === m.buddyId);
-          if (buddyMember) {
-            badgeBuddy = `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddyMember.name)}</span>`;
-          }
+        const buddyMember = m.buddyId 
+          ? mems.find(x => x.id === m.buddyId) 
+          : mems.find(x => x.buddyId === m.id);
+        if (buddyMember) {
+          badgeBuddy = `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddyMember.name)}</span>`;
         }
 
         if (isClosed) {
@@ -5420,7 +5425,7 @@ function openPlayerSettingsModal(idx, isAdminView) {
   editingPlayerIdx = idx;
   editingPlayerIsAdmin = isAdminView;
   editingPlayerSkill = m.skill || null;
-  editingPlayerBuddyId = m.buddyId || null;
+  editingPlayerBuddyId = m.buddyId || members.find(x => x.buddyId === m.id)?.id || null;
   
   $("playerModalName").textContent = m.name;
   
