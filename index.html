@@ -114,10 +114,93 @@
         </div>
       </div>
 
+      <!-- ===== Admin PromptPay Settings (Dynamic QR สำหรับ Join View) ===== -->
+      <div class="mt-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">💸 PromptPay สำหรับรับเงิน</h3>
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">Dynamic QR</span>
+        </div>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">ใช้สร้าง QR ล็อกยอดเงินอัตโนมัติให้ผู้จ่ายในหน้า Join View</p>
+
+        <label class="block mb-2">
+          <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400">เบอร์ / เลขบัตรประชาชน</span>
+          <input id="fldAdminPromptpayId" type="text" inputmode="numeric" placeholder="0812345678 หรือ 1234567890123"
+            class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-sm" />
+        </label>
+
+        <label class="block mb-3">
+          <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400">ประเภท</span>
+          <select id="fldAdminPromptpayType" class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-sm">
+            <option value="phone">📱 เบอร์โทรศัพท์ (10 หลัก)</option>
+            <option value="id">🆔 เลขบัตรประชาชน (13 หลัก)</option>
+          </select>
+        </label>
+
+        <div class="flex items-center gap-2">
+          <button id="btnSaveAdminPromptpay" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 rounded-lg transition-transform active:scale-95">
+            บันทึก
+          </button>
+          <span id="adminPromptpayStatus" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
+        </div>
+      </div>
+
+      <button id="btnTestPromptPay" class="w-full mt-4 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 text-amber-700 dark:text-amber-300 font-semibold py-3 rounded-xl border border-amber-200 dark:border-amber-800/50 flex items-center justify-center gap-2 text-sm">
+        🧪 ทดสอบ PromptPay QR
+      </button>
+
       <button id="btnAdminLogout" class="w-full mt-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 dark:text-slate-400 font-semibold py-4 rounded-2xl transition-colors text-sm">
         ออกจากระบบ Admin (Log off)
       </button>
     </section>
+
+    <!-- ===== Test PromptPay Modal ===== -->
+    <div id="testPromptPayModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl p-6 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="text-center mb-4">
+          <span class="text-4xl">🧪</span>
+          <h3 class="text-lg font-bold mt-2">ทดสอบ PromptPay QR</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">สร้าง QR + สแกนทดสอบกับแอปธนาคาร</p>
+        </div>
+
+        <label class="block mb-3">
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">เบอร์/เลขบัตร PromptPay</span>
+          <input id="testPpId" type="text" inputmode="numeric" placeholder="0868830801 หรือ 1234567890123"
+            class="w-full mt-1 px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-amber-500 focus:outline-none bg-white dark:bg-slate-900" />
+        </label>
+
+        <label class="block mb-3">
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">ประเภท</span>
+          <select id="testPpType" class="w-full mt-1 px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-amber-500 focus:outline-none bg-white dark:bg-slate-900">
+            <option value="auto">Auto (10 หลัก = เบอร์, 13 หลัก = บัตร)</option>
+            <option value="phone">เบอร์โทรศัพท์</option>
+            <option value="id">เลขบัตรประชาชน</option>
+          </select>
+        </label>
+
+        <label class="block mb-4">
+          <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">ยอดเงินทดสอบ (บาท)</span>
+          <input id="testPpAmount" type="number" step="0.01" min="1" value="1"
+            class="w-full mt-1 px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-amber-500 focus:outline-none bg-white dark:bg-slate-900" />
+        </label>
+
+        <button id="btnGenerateTestQR" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl mb-3 transition-colors">
+          สร้าง QR
+        </button>
+
+        <div id="testQRDisplay" class="hidden text-center bg-slate-50 dark:bg-slate-900 p-4 rounded-xl mb-3">
+          <canvas id="testQRCanvas" class="mx-auto bg-white p-2 rounded-lg"></canvas>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">สแกนด้วยแอปธนาคารเพื่อทดสอบ</p>
+          <p class="text-[10px] text-slate-400 mt-2 break-all font-mono" id="testPayload"></p>
+          <button id="btnDownloadTestQR" class="mt-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg">
+            💾 บันทึก QR
+          </button>
+        </div>
+
+        <button id="btnCloseTestModal" class="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-600 dark:text-slate-300 font-medium py-2.5 rounded-lg">
+          ปิด
+        </button>
+      </div>
+    </div>
 
     <!-- ===== iOS Install Modal ===== -->
     <div id="iosInstallModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -748,16 +831,20 @@
         <div id="paymentAmount" class="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mt-1">— ฿</div>
       </div>
 
-      <!-- QR -->
-      <div id="paymentQRWrap" class="hidden bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mb-4 text-center">
-        <div class="text-xs text-slate-500 dark:text-slate-400 mb-2 font-semibold">📱 สแกน QR แล้วใส่ยอดตามด้านบน</div>
-        <img id="paymentQRImg" src="" alt="QR Code" class="w-full max-w-[220px] mx-auto rounded-lg" />
-        <p class="text-[10px] text-slate-400 mt-2">แตะค้างที่รูปเพื่อบันทึก/สแกน</p>
+      <!-- Dynamic QR (PromptPay payload ล็อกยอด) -->
+      <div id="paymentQRWrap" class="hidden bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mb-3 text-center">
+        <div id="paymentQRMode" class="text-xs text-slate-600 dark:text-slate-300 mb-2 font-semibold">📱 สแกน QR — ยอดเงินถูกล็อกอัตโนมัติ ✓</div>
+        <canvas id="paymentQRCanvas" class="mx-auto bg-white p-2 rounded-lg shadow-sm"></canvas>
+        <img id="paymentQRImg" src="" alt="QR Code" class="hidden w-full max-w-[220px] mx-auto rounded-lg" />
+        <p class="text-[10px] text-slate-400 mt-2">เปิดแอปธนาคารแล้วสแกน QR นี้</p>
+        <button id="btnDownloadPaymentQR" class="mt-3 inline-flex items-center justify-center gap-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-transform active:scale-95">
+          💾 บันทึกรูป QR Code
+        </button>
       </div>
 
       <!-- No QR fallback -->
       <div id="paymentNoQR" class="hidden bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 mb-4 text-center">
-        <p class="text-xs text-amber-700 dark:text-amber-300">ผู้จัดยังไม่ได้ตั้ง QR — โอนเงินตามวิธีอื่นแล้วแนบสลิป</p>
+        <p class="text-xs text-amber-700 dark:text-amber-300">ผู้จัดยังไม่ได้ตั้ง PromptPay — โอนเงินตามวิธีอื่นแล้วแนบสลิป</p>
       </div>
 
       <!-- Upload slip -->

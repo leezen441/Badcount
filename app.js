@@ -96,6 +96,79 @@ async function renderPromptPayQR(canvas, promptpayId, amount, type = "auto") {
   });
 }
 
+// 🔧 Expose to window สำหรับทดสอบใน Console
+window.generatePromptPayPayload = generatePromptPayPayload;
+window.renderPromptPayQR = renderPromptPayQR;
+
+// ============================================================
+// 🧪 Test PromptPay Modal — ทดสอบ generator ก่อนใช้จริง
+// ============================================================
+function setupTestPromptPayModal() {
+  const btnOpen = document.getElementById("btnTestPromptPay");
+  const modal = document.getElementById("testPromptPayModal");
+  const btnClose = document.getElementById("btnCloseTestModal");
+  const btnGen = document.getElementById("btnGenerateTestQR");
+  const btnDownload = document.getElementById("btnDownloadTestQR");
+  if (!btnOpen || !modal || !btnGen) return;
+
+  btnOpen.addEventListener("click", () => modal.classList.remove("hidden"));
+  btnClose?.addEventListener("click", () => modal.classList.add("hidden"));
+  modal.addEventListener("click", (e) => {
+    if (e.target.id === "testPromptPayModal") modal.classList.add("hidden");
+  });
+
+  btnGen.addEventListener("click", async () => {
+    const id = document.getElementById("testPpId").value.trim();
+    const type = document.getElementById("testPpType").value;
+    const amount = parseFloat(document.getElementById("testPpAmount").value) || 1;
+
+    if (!id) {
+      toast("⚠️ กรุณาใส่เบอร์/เลขบัตร PromptPay");
+      return;
+    }
+
+    const canvas = document.getElementById("testQRCanvas");
+    const payloadDisplay = document.getElementById("testPayload");
+    const display = document.getElementById("testQRDisplay");
+
+    try {
+      const dataUrl = await renderPromptPayQR(canvas, id, amount, type);
+      if (!dataUrl) {
+        toast("⚠️ สร้าง QR ไม่สำเร็จ — ตรวจสอบ format (เบอร์ 10 หลัก / บัตร 13 หลัก)");
+        display.classList.add("hidden");
+        return;
+      }
+      const payload = generatePromptPayPayload(id, { amount, type });
+      payloadDisplay.textContent = payload;
+      display.classList.remove("hidden");
+      toast(`✅ สร้าง QR สำหรับ ${amount} ฿ สำเร็จ — ลองสแกนได้`);
+    } catch (err) {
+      console.error(err);
+      toast("เกิดข้อผิดพลาด: " + err.message);
+    }
+  });
+
+  btnDownload?.addEventListener("click", () => {
+    const canvas = document.getElementById("testQRCanvas");
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `promptpay-test-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast("💾 บันทึก QR แล้ว");
+  });
+}
+
+// เรียกตอน DOM พร้อม
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupTestPromptPayModal);
+} else {
+  setupTestPromptPayModal();
+}
+
 // ============================================================
 // 📁 Receipts Subcollection (sessions/{id}/receipts/{memberId})
 // ============================================================
@@ -148,6 +221,17 @@ async function deleteReceipt(sessionId, memberId) {
   }
 }
 
+// ลบ receipts ทั้งหมดของ session (best-effort) — เรียกก่อนลบ session
+async function deleteAllReceiptsForSession(sessionId) {
+  if (!sessionId) return;
+  try {
+    const snap = await getDocs(collection(db, "sessions", sessionId, "receipts"));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref).catch(() => {})));
+  } catch (err) {
+    console.warn("[Receipt] bulk delete failed:", err);
+  }
+}
+
 // ---------- App State ----------
 let currentSessionId = null;
 let currentSession = null;
@@ -190,6 +274,84 @@ async function saveGlobalDefaults(patch) {
 
 // Start loading defaults at app boot — non-blocking
 loadGlobalDefaults();
+
+// ---------- Admin PromptPay Settings (Dynamic QR) ----------
+// เก็บใน settings/defaults (globalDefaults) → แก้ผ่าน UI ได้
+// Fields: adminPromptpayId (string), adminPromptpayType ("phone" | "id")
+
+function getAdminPromptPayConfig() {
+  const id = (globalDefaults.adminPromptpayId || "").trim();
+  const type = globalDefaults.adminPromptpayType === "id" ? "id" : "phone";
+  return { id, type };
+}
+
+async function setupAdminPromptpaySettings() {
+  const idInput = document.getElementById("fldAdminPromptpayId");
+  const typeSelect = document.getElementById("fldAdminPromptpayType");
+  const btnSave = document.getElementById("btnSaveAdminPromptpay");
+  const statusEl = document.getElementById("adminPromptpayStatus");
+  if (!idInput || !typeSelect || !btnSave) return;
+
+  // โหลดค่าเดิมจาก cloud
+  await loadGlobalDefaults();
+  const cfg = getAdminPromptPayConfig();
+  if (cfg.id) {
+    idInput.value = cfg.id;
+    typeSelect.value = cfg.type;
+    if (statusEl) statusEl.textContent = "✓ ตั้งค่าแล้ว";
+  } else {
+    if (statusEl) statusEl.textContent = "ยังไม่ได้ตั้งค่า";
+  }
+
+  btnSave.addEventListener("click", async () => {
+    const rawId = idInput.value.trim();
+    const cleanId = rawId.replace(/\D/g, "");
+    const type = typeSelect.value === "id" ? "id" : "phone";
+
+    if (!cleanId) {
+      toast("⚠️ กรุณาใส่เบอร์/เลขบัตรพร้อมเพย์");
+      return;
+    }
+    if (type === "phone" && cleanId.length !== 10) {
+      toast("⚠️ เบอร์โทรต้อง 10 หลัก");
+      return;
+    }
+    if (type === "id" && cleanId.length !== 13) {
+      toast("⚠️ เลขบัตรประชาชนต้อง 13 หลัก");
+      return;
+    }
+
+    // ทดสอบ generate payload เพื่อ verify
+    const payload = generatePromptPayPayload(cleanId, { amount: 1, type });
+    if (!payload) {
+      toast("⚠️ format ไม่ถูกต้อง");
+      return;
+    }
+
+    btnSave.disabled = true;
+    btnSave.textContent = "กำลังบันทึก...";
+    try {
+      await saveGlobalDefaults({
+        adminPromptpayId: cleanId,
+        adminPromptpayType: type
+      });
+      if (statusEl) statusEl.textContent = "✓ บันทึกแล้ว";
+      toast("💾 บันทึก PromptPay สำหรับรับเงินแล้ว");
+    } catch (err) {
+      console.error(err);
+      toast("เกิดข้อผิดพลาด: " + err.message);
+    } finally {
+      btnSave.disabled = false;
+      btnSave.textContent = "บันทึก";
+    }
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupAdminPromptpaySettings);
+} else {
+  setupAdminPromptpaySettings();
+}
 
 // ---------- Authentication ----------
 // SHA-256 ของรหัส "SundayHH@" — ไม่เก็บรหัสตรงๆ ในซอร์ส
@@ -1662,15 +1824,15 @@ function renderMembers() {
         <div class="font-bold text-sm sm:text-lg ${priceColor} whitespace-nowrap shrink-0">${fmt(totals.perMember[idx])} ฿</div>
       </div>
 
-      ${(m.slipImage || m.slipQR) ? `
+      ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
         <button data-act="view-slip" data-idx="${idx}" class="text-base sm:text-lg shrink-0 px-0.5 sm:px-1 hover:scale-110 transition-transform" title="ดูสลิปการโอนของ ${escapeHtml(m.name)}">
           🖼️
         </button>
       ` : ''}
 
       ${!isPaid ? `
-        <button data-act="scan-qr" data-idx="${idx}" class="text-base sm:text-lg shrink-0 px-0.5 sm:px-1 hover:scale-110 transition-transform" title="สแกน QR จากสลิปของ ${escapeHtml(m.name)}">
-          📷
+        <button data-act="show-dyn-qr" data-idx="${idx}" class="text-base sm:text-lg shrink-0 px-0.5 sm:px-1 hover:scale-110 transition-transform" title="แสดง QR รับเงินสำหรับ ${escapeHtml(m.name)} (ล็อกยอด)">
+          💸
         </button>
       ` : ''}
 
@@ -1693,13 +1855,15 @@ function renderMembers() {
       // view-slip = action ที่ไม่ได้ modify data → เปิด modal แล้ว return
       if (act === "view-slip") {
         const m = (currentSession.members || [])[idx];
-        if (m && (m.slipImage || m.slipQR)) openSlipViewer(m.name, m.slipImage, m.slipQR, m.slipQRAmount);
+        if (m && (m.slipImage || m.slipQR || m.hasReceipt)) {
+          openSlipViewer(m.id, m.name, m.slipImage, m.slipQR, m.slipQRAmount);
+        }
         return;
       }
 
-      // scan-qr = เปิดกล้องสแกน QR จากสลิปบนมือถือ member
-      if (act === "scan-qr") {
-        openCameraScan(idx);
+      // show-dyn-qr = แสดง Dynamic QR (PromptPay ล็อกยอด) สำหรับสมาชิกคนนั้น
+      if (act === "show-dyn-qr") {
+        openPaymentModal(idx);
         return;
       }
 
@@ -1710,7 +1874,10 @@ function renderMembers() {
       else if (act === "toggle-paid") members[idx].isPaid = !members[idx].isPaid;
       else if (act === "del") {
         if (!confirm(`ลบ "${members[idx].name}" ออกจากก๊วน?`)) return;
+        const removed = members[idx];
         members.splice(idx, 1);
+        // ลบ receipt subcollection doc (best-effort)
+        if (removed?.id && currentSessionId) deleteReceipt(currentSessionId, removed.id);
       }
 
       saveSession({ members });
@@ -2100,6 +2267,8 @@ $("btnDeleteSession").addEventListener("click", async () => {
       if (recentlyDeletedSessionId === deletingId) recentlyDeletedSessionId = null;
     }, 5000);
 
+    // ลบ receipts subcollection ก่อน (best-effort) — กัน orphan
+    await deleteAllReceiptsForSession(deletingId);
     await deleteDoc(doc(db, "sessions", deletingId));
     // Cleanup listener ทันที (snapshot fire "ไม่มี" จะไม่ trigger logic)
     if (unsubscribeSession) { unsubscribeSession(); unsubscribeSession = null; }
@@ -2737,16 +2906,20 @@ async function compressImage(file, maxWidth = 800, quality = 0.7) {
   });
 }
 
-// ---------- Payment Modal (Join View) ----------
+// ---------- Payment Modal (Join View + Manage View Show-QR) ----------
 let paymentMemberIdx = null;
+let paymentQRDataUrl = null;        // เก็บ dataURL ปัจจุบันสำหรับปุ่ม Download
+let paymentQRMemberName = null;
 
-function openPaymentModal(memberIdx) {
+async function openPaymentModal(memberIdx) {
   if (!currentSession) return;
   const members = currentSession.members || [];
   const m = members[memberIdx];
   if (!m) return;
 
   paymentMemberIdx = memberIdx;
+  paymentQRMemberName = m.name || "member";
+  paymentQRDataUrl = null;
 
   const totals = calcSessionTotals(currentSession);
   const cost = totals.perMember?.[memberIdx] ?? 0;
@@ -2754,20 +2927,80 @@ function openPaymentModal(memberIdx) {
   $("paymentMemberName").textContent = m.name || "—";
   $("paymentAmount").textContent = fmt(cost) + " ฿";
 
-  if (currentSession.bankQR) {
-    $("paymentQRImg").src = currentSession.bankQR;
-    $("paymentQRWrap").classList.remove("hidden");
-    $("paymentNoQR").classList.add("hidden");
-  } else {
-    $("paymentQRWrap").classList.add("hidden");
-    $("paymentNoQR").classList.remove("hidden");
-  }
-
+  // Reset UI
   $("paymentSlipInput").value = "";
   $("paymentUploadLabel").classList.remove("hidden");
   $("paymentUploading").classList.add("hidden");
   $("paymentModal").classList.remove("hidden");
+
+  const wrap = $("paymentQRWrap");
+  const noQR = $("paymentNoQR");
+  const canvas = $("paymentQRCanvas");
+  const imgEl = $("paymentQRImg");
+  const modeEl = $("paymentQRMode");
+  const btnDownload = $("btnDownloadPaymentQR");
+
+  // ดึง PromptPay ID (โหลด defaults ถ้ายังไม่โหลด)
+  if (!globalDefaultsLoaded) {
+    try { await loadGlobalDefaults(); } catch (_) {}
+  }
+  const cfg = getAdminPromptPayConfig();
+
+  // === 1) Dynamic QR (PromptPay) — preferred ===
+  if (cfg.id && cost > 0) {
+    try {
+      if (canvas) {
+        canvas.classList.remove("hidden");
+        imgEl?.classList.add("hidden");
+      }
+      const dataUrl = await renderPromptPayQR(canvas, cfg.id, cost, cfg.type);
+      if (!dataUrl) throw new Error("payload invalid");
+      paymentQRDataUrl = dataUrl;
+      if (modeEl) modeEl.textContent = "📱 สแกน QR — ยอดเงินถูกล็อกอัตโนมัติ ✓";
+      if (btnDownload) btnDownload.classList.remove("hidden");
+      wrap?.classList.remove("hidden");
+      noQR?.classList.add("hidden");
+      return;
+    } catch (err) {
+      console.warn("[Payment] Dynamic QR failed, fallback:", err);
+      // continue to fallback
+    }
+  }
+
+  // === 2) Fallback: Static bankQR (per-session image) ===
+  if (currentSession.bankQR) {
+    if (canvas) canvas.classList.add("hidden");
+    if (imgEl) {
+      imgEl.src = currentSession.bankQR;
+      imgEl.classList.remove("hidden");
+    }
+    if (modeEl) modeEl.textContent = "📱 สแกน QR — กรุณาใส่ยอดเงินเอง";
+    if (btnDownload) btnDownload.classList.add("hidden");  // ไม่ให้โหลด static (มีปุ่มแยกใน Manage อยู่แล้ว)
+    wrap?.classList.remove("hidden");
+    noQR?.classList.add("hidden");
+    return;
+  }
+
+  // === 3) No QR at all ===
+  wrap?.classList.add("hidden");
+  noQR?.classList.remove("hidden");
 }
+
+// Download dynamic QR ลงเครื่อง
+$("btnDownloadPaymentQR")?.addEventListener("click", () => {
+  if (!paymentQRDataUrl) {
+    toast("⚠️ ยังไม่มี QR ให้บันทึก");
+    return;
+  }
+  const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
+  const a = document.createElement("a");
+  a.href = paymentQRDataUrl;
+  a.download = `PromptPay_${safeName}_${Date.now()}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast("💾 บันทึก QR แล้ว");
+});
 
 function closePaymentModal() {
   $("paymentModal").classList.add("hidden");
@@ -2826,17 +3059,25 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
       }
     }
 
-    // 3) compress เพื่อบันทึก — ใช้ aggressive compression เพราะ Firestore doc มีขีดจำกัด 1MB
+    // 3) compress เพื่อบันทึก — แยกเก็บลง receipts subcollection (กัน main doc เต็ม 1MB)
     const base64 = await compressImage(file, 600, 0.55);
 
-    // 4) อัปเดต member ผ่าน id (ไม่ใช่ idx) เพื่อกัน race condition
+    // 4) บันทึกรูปสลิปลง subcollection (sessions/{id}/receipts/{memberId})
     const targetId = currentSession.members?.[paymentMemberIdx]?.id;
+    if (!targetId) throw new Error("ไม่พบ memberId");
+
+    const receiptSaved = await saveReceipt(currentSessionId, targetId, base64);
+    if (!receiptSaved) {
+      throw new Error("บันทึกรูปสลิปไม่สำเร็จ");
+    }
+
+    // 5) Auto-tick: อัปเดต member status (ไม่เก็บรูปใน main doc)
     const newMembers = (currentSession.members || []).map(m =>
       m.id === targetId
         ? {
             ...m,
             isPaid: true,
-            slipImage: base64,
+            hasReceipt: true,             // flag → admin เปิดดูสลิปจาก subcollection
             slipQR: qrData || null,
             slipQRAmount: qrAmount !== null ? qrAmount : null
           }
@@ -2864,15 +3105,37 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
 });
 
 // ---------- Slip Viewer Modal (Admin View) ----------
-function openSlipViewer(memberName, slipImage, slipQR, slipQRAmount) {
+// signature: openSlipViewer(memberId, memberName, legacySlipImage, slipQR, slipQRAmount)
+// - legacySlipImage = รูปที่อาจเก็บไว้ใน member doc (back-compat); ใหม่จะดึงจาก receipts subcollection
+async function openSlipViewer(memberId, memberName, legacySlipImage, slipQR, slipQRAmount) {
   $("slipViewerName").textContent = memberName || "—";
   const imgEl = $("slipViewerImg");
-  if (slipImage) {
-    imgEl.src = slipImage;
+
+  // 1) ใช้ legacy slipImage ก่อน (ถ้ามี) เพื่อโชว์เร็ว
+  if (legacySlipImage) {
+    imgEl.src = legacySlipImage;
     imgEl.classList.remove("hidden");
   } else {
     imgEl.src = "";
     imgEl.classList.add("hidden");
+  }
+
+  $("slipViewerModal").classList.remove("hidden");
+
+  // 2) ดึงรูปจาก receipts subcollection (ใหม่)
+  if (memberId && currentSessionId) {
+    try {
+      const receipt = await getReceipt(currentSessionId, memberId);
+      if (receipt && receipt.imageBase64) {
+        imgEl.src = receipt.imageBase64;
+        imgEl.classList.remove("hidden");
+      } else if (!legacySlipImage) {
+        // ไม่มีทั้งคู่ — โชว์ข้อความ
+        imgEl.classList.add("hidden");
+      }
+    } catch (err) {
+      console.warn("[SlipViewer] fetch receipt failed:", err);
+    }
   }
   // แสดง QR text (ถ้ามี) ใต้รูป
   let qrInfoEl = $("slipViewerQRInfo");
@@ -4215,7 +4478,9 @@ function renderSessionList(container, snap, isHome, isManager = false) {
     btn.addEventListener("click", async () => {
       if (!confirm("ต้องการลบก๊วนนี้ทิ้งใช่หรือไม่? (ไม่สามารถกู้คืนได้)")) return;
       try {
-        await deleteDoc(doc(db, "sessions", btn.dataset.quickDel));
+        const delId = btn.dataset.quickDel;
+        await deleteAllReceiptsForSession(delId);
+        await deleteDoc(doc(db, "sessions", delId));
         toast("ลบก๊วนแล้ว");
         if (isHome) loadRecentSessions();
         else loadHistory();
