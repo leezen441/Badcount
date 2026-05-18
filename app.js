@@ -2375,9 +2375,9 @@ $("btnAddMatch").addEventListener("click", () => {
 // ============================================================
 // 🎖️  Skill / Mode helpers (Phase 1-3 of Advance mode feature)
 // ============================================================
-// Skill: A=4 (เก่งสุด), B=3, C=2, D=1
-const SKILL_VALUE = { A: 4, B: 3, C: 2, D: 1 };
-const SKILL_LEVELS = ["A", "B", "C", "D"];
+// Skill: A=5 (เก่งสุด), B=4, C=3, P=2, S=1 (อ่อนสุด)
+const SKILL_VALUE = { A: 5, B: 4, C: 3, P: 2, S: 1 };
+const SKILL_LEVELS = ["A", "B", "C", "P", "S"];
 
 function getMode() { return currentSession?.mode === "advance" ? "advance" : "normal"; }
 function isAdvanceMode() { return getMode() === "advance"; }
