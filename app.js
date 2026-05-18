@@ -2063,17 +2063,12 @@ function renderMatches() {
         <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
           ${(() => {
             const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
-            if (pIds.length === 4) {
+            if (pIds.length === 4 && useTeams()) {
               const name1 = escapeHtml(membersMap[pIds[0]] || '?');
               const name2 = escapeHtml(membersMap[pIds[1]] || '?');
               const name3 = escapeHtml(membersMap[pIds[2]] || '?');
               const name4 = escapeHtml(membersMap[pIds[3]] || '?');
-              
-              if (useTeams()) {
-                return `<span class="text-rose-600 dark:text-rose-400 font-bold">${name1}, ${name2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span class="text-sky-600 dark:text-sky-400 font-bold">${name3}, ${name4}</span>`;
-              } else {
-                return `<span>${name1}, ${name2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span>${name3}, ${name4}</span>`;
-              }
+              return `<span class="text-rose-600 dark:text-rose-400 font-bold">${name1}, ${name2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span class="text-sky-600 dark:text-sky-400 font-bold">${name3}, ${name4}</span>`;
             }
             return pIds.map(pid => escapeHtml(membersMap[pid] || '?')).join(", ");
           })()}
