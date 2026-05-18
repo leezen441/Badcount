@@ -77,23 +77,43 @@ function generatePromptPayPayload(promptpayId, opts = {}) {
   return payloadBeforeCrc + crc16(payloadBeforeCrc);
 }
 
-// Render PromptPay QR onto canvas — returns Promise<dataURL>
-async function renderPromptPayQR(canvas, promptpayId, amount, type = "auto") {
+// Render PromptPay QR into a container (DIV) — returns Promise<dataURL>
+// ใช้ davidshimjs/qrcodejs API: new QRCode(element, { text, width, height, correctLevel })
+async function renderPromptPayQR(container, promptpayId, amount, type = "auto") {
   const payload = generatePromptPayPayload(promptpayId, { amount, type });
   if (!payload) {
     console.error("[PromptPay] Invalid ID — must be 10-digit phone or 13-digit ID");
     return null;
   }
-  return new Promise((resolve, reject) => {
-    if (typeof QRCode === "undefined") {
-      reject(new Error("qrcode.js not loaded"));
-      return;
-    }
-    QRCode.toCanvas(canvas, payload, { width: 280, margin: 2, errorCorrectionLevel: "M" }, (err) => {
-      if (err) reject(err);
-      else resolve(canvas.toDataURL("image/png"));
-    });
+  if (typeof QRCode === "undefined") {
+    throw new Error("qrcode.js not loaded");
+  }
+  if (!container) {
+    throw new Error("container is required");
+  }
+  // ล้างของเดิม + วาดใหม่
+  container.innerHTML = "";
+  // eslint-disable-next-line no-new
+  new QRCode(container, {
+    text: payload,
+    width: 256,
+    height: 256,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
   });
+  // davidshimjs วาด <canvas> + <img> ภายใน container — รอ tick ให้ render เสร็จ
+  await new Promise(r => setTimeout(r, 30));
+  const cv = container.querySelector("canvas");
+  const img = container.querySelector("img");
+  // ซ่อน canvas ใช้แค่ img (img มี dataURL ติดมาด้วย → save ได้)
+  if (cv) cv.style.display = "none";
+  if (img) {
+    img.style.display = "block";
+    img.style.margin = "0 auto";
+    return img.src || (cv ? cv.toDataURL("image/png") : null);
+  }
+  return cv ? cv.toDataURL("image/png") : null;
 }
 
 // 🔧 Expose to window สำหรับทดสอบใน Console
@@ -149,9 +169,15 @@ function setupTestPromptPayModal() {
   });
 
   btnDownload?.addEventListener("click", () => {
-    const canvas = document.getElementById("testQRCanvas");
-    if (!canvas) return;
-    const dataUrl = canvas.toDataURL("image/png");
+    const container = document.getElementById("testQRCanvas");
+    if (!container) return;
+    const img = container.querySelector("img");
+    const cv = container.querySelector("canvas");
+    const dataUrl = (img && img.src) || (cv && cv.toDataURL("image/png"));
+    if (!dataUrl) {
+      toast("⚠️ ยังไม่มี QR ให้บันทึก");
+      return;
+    }
     const a = document.createElement("a");
     a.href = dataUrl;
     a.download = `promptpay-test-${Date.now()}.png`;
@@ -2234,17 +2260,18 @@ $("fldNewMember").addEventListener("keypress", e => { if (e.key === "Enter") add
 
 // Share link (Listener moved to bottom)
 
-// QR
+// QR — legacy share-session link QR (dead element; kept as defensive no-op)
 $("btnQR").addEventListener("click", () => {
   const url = location.href;
   const canvas = $("qrCanvas");
-  canvas.innerHTML = "";
-  QRCode.toCanvas(url, { width: 220, margin: 1 }, (err, c) => {
-    if (err) { toast("สร้าง QR ไม่ได้"); return; }
-    canvas.appendChild(c);
-  });
-  $("qrUrlText").textContent = url;
-  $("qrModal").classList.remove("hidden");
+  if (canvas && typeof QRCode !== "undefined") {
+    canvas.innerHTML = "";
+    try {
+      new QRCode(canvas, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    } catch (e) { /* ignore */ }
+  }
+  const txt = $("qrUrlText"); if (txt) txt.textContent = url;
+  const modal = $("qrModal"); if (modal) modal.classList.remove("hidden");
 });
 $("btnCloseQR").addEventListener("click", () => $("qrModal").classList.add("hidden"));
 $("qrModal").addEventListener("click", e => { if (e.target.id === "qrModal") $("qrModal").classList.add("hidden"); });
