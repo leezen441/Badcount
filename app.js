@@ -1850,44 +1850,47 @@ function renderMembers() {
     const priceColor = isPaid ? "text-emerald-500" : "text-rose-500";
     
     return `
-    <div class="py-3 flex items-center gap-1 sm:gap-3">
+    <div class="py-2.5 sm:py-3 flex items-center gap-1 sm:gap-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
       <button data-act="toggle-paid" data-idx="${idx}" class="w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-400'}" title="ทำเครื่องหมายว่าจ่ายแล้ว">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
       </button>
       
-      <div class="flex-1 min-w-0 flex items-center justify-between pr-1 sm:pr-2 gap-1.5">
-        <div class="min-w-0 flex-1 truncate flex items-center gap-1.5">
-          <button data-act="edit-player" data-idx="${idx}" class="font-medium text-left truncate flex items-center gap-1.5 hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/ทีม">
-            <span>${escapeHtml(m.name)}</span>
-            ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold rounded shrink-0">${m.skill}</span>` : ''}
-            ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-bold rounded shrink-0">Team ${m.team}</span>` : ''}
+      <div class="flex-1 min-w-0 flex items-center justify-between gap-1 sm:gap-2">
+        <div class="min-w-0 flex-1 flex items-center gap-1">
+          <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate max-w-[65px] sm:max-w-none text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/ทีม">
+            ${escapeHtml(m.name)}
           </button>
+          ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
+          ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-extrabold rounded shrink-0">${m.team}</span>` : ''}
           ${pStats[m.id].games > 0
             ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
             : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
           }
         </div>
-        <div class="font-bold text-sm sm:text-lg ${priceColor} whitespace-nowrap shrink-0">${fmt(totals.perMember[idx])} ฿</div>
+        
+        <div class="flex flex-col items-end justify-center shrink-0 min-w-[60px] sm:min-w-[85px]">
+          <div class="font-extrabold text-xs sm:text-base ${priceColor} whitespace-nowrap">${fmt(totals.perMember[idx])} ฿</div>
+          <div class="flex gap-1 mt-0.5">
+            ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
+              <button data-act="view-slip" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="ดูสลิป">
+                <span>🖼️</span>
+              </button>
+            ` : ''}
+            ${!isPaid ? `
+              <button data-act="show-dyn-qr" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="สแกน QR">
+                <span>💸</span>
+              </button>
+            ` : ''}
+          </div>
+        </div>
       </div>
 
-      ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
-        <button data-act="view-slip" data-idx="${idx}" class="text-base sm:text-lg shrink-0 px-0.5 sm:px-1 hover:scale-110 transition-transform" title="ดูสลิปการโอนของ ${escapeHtml(m.name)}">
-          🖼️
-        </button>
-      ` : ''}
-
-      ${!isPaid ? `
-        <button data-act="show-dyn-qr" data-idx="${idx}" class="text-base sm:text-lg shrink-0 px-0.5 sm:px-1 hover:scale-110 transition-transform" title="แสดง QR รับเงินสำหรับ ${escapeHtml(m.name)} (ล็อกยอด)">
-          💸
-        </button>
-      ` : ''}
-
-      <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shrink-0">
-        <button data-act="dec" data-idx="${idx}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">−</button>
-        <div class="w-7 sm:w-10 text-center font-semibold text-sm" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
-        <button data-act="inc" data-idx="${idx}" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">+</button>
+      <div class="flex items-center gap-0.5 sm:gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 sm:p-1 shrink-0">
+        <button data-act="dec" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">−</button>
+        <div class="w-6 sm:w-10 text-center font-semibold text-xs sm:text-sm" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
+        <button data-act="inc" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">+</button>
       </div>
       
       <button data-act="del" data-idx="${idx}" class="text-slate-300 hover:text-red-500 pl-1 pr-2 text-xl shrink-0 leading-none">×</button>
