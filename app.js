@@ -3089,7 +3089,7 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
       }
     } else if (qrAmount === null) {
       // มี QR แต่ไม่มียอด (URL หรือ format อื่น) — confirm
-      const proceed = confirm(`⚠️ พบ QR แต่อ่านยอดเงินไม่ได้\n\n(สลิปบางธนาคารใส่แค่ link/reference ไม่ใส่ยอด)\n\nคุณยืนยันว่าโอน ${expectedAmount.toFixed(2)} ฿ ถูกต้องแล้ว?`);
+      const proceed = confirm(`คุณยืนยันว่าโอน ${expectedAmount.toFixed(2)} ฿ ถูกต้องแล้ว?`);
       if (!proceed) {
         $("paymentUploadLabel").classList.remove("hidden");
         $("paymentUploading").classList.add("hidden");
