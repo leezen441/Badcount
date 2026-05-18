@@ -1266,6 +1266,11 @@ function renderSession() {
   renderCourts();
   updatePaymentReminder();
   updateCleanupButton();
+  
+  // If matchmaking modal is open, re-render it in real-time to reflect any updates
+  if ($("matchModal") && !$("matchModal").classList.contains("hidden")) {
+    renderMatchDraft();
+  }
 }
 
 // 🎨 Update สีปุ่ม Invite + Label ปุ่ม ปิดรับ/เปิดรับ ตามสถานะ
@@ -2638,8 +2643,16 @@ function renderMatchDraft() {
         teamAPlayers.push(id);
         const m = allMembers.find(x => x.id === id);
         if (m) {
-          const skillBadge = m.skill ? ` <span class="bg-rose-700 text-white font-extrabold rounded px-1.5 py-0.25 text-[10px] scale-90">${m.skill}</span>` : "";
-          teamAHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-rose-500 text-white shadow-sm ring-2 ring-rose-300 ring-offset-1 transition-transform active:scale-95 flex items-center gap-1.5">${escapeHtml(m.name)}${skillBadge} ✕</button>`;
+          const editSkillBadge = isAdvanceMode()
+            ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-rose-700 hover:bg-rose-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
+            : '';
+          teamAHtml += `
+            <div class="inline-flex items-center bg-rose-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ring-rose-300 dark:ring-rose-900/50 ring-offset-1 pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
+              <span class="truncate max-w-[65px]">${escapeHtml(m.name)}</span>
+              ${editSkillBadge}
+              <button data-draft-id="${id}" class="hover:bg-rose-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออกจากทีม A">✕</button>
+            </div>
+          `;
         }
       } else {
         // Dotted empty placeholder
@@ -2660,8 +2673,16 @@ function renderMatchDraft() {
         teamBPlayers.push(id);
         const m = allMembers.find(x => x.id === id);
         if (m) {
-          const skillBadge = m.skill ? ` <span class="bg-sky-700 text-white font-extrabold rounded px-1.5 py-0.25 text-[10px] scale-90">${m.skill}</span>` : "";
-          teamBHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-sky-500 text-white shadow-sm ring-2 ring-sky-300 ring-offset-1 transition-transform active:scale-95 flex items-center gap-1.5">${escapeHtml(m.name)}${skillBadge} ✕</button>`;
+          const editSkillBadge = isAdvanceMode()
+            ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-sky-700 hover:bg-sky-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
+            : '';
+          teamBHtml += `
+            <div class="inline-flex items-center bg-sky-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ring-sky-300 dark:ring-sky-900/50 ring-offset-1 pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
+              <span class="truncate max-w-[65px]">${escapeHtml(m.name)}</span>
+              ${editSkillBadge}
+              <button data-draft-id="${id}" class="hover:bg-sky-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออกจากทีม B">✕</button>
+            </div>
+          `;
         }
       } else {
         // Dotted empty placeholder
@@ -2689,8 +2710,16 @@ function renderMatchDraft() {
       if (!id) return;
       const m = allMembers.find(x => x.id === id);
       if (!m) return;
-      const skillBadge = m.skill ? ` <span class="bg-indigo-600 text-white font-extrabold rounded px-1.5 py-0.25 text-[10px] scale-90">${m.skill}</span>` : "";
-      selHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1 transition-transform active:scale-95 flex items-center gap-1.5">${escapeHtml(m.name)}${skillBadge} ✕</button>`;
+      const editSkillBadge = isAdvanceMode()
+        ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
+        : '';
+      selHtml += `
+        <div class="inline-flex items-center bg-emerald-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-900/50 ring-offset-1 pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
+          <span class="truncate max-w-[65px]">${escapeHtml(m.name)}</span>
+          ${editSkillBadge}
+          <button data-draft-id="${id}" class="hover:bg-emerald-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออก">✕</button>
+        </div>
+      `;
     });
 
     if (activeCount === 0) {
@@ -2816,21 +2845,31 @@ function renderMatchDraft() {
         ? "font-semibold text-slate-800 dark:text-slate-100"
         : "font-medium text-slate-700 dark:text-slate-300";
 
+      const editSkillBadge = isAdvanceMode()
+        ? `<button data-act="edit-player-skill" data-player-id="${m.id}" class="text-[9px] px-1.5 py-0.5 rounded transition-all active:scale-95 shrink-0 ${m.skill ? 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold' : 'border border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400 font-bold bg-white dark:bg-slate-900 hover:border-indigo-500 hover:text-indigo-600'}" title="คลิกเพื่อตั้งระดับมือ">
+            ${m.skill ? m.skill : '+ ระดับมือ'}
+          </button>`
+        : '';
+
       return `
-        <button data-draft-id="${m.id}" class="w-full text-left px-3 py-2.5 flex flex-wrap items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 active:bg-slate-100 dark:active:bg-slate-700 ${rowClass}">
-          ${rankBadge}
-          <span class="${nameClass} flex-1 min-w-0 truncate flex items-center gap-1.5">
-            <span>${escapeHtml(m.name)}</span>
-            ${m.skill ? `<span class="text-[9px] px-1.5 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold rounded shrink-0">${m.skill}</span>` : ''}
-            ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-bold rounded shrink-0">Team ${m.team}</span>` : ''}
-          </span>
-          <span class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 flex-shrink-0">
-            <span class="text-base">🏸</span>
-            <span class="font-medium text-slate-700 dark:text-slate-300 tabular-nums w-5 text-right">${games}</span>
-          </span>
-          <span class="flex items-center text-sm flex-shrink-0 ml-1 min-w-[28px]">${restHtml}</span>
+        <div class="w-full px-3 py-2 flex flex-wrap items-center justify-between gap-1 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${rowClass}">
+          <button data-draft-id="${m.id}" class="flex-1 text-left flex items-center gap-2 min-w-0 py-1">
+            ${rankBadge}
+            <span class="${nameClass} truncate">${escapeHtml(m.name)}</span>
+            ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-extrabold rounded shrink-0">${m.team}</span>` : ''}
+          </button>
+          
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${editSkillBadge}
+            
+            <span class="flex items-center gap-0.5 text-xs text-slate-400">
+              <span>🏸</span>
+              <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums w-4 text-right">${games}</span>
+            </span>
+            <span class="flex items-center text-xs shrink-0">${restHtml}</span>
+          </div>
           ${partnerHtml}
-        </button>
+        </div>
       `;
     };
 
@@ -2889,6 +2928,18 @@ function renderMatchDraft() {
         }
       }
       renderMatchDraft();
+    });
+  });
+
+  // Wire up "edit-player-skill" buttons inside Match Modal
+  $("matchModal").querySelectorAll("button[data-act='edit-player-skill']").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent bubbling up to drafting event handlers
+      const pid = btn.dataset.playerId;
+      const idx = allMembers.findIndex(x => x.id === pid);
+      if (idx !== -1) {
+        openPlayerSettingsModal(idx, true);
+      }
     });
   });
 }
@@ -5403,21 +5454,13 @@ function openPlayerSettingsModal(idx, isAdminView) {
   
   $("playerModalName").textContent = m.name;
   
-  // Toggle visibility based on session config
+  // The settings modal is only accessible by administrators/managers.
+  // We always show both the Skill and Team sections so they can configure players at any time.
   const skillSec = $("playerModalSkillSection");
   const teamSec = $("playerModalTeamSection");
   
-  const adv = isAdvanceMode() || currentSession?.mode === "advance";
-  const teams = useTeams() || !!currentSession?.useTeams;
-  
-  if (skillSec) {
-    if (adv) skillSec.classList.remove("hidden");
-    else skillSec.classList.add("hidden");
-  }
-  if (teamSec) {
-    if (teams) teamSec.classList.remove("hidden");
-    else teamSec.classList.add("hidden");
-  }
+  if (skillSec) skillSec.classList.remove("hidden");
+  if (teamSec) teamSec.classList.remove("hidden");
   
   // Render current values
   updateModalSkillUI();
