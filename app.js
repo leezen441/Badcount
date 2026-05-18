@@ -1873,7 +1873,7 @@ function renderMembers() {
               ? members.find(x => x.id === m.buddyId) 
               : members.find(x => x.buddyId === m.id);
             if (buddy) {
-              return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
+              return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
             }
             return "";
           })()}
@@ -2908,7 +2908,7 @@ function renderMatchDraft() {
                 ? allMembers.find(x => x.id === m.buddyId) 
                 : allMembers.find(x => x.buddyId === m.id);
               if (buddy) {
-                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
+                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
               }
               return "";
             })()}
@@ -3884,7 +3884,7 @@ async function setupJoinView(id) {
           ? mems.find(x => x.id === m.buddyId) 
           : mems.find(x => x.buddyId === m.id);
         if (buddyMember) {
-          badgeBuddy = `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddyMember.name)}</span>`;
+          badgeBuddy = `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold rounded shrink-0">🤝 ${escapeHtml(buddyMember.name)}</span>`;
         }
 
         if (isClosed) {
