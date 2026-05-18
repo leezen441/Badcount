@@ -103,17 +103,27 @@ async function renderPromptPayQR(container, promptpayId, amount, type = "auto") 
     correctLevel: QRCode.CorrectLevel.M
   });
   // davidshimjs วาด <canvas> + <img> ภายใน container — รอ tick ให้ render เสร็จ
-  await new Promise(r => setTimeout(r, 30));
+  await new Promise(r => setTimeout(r, 50));
   const cv = container.querySelector("canvas");
   const img = container.querySelector("img");
-  // ซ่อน canvas ใช้แค่ img (img มี dataURL ติดมาด้วย → save ได้)
-  if (cv) cv.style.display = "none";
-  if (img) {
-    img.style.display = "block";
-    img.style.margin = "0 auto";
-    return img.src || (cv ? cv.toDataURL("image/png") : null);
+
+  // บนมือถือสมัยใหม่ davidshimjs วาดลง canvas เป็นหลัก ส่วน img อาจไม่มี src
+  // → โชว์ canvas + ซ่อน img เพื่อให้ภาพไม่หายไปเป็นจุดขาว
+  if (cv) {
+    cv.style.display = "block";
+    cv.style.margin = "0 auto";
+    cv.style.width = "256px";
+    cv.style.height = "256px";
   }
-  return cv ? cv.toDataURL("image/png") : null;
+  if (img) {
+    img.style.display = "none";
+  }
+
+  // dataURL — prefer canvas (สด/ตรงเสมอ), fallback img.src
+  if (cv) {
+    try { return cv.toDataURL("image/png"); } catch (_) {}
+  }
+  return img && img.src ? img.src : null;
 }
 
 // 🔧 Expose to window สำหรับทดสอบใน Console
@@ -171,9 +181,11 @@ function setupTestPromptPayModal() {
   btnDownload?.addEventListener("click", () => {
     const container = document.getElementById("testQRCanvas");
     if (!container) return;
-    const img = container.querySelector("img");
     const cv = container.querySelector("canvas");
-    const dataUrl = (img && img.src) || (cv && cv.toDataURL("image/png"));
+    const img = container.querySelector("img");
+    let dataUrl = null;
+    if (cv) { try { dataUrl = cv.toDataURL("image/png"); } catch (_) {} }
+    if (!dataUrl && img && img.src) dataUrl = img.src;
     if (!dataUrl) {
       toast("⚠️ ยังไม่มี QR ให้บันทึก");
       return;
