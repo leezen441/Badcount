@@ -2572,8 +2572,6 @@ function renderMatchDraft() {
   const selectedDiv = $("selectedPlayers");
   const availableDiv = $("availablePlayers");
 
-  $("selPlayerCount").textContent = matchDraftPlayers.length;
-
   // อัปเดต header info ทุกครั้งที่ render
   updateMatchModalInfo();
 
@@ -2614,60 +2612,61 @@ function renderMatchDraft() {
   const selectedBox = $("selectedPlayersBox");
   const teamBoxes = $("teamBoxes");
 
+  // Ensure matchDraftPlayers has exactly 4 elements to preserve slot positions
+  while (matchDraftPlayers.length < 4) {
+    matchDraftPlayers.push(null);
+  }
+
+  const activeCount = matchDraftPlayers.filter(Boolean).length;
+  $("selPlayerCount").textContent = activeCount;
+
   if (useT) {
     selectedBox?.classList.add("hidden");
     teamBoxes?.classList.remove("hidden");
     
-    // Distribute selected players into Team A and Team B based on preference and capacity (2 per team max)
-    let teamAPlayers = [];
-    let teamBPlayers = [];
-    matchDraftPlayers.forEach(id => {
-      const m = allMembers.find(x => x.id === id);
-      if (m) {
-        if (m.team === "A") {
-          if (teamAPlayers.length < 2) teamAPlayers.push(id);
-          else teamBPlayers.push(id);
-        } else if (m.team === "B") {
-          if (teamBPlayers.length < 2) teamBPlayers.push(id);
-          else teamAPlayers.push(id);
-        }
-      }
-    });
-    
-    // Distribute unassigned players
-    matchDraftPlayers.forEach(id => {
-      if (!teamAPlayers.includes(id) && !teamBPlayers.includes(id)) {
-        if (teamAPlayers.length < 2) teamAPlayers.push(id);
-        else if (teamBPlayers.length < 2) teamBPlayers.push(id);
-        else teamAPlayers.push(id);
-      }
-    });
-    
-    // Render Team A
+    // Render Team A Slot 0 & 1
     let teamAHtml = "";
-    teamAPlayers.forEach(id => {
-      const m = allMembers.find(x => x.id === id);
-      if (!m) return;
-      teamAHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-rose-500 text-white shadow-sm ring-2 ring-rose-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
+    let countA = 0;
+    const teamAPlayers = [];
+    [0, 1].forEach(slotIdx => {
+      const id = matchDraftPlayers[slotIdx];
+      if (id) {
+        countA++;
+        teamAPlayers.push(id);
+        const m = allMembers.find(x => x.id === id);
+        if (m) {
+          const skillBadge = m.skill ? ` <span class="bg-rose-700 text-white font-extrabold rounded px-1.5 py-0.25 text-[10px] scale-90">${m.skill}</span>` : "";
+          teamAHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-rose-500 text-white shadow-sm ring-2 ring-rose-300 ring-offset-1 transition-transform active:scale-95 flex items-center gap-1.5">${escapeHtml(m.name)}${skillBadge} ✕</button>`;
+        }
+      } else {
+        // Dotted empty placeholder
+        teamAHtml += `<div class="px-3 py-1.5 border border-dashed border-rose-300 dark:border-rose-800 text-rose-400 dark:text-rose-600/70 text-xs rounded-full cursor-default select-none font-medium flex items-center justify-center shrink-0 w-28">ว่าง (Slot ${slotIdx + 1})</div>`;
+      }
     });
-    if (teamAPlayers.length === 0) {
-      teamAHtml = `<div class="text-rose-400 text-xs py-2 w-full text-center">ยังไม่มีผู้เล่นทีม A</div>`;
-    }
-    $("teamAPlayers").innerHTML = teamAHtml;
-    $("teamACount").textContent = teamAPlayers.length;
+    $("teamAPlayers").innerHTML = `<div class="flex flex-wrap gap-2">${teamAHtml}</div>`;
+    $("teamACount").textContent = countA;
     
-    // Render Team B
+    // Render Team B Slot 2 & 3
     let teamBHtml = "";
-    teamBPlayers.forEach(id => {
-      const m = allMembers.find(x => x.id === id);
-      if (!m) return;
-      teamBHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-sky-500 text-white shadow-sm ring-2 ring-sky-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
+    let countB = 0;
+    const teamBPlayers = [];
+    [2, 3].forEach(slotIdx => {
+      const id = matchDraftPlayers[slotIdx];
+      if (id) {
+        countB++;
+        teamBPlayers.push(id);
+        const m = allMembers.find(x => x.id === id);
+        if (m) {
+          const skillBadge = m.skill ? ` <span class="bg-sky-700 text-white font-extrabold rounded px-1.5 py-0.25 text-[10px] scale-90">${m.skill}</span>` : "";
+          teamBHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-sky-500 text-white shadow-sm ring-2 ring-sky-300 ring-offset-1 transition-transform active:scale-95 flex items-center gap-1.5">${escapeHtml(m.name)}${skillBadge} ✕</button>`;
+        }
+      } else {
+        // Dotted empty placeholder
+        teamBHtml += `<div class="px-3 py-1.5 border border-dashed border-sky-300 dark:border-sky-800 text-sky-400 dark:text-sky-600/70 text-xs rounded-full cursor-default select-none font-medium flex items-center justify-center shrink-0 w-28">ว่าง (Slot ${slotIdx - 1})</div>`;
+      }
     });
-    if (teamBPlayers.length === 0) {
-      teamBHtml = `<div class="text-sky-400 text-xs py-2 w-full text-center">ยังไม่มีผู้เล่นทีม B</div>`;
-    }
-    $("teamBPlayers").innerHTML = teamBHtml;
-    $("teamBCount").textContent = teamBPlayers.length;
+    $("teamBPlayers").innerHTML = `<div class="flex flex-wrap gap-2">${teamBHtml}</div>`;
+    $("teamBCount").textContent = countB;
     
     // Calculate strengths
     const getTeamStrength = (playerIds) => {
@@ -2684,12 +2683,14 @@ function renderMatchDraft() {
     
     let selHtml = "";
     matchDraftPlayers.forEach(id => {
+      if (!id) return;
       const m = allMembers.find(x => x.id === id);
       if (!m) return;
-      selHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
+      const skillBadge = m.skill ? ` <span class="bg-indigo-600 text-white font-extrabold rounded px-1.5 py-0.25 text-[10px] scale-90">${m.skill}</span>` : "";
+      selHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1 transition-transform active:scale-95 flex items-center gap-1.5">${escapeHtml(m.name)}${skillBadge} ✕</button>`;
     });
 
-    if (matchDraftPlayers.length === 0) {
+    if (activeCount === 0) {
       selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
     } else {
       selHtml = `<div class="flex flex-wrap gap-2">${selHtml}</div>`;
@@ -2712,6 +2713,7 @@ function renderMatchDraft() {
       overlapWithSelected[m.id] = {};
       let total = 0;
       matchDraftPlayers.forEach(selId => {
+        if (!selId) return;
         const cnt = partnerCount[m.id][selId] || 0;
         if (cnt > 0) overlapWithSelected[m.id][selId] = cnt;
         total += cnt;
@@ -2722,11 +2724,11 @@ function renderMatchDraft() {
     // ✨ Joint Optimization: หาชุด "คนที่ดีที่สุดที่ควรเพิ่มเข้าที่นั่งที่เหลือ"
     // ใช้ algorithm เดียวกับ Auto Draft → Top ① ② ③ ④ จะตรงกับ Auto Draft เสมอ
     const minGames = Math.min(...allMembers.map(m => gamesPlayed[m.id]));
-    const slotsNeeded = 4 - matchDraftPlayers.length;
+    const slotsNeeded = 4 - activeCount;
     let topPickIds = new Set();
     if (slotsNeeded > 0) {
       const optimal = findOptimalAddition(
-        available, matchDraftPlayers, slotsNeeded,
+        available, matchDraftPlayers.filter(Boolean), slotsNeeded,
         gamesPlayed, partnerCount, minGames, true /* deterministic */,
         { advanceMode: isAdvanceMode(), members: allMembers, useTeams: useTeams() }
       );
@@ -2814,7 +2816,11 @@ function renderMatchDraft() {
       return `
         <button data-draft-id="${m.id}" class="w-full text-left px-3 py-2.5 flex flex-wrap items-center gap-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 active:bg-slate-100 dark:active:bg-slate-700 ${rowClass}">
           ${rankBadge}
-          <span class="${nameClass} flex-1 min-w-0 truncate">${escapeHtml(m.name)}</span>
+          <span class="${nameClass} flex-1 min-w-0 truncate flex items-center gap-1.5">
+            <span>${escapeHtml(m.name)}</span>
+            ${m.skill ? `<span class="text-[9px] px-1.5 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold rounded shrink-0">${m.skill}</span>` : ''}
+            ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-bold rounded shrink-0">Team ${m.team}</span>` : ''}
+          </span>
           <span class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 flex-shrink-0">
             <span class="text-base">🏸</span>
             <span class="font-medium text-slate-700 dark:text-slate-300 tabular-nums w-5 text-right">${games}</span>
@@ -2839,17 +2845,45 @@ function renderMatchDraft() {
     </div>`;
   }
   
-  $("btnSaveMatch").disabled = matchDraftPlayers.length !== 4;
-  $("btnSaveMatch").className = matchDraftPlayers.length === 4 ? "flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow-md transition-transform active:scale-95" : "flex-1 bg-slate-200 text-slate-400 py-3 rounded-xl font-medium cursor-not-allowed";
+  $("btnSaveMatch").disabled = activeCount !== 4;
+  $("btnSaveMatch").className = activeCount === 4 ? "flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow-md transition-transform active:scale-95" : "flex-1 bg-slate-200 text-slate-400 py-3 rounded-xl font-medium cursor-not-allowed";
 
   $("matchModal").querySelectorAll("button[data-draft-id]").forEach(btn => {
     btn.addEventListener("click", () => {
       const pid = btn.dataset.draftId;
       if (matchDraftPlayers.includes(pid)) {
-        matchDraftPlayers = matchDraftPlayers.filter(id => id !== pid);
+        const idx = matchDraftPlayers.indexOf(pid);
+        if (idx !== -1) {
+          matchDraftPlayers[idx] = null;
+        }
       } else {
-        if (matchDraftPlayers.length >= 4) return toast("เลือกได้สูงสุด 4 คนครับ");
-        matchDraftPlayers.push(pid);
+        const m = allMembers.find(x => x.id === pid);
+        if (!m) return;
+        
+        let targetIdx = -1;
+        if (useT) {
+          if (m.team === "A") {
+            if (matchDraftPlayers[0] === null) targetIdx = 0;
+            else if (matchDraftPlayers[1] === null) targetIdx = 1;
+            else if (matchDraftPlayers[2] === null) targetIdx = 2;
+            else if (matchDraftPlayers[3] === null) targetIdx = 3;
+          } else if (m.team === "B") {
+            if (matchDraftPlayers[2] === null) targetIdx = 2;
+            else if (matchDraftPlayers[3] === null) targetIdx = 3;
+            else if (matchDraftPlayers[0] === null) targetIdx = 0;
+            else if (matchDraftPlayers[1] === null) targetIdx = 1;
+          } else {
+            targetIdx = matchDraftPlayers.findIndex(x => x === null);
+          }
+        } else {
+          targetIdx = matchDraftPlayers.findIndex(x => x === null);
+        }
+        
+        if (targetIdx !== -1) {
+          matchDraftPlayers[targetIdx] = pid;
+        } else {
+          return toast("เลือกได้สูงสุด 4 คนครับ");
+        }
       }
       renderMatchDraft();
     });
@@ -2860,7 +2894,7 @@ $("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.ad
 $("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal") $("matchModal").classList.add("hidden"); });
 
 $("btnAutoSplit")?.addEventListener("click", () => {
-  if (matchDraftPlayers.length !== 4) return toast("กรุณาเลือกผู้เล่นให้ครบ 4 คนก่อนครับ");
+  if (matchDraftPlayers.filter(Boolean).length !== 4) return toast("กรุณาเลือกผู้เล่นให้ครบ 4 คนก่อนครับ");
   
   // Calculate partner counts to minimize duplicate teammates
   const matches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
@@ -2884,8 +2918,8 @@ $("btnAutoSplit")?.addEventListener("click", () => {
     }
   });
   
-  const split = findBestTeamSplit(matchDraftPlayers, allMembers, teammateCount);
-  matchDraftPlayers = [...split.teamA, ...split.teamB];
+  const split = findBestTeamSplit(matchDraftPlayers.filter(Boolean), allMembers, teammateCount);
+  matchDraftPlayers = [split.teamA[0] || null, split.teamA[1] || null, split.teamB[0] || null, split.teamB[1] || null];
   renderMatchDraft();
   toast("จัดทีมให้สมดุลที่สุดแล้ว ✨");
 });
@@ -2935,7 +2969,31 @@ if (autoDraftBtn) {
       });
 
       if (picked && picked.length === 4) {
-        matchDraftPlayers = picked;
+        if (useTeams()) {
+          let teamA = [];
+          let teamB = [];
+          picked.forEach(id => {
+            const m = allMembers.find(x => x.id === id);
+            if (m) {
+              if (m.team === "A") {
+                if (teamA.length < 2) teamA.push(id);
+                else teamB.push(id);
+              } else if (m.team === "B") {
+                if (teamB.length < 2) teamB.push(id);
+                else teamA.push(id);
+              }
+            }
+          });
+          picked.forEach(id => {
+            if (!teamA.includes(id) && !teamB.includes(id)) {
+              if (teamA.length < 2) teamA.push(id);
+              else teamB.push(id);
+            }
+          });
+          matchDraftPlayers = [teamA[0] || null, teamA[1] || null, teamB[0] || null, teamB[1] || null];
+        } else {
+          matchDraftPlayers = [...picked];
+        }
         renderMatchDraft();
         toast("สุ่มจัดคิวเรียบร้อย ✨");
       }
@@ -2947,7 +3005,7 @@ if (autoDraftBtn) {
 }
 
 $("btnSaveMatch").addEventListener("click", () => {
-  if (matchDraftPlayers.length !== 4) return alert("กรุณาเลือกผู้เล่นให้ครบ 4 คน");
+  if (matchDraftPlayers.filter(Boolean).length !== 4) return alert("กรุณาเลือกผู้เล่นให้ครบ 4 คน");
 
   const shuttles = $("fldMatchShuttles").value.trim();
   const matches = [...(currentSession.matches || [])];
@@ -2982,32 +3040,7 @@ $("btnSaveMatch").addEventListener("click", () => {
     }
   }
 
-  let finalDraftPlayers = [...matchDraftPlayers];
-  if (useTeams()) {
-    const allMembers = currentSession.members || [];
-    let teamAPlayers = [];
-    let teamBPlayers = [];
-    matchDraftPlayers.forEach(id => {
-      const m = allMembers.find(x => x.id === id);
-      if (m) {
-        if (m.team === "A") {
-          if (teamAPlayers.length < 2) teamAPlayers.push(id);
-          else teamBPlayers.push(id);
-        } else if (m.team === "B") {
-          if (teamBPlayers.length < 2) teamBPlayers.push(id);
-          else teamAPlayers.push(id);
-        }
-      }
-    });
-    matchDraftPlayers.forEach(id => {
-      if (!teamAPlayers.includes(id) && !teamBPlayers.includes(id)) {
-        if (teamAPlayers.length < 2) teamAPlayers.push(id);
-        else if (teamBPlayers.length < 2) teamBPlayers.push(id);
-        else teamAPlayers.push(id);
-      }
-    });
-    finalDraftPlayers = [...teamAPlayers, ...teamBPlayers];
-  }
+  const finalDraftPlayers = [...matchDraftPlayers];
 
   if (editingMatchId) {
     const idx = matches.findIndex(x => x.id === editingMatchId);
