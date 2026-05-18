@@ -1219,7 +1219,7 @@ function renderSession() {
 
   // Update fields only if not currently focused (avoid stomping user input)
   const setIfNotFocused = (el, val) => {
-    if (document.activeElement !== el) el.value = val ?? "";
+    if (el && document.activeElement !== el) el.value = val ?? "";
   };
   setIfNotFocused($("fldLocation"), s.location);
   setIfNotFocused($("fldDate"), s.date);
@@ -1228,6 +1228,12 @@ function renderSession() {
   setIfNotFocused($("fldShuttlePrice"), s.shuttlePrice || "");
   setIfNotFocused($("fldOtherCostType"), s.otherCostType || "perPerson");
   setIfNotFocused($("fldOtherCost"), s.otherCost || "");
+  setIfNotFocused($("fldMatchMode"), s.mode || "normal");
+  
+  const chkUseTeams = $("fldUseTeams");
+  if (chkUseTeams) {
+    chkUseTeams.checked = !!s.useTeams;
+  }
 
   // Status badge
   const badge = $("sessionStatusBadge");
@@ -1852,11 +1858,15 @@ function renderMembers() {
       </button>
       
       <div class="flex-1 min-w-0 flex items-center justify-between pr-1 sm:pr-2 gap-1.5">
-        <div class="min-w-0 flex-1 truncate">
-          <span class="font-medium ${isPaid ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'}">${escapeHtml(m.name)}</span>
+        <div class="min-w-0 flex-1 truncate flex items-center gap-1.5">
+          <button data-act="edit-player" data-idx="${idx}" class="font-medium text-left truncate flex items-center gap-1.5 hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/ทีม">
+            <span>${escapeHtml(m.name)}</span>
+            ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold rounded shrink-0">${m.skill}</span>` : ''}
+            ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-bold rounded shrink-0">Team ${m.team}</span>` : ''}
+          </button>
           ${pStats[m.id].games > 0
-            ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1">(ตี ${pStats[m.id].games} เกม • ล่าสุด: ${escapeHtml(pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', '))})</span>`
-            : `<span class="hidden sm:inline text-xs text-slate-300 ml-1">(ยังไม่ได้ลงสนาม)</span>`
+            ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
+            : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
           }
         </div>
         <div class="font-bold text-sm sm:text-lg ${priceColor} whitespace-nowrap shrink-0">${fmt(totals.perMember[idx])} ฿</div>
@@ -1882,7 +1892,8 @@ function renderMembers() {
       
       <button data-act="del" data-idx="${idx}" class="text-slate-300 hover:text-red-500 pl-1 pr-2 text-xl shrink-0 leading-none">×</button>
     </div>
-  `}).join("");
+    `
+  }).join("");
 
   // Wire up +/- and delete
   list.querySelectorAll("button[data-act]").forEach(btn => {
@@ -1902,6 +1913,12 @@ function renderMembers() {
       // show-dyn-qr = แสดง Dynamic QR (PromptPay ล็อกยอด) สำหรับสมาชิกคนนั้น
       if (act === "show-dyn-qr") {
         openPaymentModal(idx);
+        return;
+      }
+
+      // edit-player = แสดงตั้งค่าผู้เล่น
+      if (act === "edit-player") {
+        openPlayerSettingsModal(idx, true);
         return;
       }
 
@@ -2027,8 +2044,23 @@ function renderMatches() {
           </div>
           ${m.shuttleNumbers ? `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>` : ''}
         </div>
-        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7">
-          ${(m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean)).map(pid => escapeHtml(membersMap[pid] || '?')).join(", ")}
+        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
+          ${(() => {
+            const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
+            if (pIds.length === 4) {
+              const name1 = escapeHtml(membersMap[pIds[0]] || '?');
+              const name2 = escapeHtml(membersMap[pIds[1]] || '?');
+              const name3 = escapeHtml(membersMap[pIds[2]] || '?');
+              const name4 = escapeHtml(membersMap[pIds[3]] || '?');
+              
+              if (useTeams()) {
+                return `<span class="text-rose-600 dark:text-rose-400 font-bold">${name1}, ${name2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span class="text-sky-600 dark:text-sky-400 font-bold">${name3}, ${name4}</span>`;
+              } else {
+                return `<span>${name1}, ${name2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span>${name3}, ${name4}</span>`;
+              }
+            }
+            return pIds.map(pid => escapeHtml(membersMap[pid] || '?')).join(", ");
+          })()}
         </div>
       </div>
       <div class="flex flex-col items-center gap-1.5">
@@ -2249,6 +2281,9 @@ $("fldOtherCostType").addEventListener("change", e => {
   saveSession({ otherCostType: val });
 });
 
+$("fldMatchMode")?.addEventListener("change", e => saveSession({ mode: e.target.value }));
+$("fldUseTeams")?.addEventListener("change", e => saveSession({ useTeams: e.target.checked }));
+
 // Add member
 function addMember() {
   const input = $("fldNewMember");
@@ -2337,13 +2372,67 @@ $("btnAddMatch").addEventListener("click", () => {
   $("matchModal").classList.remove("hidden");
 });
 
+// ============================================================
+// 🎖️  Skill / Mode helpers (Phase 1-3 of Advance mode feature)
+// ============================================================
+// Skill: A=4 (เก่งสุด), B=3, C=2, D=1
+const SKILL_VALUE = { A: 4, B: 3, C: 2, D: 1 };
+const SKILL_LEVELS = ["A", "B", "C", "D"];
+
+function getMode() { return currentSession?.mode === "advance" ? "advance" : "normal"; }
+function isAdvanceMode() { return getMode() === "advance"; }
+function useTeams() { return !!currentSession?.useTeams; }
+
+function getSkillValue(memberId, members) {
+  const m = (members || currentSession?.members || []).find(x => x.id === memberId);
+  const s = (m && m.skill) || null;
+  return s && SKILL_VALUE[s] ? SKILL_VALUE[s] : 2.5; // unknown → กลางๆ
+}
+
+// คะแนน skill gap ของ 4 ใน combo — split เป็น 2 vs 2 ทั้ง 3 วิธี เลือก gap ต่ำสุด
+function bestSkillSplitGap(ids, members) {
+  if (ids.length !== 4) return 0;
+  const v = ids.map(id => getSkillValue(id, members));
+  const pairs = [
+    Math.abs((v[0] + v[1]) - (v[2] + v[3])),
+    Math.abs((v[0] + v[2]) - (v[1] + v[3])),
+    Math.abs((v[0] + v[3]) - (v[1] + v[2]))
+  ];
+  return Math.min(...pairs);
+}
+
+// คืน split ที่ดีที่สุดของ 4 ids → { teamA, teamB, gap }
+// ถ้า teammateCount มี → minimize teammate overlap ก่อน skill gap
+function findBestTeamSplit(ids, members, teammateCount) {
+  if (ids.length !== 4) return { teamA: ids.slice(0, 2), teamB: ids.slice(2, 4), gap: 0 };
+  const splits = [
+    { a: [ids[0], ids[1]], b: [ids[2], ids[3]] },
+    { a: [ids[0], ids[2]], b: [ids[1], ids[3]] },
+    { a: [ids[0], ids[3]], b: [ids[1], ids[2]] }
+  ];
+  const scored = splits.map(s => {
+    const va = getSkillValue(s.a[0], members) + getSkillValue(s.a[1], members);
+    const vb = getSkillValue(s.b[0], members) + getSkillValue(s.b[1], members);
+    const gap = Math.abs(va - vb);
+    let teammateOverlap = 0;
+    if (teammateCount) {
+      teammateOverlap += (teammateCount[s.a[0]]?.[s.a[1]] || 0);
+      teammateOverlap += (teammateCount[s.b[0]]?.[s.b[1]] || 0);
+    }
+    return { teamA: s.a, teamB: s.b, gap, teammateOverlap, strA: va, strB: vb };
+  });
+  // ลำดับความสำคัญ: teammateOverlap ↑ → gap ↑
+  scored.sort((x, y) => x.teammateOverlap - y.teammateOverlap || x.gap - y.gap);
+  return scored[0];
+}
+
 // ---------- Match scoring helpers (shared by renderMatchDraft + auto-draft) ----------
 // คำนวณคะแนนของชุด N คน (ปกติ N=4) เพื่อใช้ในการแนะนำและสุ่ม
 //   balance = ผลรวมเกมส่วนเกินจาก minGames (ยิ่งน้อย = ทุกคนเล่นเท่าๆ กัน)
 //   max     = คู่ที่จับกันมากสุดในชุด (ยิ่งน้อย = ไม่สร้างคู่ที่ซ้ำหนัก)
 //   unmet   = จำนวนคู่ในชุดที่ยังไม่เคยจับกันมาก่อน (ยิ่งมาก = สร้างคู่ใหม่ๆ)
 //   sum     = ผลรวม partner overlap ทุกคู่ (tiebreaker)
-function scoreMatchCombo(ids, gamesPlayed, partnerCount, minGames) {
+function scoreMatchCombo(ids, gamesPlayed, partnerCount, minGames, opts) {
   let sum = 0, max = 0, unmet = 0;
   const n = ids.length;
   for (let i = 0; i < n; i++) {
@@ -2355,20 +2444,47 @@ function scoreMatchCombo(ids, gamesPlayed, partnerCount, minGames) {
     }
   }
   const balance = ids.reduce((acc, id) => acc + (gamesPlayed[id] - minGames), 0);
-  return { balance, max, unmet, sum };
+  
+  // ใน Advance mode → คะแนน skillGap = gap ของ best 2v2 split ในชุดนี้
+  let skillGap = 0;
+  if (opts && opts.advanceMode && n === 4) {
+    skillGap = bestSkillSplitGap(ids, opts.members);
+  }
+  
+  // ใน Team mode → คำนวณความเบี่ยงเบนของทีม (teamImbalance) เพื่อให้ได้ Team A 2 คน และ Team B 2 คน
+  let teamImbalance = 0;
+  if (opts && opts.useTeams && n === 4) {
+    let countA = 0;
+    let countB = 0;
+    ids.forEach(id => {
+      const m = (opts.members || []).find(x => x.id === id);
+      if (m) {
+        if (m.team === "A") countA++;
+        else if (m.team === "B") countB++;
+      }
+    });
+    teamImbalance = Math.abs(countA - 2) + Math.abs(countB - 2);
+  }
+  
+  return { balance, max, unmet, sum, skillGap, teamImbalance };
 }
 
-// เปรียบเทียบ score: balance ↑ → max ↑ → unmet ↓ (มากดีกว่า) → sum ↑
+// เปรียบเทียบ score: teamImbalance ↓ (ถ้าเปิด Team mode) → balance ↑ → max ↑ → skillGap ↑ (Advance only) → unmet ↓ → sum ↑
 function compareScores(x, y) {
+  if ((x.teamImbalance || 0) !== (y.teamImbalance || 0)) {
+    return (x.teamImbalance || 0) - (y.teamImbalance || 0);
+  }
   if (x.balance !== y.balance) return x.balance - y.balance;
   if (x.max !== y.max) return x.max - y.max;
+  // skillGap มีค่าเฉพาะ Advance — ถ้าเป็น 0 ทั้งคู่ก็ไม่กระทบลำดับ
+  if ((x.skillGap || 0) !== (y.skillGap || 0)) return (x.skillGap || 0) - (y.skillGap || 0);
   if (x.unmet !== y.unmet) return y.unmet - x.unmet;
   return x.sum - y.sum;
 }
 
 // หา "ชุดที่ดีที่สุด" สำหรับเติมที่นั่ง slotsNeeded ที่เหลือ โดยมี fixedIds ที่ถูกเลือกไว้แล้ว
 // deterministic = true → เลือกแบบคงที่ (สำหรับ UI), false → สุ่มในกลุ่มเสมอ (สำหรับ Auto Draft)
-function findOptimalAddition(availableMembers, fixedIds, slotsNeeded, gamesPlayed, partnerCount, minGames, deterministic) {
+function findOptimalAddition(availableMembers, fixedIds, slotsNeeded, gamesPlayed, partnerCount, minGames, deterministic, opts) {
   if (slotsNeeded <= 0) return [];
   const ids = availableMembers.map(m => m.id);
   if (ids.length < slotsNeeded) return ids.slice();
@@ -2379,7 +2495,7 @@ function findOptimalAddition(availableMembers, fixedIds, slotsNeeded, gamesPlaye
   function recurse(start) {
     if (picked.length === slotsNeeded) {
       const combined = fixedIds.concat(picked);
-      const sc = scoreMatchCombo(combined, gamesPlayed, partnerCount, minGames);
+      const sc = scoreMatchCombo(combined, gamesPlayed, partnerCount, minGames, opts);
       combos.push({ pickedIds: picked.slice(), ...sc });
       return;
     }
@@ -2396,7 +2512,9 @@ function findOptimalAddition(availableMembers, fixedIds, slotsNeeded, gamesPlaye
   const best = combos[0];
   const tied = combos.filter(c =>
     c.balance === best.balance && c.max === best.max &&
-    c.unmet === best.unmet && c.sum === best.sum
+    c.unmet === best.unmet && c.sum === best.sum &&
+    (c.teamImbalance || 0) === (best.teamImbalance || 0) &&
+    (c.skillGap || 0) === (best.skillGap || 0)
   );
 
   if (deterministic) {
@@ -2492,19 +2610,92 @@ function renderMatchDraft() {
   });
 
   // ----- Selected players (กล่องบน) -----
-  let selHtml = "";
-  matchDraftPlayers.forEach(id => {
-    const m = allMembers.find(x => x.id === id);
-    if (!m) return;
-    selHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
-  });
+  const useT = useTeams();
+  const selectedBox = $("selectedPlayersBox");
+  const teamBoxes = $("teamBoxes");
 
-  if (matchDraftPlayers.length === 0) {
-    selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
+  if (useT) {
+    selectedBox?.classList.add("hidden");
+    teamBoxes?.classList.remove("hidden");
+    
+    // Distribute selected players into Team A and Team B based on preference and capacity (2 per team max)
+    let teamAPlayers = [];
+    let teamBPlayers = [];
+    matchDraftPlayers.forEach(id => {
+      const m = allMembers.find(x => x.id === id);
+      if (m) {
+        if (m.team === "A") {
+          if (teamAPlayers.length < 2) teamAPlayers.push(id);
+          else teamBPlayers.push(id);
+        } else if (m.team === "B") {
+          if (teamBPlayers.length < 2) teamBPlayers.push(id);
+          else teamAPlayers.push(id);
+        }
+      }
+    });
+    
+    // Distribute unassigned players
+    matchDraftPlayers.forEach(id => {
+      if (!teamAPlayers.includes(id) && !teamBPlayers.includes(id)) {
+        if (teamAPlayers.length < 2) teamAPlayers.push(id);
+        else if (teamBPlayers.length < 2) teamBPlayers.push(id);
+        else teamAPlayers.push(id);
+      }
+    });
+    
+    // Render Team A
+    let teamAHtml = "";
+    teamAPlayers.forEach(id => {
+      const m = allMembers.find(x => x.id === id);
+      if (!m) return;
+      teamAHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-rose-500 text-white shadow-sm ring-2 ring-rose-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
+    });
+    if (teamAPlayers.length === 0) {
+      teamAHtml = `<div class="text-rose-400 text-xs py-2 w-full text-center">ยังไม่มีผู้เล่นทีม A</div>`;
+    }
+    $("teamAPlayers").innerHTML = teamAHtml;
+    $("teamACount").textContent = teamAPlayers.length;
+    
+    // Render Team B
+    let teamBHtml = "";
+    teamBPlayers.forEach(id => {
+      const m = allMembers.find(x => x.id === id);
+      if (!m) return;
+      teamBHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-sky-500 text-white shadow-sm ring-2 ring-sky-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
+    });
+    if (teamBPlayers.length === 0) {
+      teamBHtml = `<div class="text-sky-400 text-xs py-2 w-full text-center">ยังไม่มีผู้เล่นทีม B</div>`;
+    }
+    $("teamBPlayers").innerHTML = teamBHtml;
+    $("teamBCount").textContent = teamBPlayers.length;
+    
+    // Calculate strengths
+    const getTeamStrength = (playerIds) => {
+      return playerIds.reduce((sum, id) => sum + getSkillValue(id, allMembers), 0);
+    };
+    const strA = getTeamStrength(teamAPlayers);
+    const strB = getTeamStrength(teamBPlayers);
+    
+    $("teamAStrength").textContent = `Strength: ${strA.toFixed(1)}`;
+    $("teamBStrength").textContent = `Strength: ${strB.toFixed(1)}`;
   } else {
-    selHtml = `<div class="flex flex-wrap gap-2">${selHtml}</div>`;
+    selectedBox?.classList.remove("hidden");
+    teamBoxes?.classList.add("hidden");
+    
+    let selHtml = "";
+    matchDraftPlayers.forEach(id => {
+      const m = allMembers.find(x => x.id === id);
+      if (!m) return;
+      selHtml += `<button data-draft-id="${id}" class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 ring-offset-1 transition-transform active:scale-95">${escapeHtml(m.name)} ✕</button>`;
+    });
+
+    if (matchDraftPlayers.length === 0) {
+      selHtml = `<div class="text-slate-400 text-sm py-4 w-full text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">ยังไม่ได้เลือกผู้เล่น<br><span class="text-xs">แตะชื่อด้านล่างเพื่อดึงลงสนาม</span></div>`;
+    } else {
+      selHtml = `<div class="flex flex-wrap gap-2">${selHtml}</div>`;
+    }
+    selectedDiv.innerHTML = selHtml;
   }
-  selectedDiv.innerHTML = selHtml;
 
   // ----- Available players (รายการแนวตั้ง) -----
   // คนที่จ่ายเงินแล้ว = "ออกจากก๊วน" → ไม่อยู่ใน pool ให้เลือกจัดเกมใหม่
@@ -2536,7 +2727,8 @@ function renderMatchDraft() {
     if (slotsNeeded > 0) {
       const optimal = findOptimalAddition(
         available, matchDraftPlayers, slotsNeeded,
-        gamesPlayed, partnerCount, minGames, true /* deterministic */
+        gamesPlayed, partnerCount, minGames, true /* deterministic */,
+        { advanceMode: isAdvanceMode(), members: allMembers, useTeams: useTeams() }
       );
       topPickIds = new Set(optimal);
     }
@@ -2667,6 +2859,37 @@ function renderMatchDraft() {
 $("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.add("hidden"));
 $("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal") $("matchModal").classList.add("hidden"); });
 
+$("btnAutoSplit")?.addEventListener("click", () => {
+  if (matchDraftPlayers.length !== 4) return toast("กรุณาเลือกผู้เล่นให้ครบ 4 คนก่อนครับ");
+  
+  // Calculate partner counts to minimize duplicate teammates
+  const matches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
+  const teammateCount = {};
+  const allMembers = currentSession.members || [];
+  allMembers.forEach(m => { teammateCount[m.id] = {}; });
+  
+  matches.forEach(match => {
+    const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
+    if (pIds.length === 4) {
+      const a1 = pIds[0], a2 = pIds[1];
+      if (teammateCount[a1] && teammateCount[a2]) {
+        teammateCount[a1][a2] = (teammateCount[a1][a2] || 0) + 1;
+        teammateCount[a2][a1] = (teammateCount[a2][a1] || 0) + 1;
+      }
+      const b1 = pIds[2], b2 = pIds[3];
+      if (teammateCount[b1] && teammateCount[b2]) {
+        teammateCount[b1][b2] = (teammateCount[b1][b2] || 0) + 1;
+        teammateCount[b2][b1] = (teammateCount[b2][b1] || 0) + 1;
+      }
+    }
+  });
+  
+  const split = findBestTeamSplit(matchDraftPlayers, allMembers, teammateCount);
+  matchDraftPlayers = [...split.teamA, ...split.teamB];
+  renderMatchDraft();
+  toast("จัดทีมให้สมดุลที่สุดแล้ว ✨");
+});
+
 // ---------- Auto Draft (สุ่มจัดคิว) ----------
 const autoDraftBtn = $("btnAutoDraft");
 if (autoDraftBtn) {
@@ -2705,7 +2928,11 @@ if (autoDraftBtn) {
 
       // minGames คำนวณเฉพาะคนที่ eligible — ไม่งั้นคนจ่ายแล้วที่เล่นน้อยจะดึง balance ผิด
       const minGames = Math.min(...eligibleMembers.map(m => gamesPlayed[m.id]));
-      const picked = findOptimalAddition(eligibleMembers, [], 4, gamesPlayed, partnerCount, minGames, false);
+      const picked = findOptimalAddition(eligibleMembers, [], 4, gamesPlayed, partnerCount, minGames, false, {
+        advanceMode: isAdvanceMode(),
+        members: allMembers,
+        useTeams: useTeams()
+      });
 
       if (picked && picked.length === 4) {
         matchDraftPlayers = picked;
@@ -2755,14 +2982,41 @@ $("btnSaveMatch").addEventListener("click", () => {
     }
   }
 
+  let finalDraftPlayers = [...matchDraftPlayers];
+  if (useTeams()) {
+    const allMembers = currentSession.members || [];
+    let teamAPlayers = [];
+    let teamBPlayers = [];
+    matchDraftPlayers.forEach(id => {
+      const m = allMembers.find(x => x.id === id);
+      if (m) {
+        if (m.team === "A") {
+          if (teamAPlayers.length < 2) teamAPlayers.push(id);
+          else teamBPlayers.push(id);
+        } else if (m.team === "B") {
+          if (teamBPlayers.length < 2) teamBPlayers.push(id);
+          else teamAPlayers.push(id);
+        }
+      }
+    });
+    matchDraftPlayers.forEach(id => {
+      if (!teamAPlayers.includes(id) && !teamBPlayers.includes(id)) {
+        if (teamAPlayers.length < 2) teamAPlayers.push(id);
+        else if (teamBPlayers.length < 2) teamBPlayers.push(id);
+        else teamAPlayers.push(id);
+      }
+    });
+    finalDraftPlayers = [...teamAPlayers, ...teamBPlayers];
+  }
+
   if (editingMatchId) {
     const idx = matches.findIndex(x => x.id === editingMatchId);
     if (idx !== -1) {
-      matches[idx] = { ...matches[idx], players: matchDraftPlayers, shuttleNumbers: shuttles };
+      matches[idx] = { ...matches[idx], players: finalDraftPlayers, shuttleNumbers: shuttles };
       delete matches[idx].a1; delete matches[idx].a2; delete matches[idx].b1; delete matches[idx].b2;
     }
   } else {
-    matches.push({ id: uid(), players: matchDraftPlayers, shuttleNumbers: shuttles });
+    matches.push({ id: uid(), players: finalDraftPlayers, shuttleNumbers: shuttles });
   }
 
   saveSession({ matches });
@@ -3481,11 +3735,31 @@ async function setupJoinView(id) {
         btnJoinAnother?.classList.remove("hidden");
       }
 
+      // Show/hide join form skill and team sections based on session settings
+      const joinSkillSec = $("joinSkillSection");
+      const joinTeamSec = $("joinTeamSection");
+      if (joinSkillSec) {
+        if (s.mode === "advance") {
+          joinSkillSec.classList.remove("hidden");
+        } else {
+          joinSkillSec.classList.add("hidden");
+        }
+      }
+      if (joinTeamSec) {
+        if (s.useTeams) {
+          joinTeamSec.classList.remove("hidden");
+        } else {
+          joinTeamSec.classList.add("hidden");
+        }
+      }
+
       // Render members list
       // - ปิดก๊วน: แสดงยอดเงิน + สถานะจ่าย
       // - เปิดก๊วน: แสดงแค่ชื่อ (ไม่โชว์ยอด)
       $("joinMembersList").innerHTML = mems.map((m, idx) => {
         const isPaid = !!m.isPaid;
+        const badgeSkill = m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold rounded shrink-0">${m.skill}</span>` : '';
+        const badgeTeam = m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-bold rounded shrink-0">Team ${m.team}</span>` : '';
 
         if (isClosed) {
           const cost = totals.perMember?.[idx] ?? 0;
@@ -3504,7 +3778,11 @@ async function setupJoinView(id) {
             <li class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 pr-2">
               <div class="flex items-center gap-2 min-w-0 flex-1">
                 <span class="${isPaid ? 'text-emerald-500' : 'text-rose-400'} shrink-0 text-xs">●</span>
-                <span class="${isPaid ? 'text-slate-500 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100 font-medium'} truncate">${escapeHtml(m.name)}</span>
+                <button data-act="edit-player-join" data-idx="${idx}" class="text-left font-medium hover:text-emerald-600 flex items-center gap-1.5 ${isPaid ? 'text-slate-500 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'} truncate" title="คลิกเพื่อตั้งค่าระดับมือ/ทีม">
+                  <span>${escapeHtml(m.name)}</span>
+                  ${badgeSkill}
+                  ${badgeTeam}
+                </button>
               </div>
               <div class="flex items-center shrink-0 ml-2">
                 ${priceBadge}
@@ -3516,9 +3794,13 @@ async function setupJoinView(id) {
 
         // เปิดก๊วน — แค่ชื่อ
         return `
-          <li class="flex items-center gap-2 py-1.5">
-            <span class="text-emerald-500 text-xs">●</span>
-            <span class="text-slate-800 dark:text-slate-200">${escapeHtml(m.name)}</span>
+          <li class="flex items-center gap-2 py-1.5 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0">
+            <span class="text-emerald-500 text-xs shrink-0">●</span>
+            <button data-act="edit-player-join" data-idx="${idx}" class="text-left font-medium text-slate-800 dark:text-slate-200 hover:text-emerald-600 flex items-center gap-1.5 truncate" title="คลิกเพื่อตั้งค่าระดับมือ/ทีม">
+              <span>${escapeHtml(m.name)}</span>
+              ${badgeSkill}
+              ${badgeTeam}
+            </button>
           </li>
         `;
       }).join("");
@@ -3528,6 +3810,14 @@ async function setupJoinView(id) {
         btn.addEventListener("click", () => {
           const idx = parseInt(btn.dataset.payMemberIdx, 10);
           if (!isNaN(idx)) openPaymentModal(idx);
+        });
+      });
+
+      // Wire up "edit-player-join" buttons
+      $("joinMembersList").querySelectorAll("button[data-act='edit-player-join']").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.dataset.idx, 10);
+          if (!isNaN(idx)) openPlayerSettingsModal(idx, false);
         });
       });
       // --- สิ้นสุด ---
@@ -3574,9 +3864,26 @@ $("btnSubmitJoin").addEventListener("click", async () => {
 
     const newId = uid();
     trackOwnSubmit(newId);
-    members.push({ id: newId, name, shuttlesUsed: 0 });
+    
+    const skill = (s.mode === "advance") ? currentJoinSkill : null;
+    const team = (s.useTeams) ? currentJoinTeam : null;
+    
+    members.push({
+      id: newId,
+      name,
+      shuttlesUsed: 0,
+      skill: skill || null,
+      team: team || null
+    });
+    
     await updateDoc(ref, { members });
     addKnownMember(name); // จดจำชื่อในเครื่องของผู้เล่นไว้
+
+    // รีเซ็ตการเลือกฟอร์มลงชื่อหลังกดเข้าร่วมสำเร็จ
+    currentJoinSkill = null;
+    currentJoinTeam = null;
+    updateJoinSkillUI();
+    updateJoinTeamUI();
 
     // Show success with the added name
     const successNameEl = $("joinSuccessName");
@@ -4914,6 +5221,224 @@ async function populatePlayerDatalist() {
     console.warn("Failed to fetch all player names for suggestions:", err);
   }
 }
+
+// ============================================================
+// 🎖️ PLAYER SETTINGS MODAL & PUBLIC SELECTORS
+// ============================================================
+let editingPlayerIdx = null;
+let editingPlayerIsAdmin = true;
+let editingPlayerSkill = null;
+let editingPlayerTeam = null;
+
+// Public Join form state
+let currentJoinSkill = null;
+let currentJoinTeam = null;
+
+function updateJoinSkillUI() {
+  const container = $("joinSkillSection");
+  if (!container) return;
+  container.querySelectorAll("button[data-join-skill]").forEach(btn => {
+    const s = btn.dataset.joinSkill;
+    if (s === currentJoinSkill) {
+      btn.className = "py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-indigo-600 border-indigo-600 text-white shadow-md scale-95";
+    } else {
+      btn.className = "py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800";
+    }
+  });
+}
+
+function updateJoinTeamUI() {
+  const container = $("joinTeamSection");
+  if (!container) return;
+  
+  const btnA = $("btnJoinTeamA");
+  const btnB = $("btnJoinTeamB");
+  const btnNone = $("btnJoinTeamNone");
+  
+  if (!btnA) return;
+  
+  if (currentJoinTeam === "A") {
+    btnA.className = "py-2.5 rounded-xl font-bold border bg-rose-600 border-rose-600 text-white shadow-md scale-95 transition-all text-xs";
+    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
+    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
+  } else if (currentJoinTeam === "B") {
+    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
+    btnB.className = "py-2.5 rounded-xl font-bold border bg-sky-600 border-sky-600 text-white shadow-md scale-95 transition-all text-xs";
+    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
+  } else {
+    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
+    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
+    btnNone.className = "py-2.5 rounded-xl font-bold border bg-slate-600 border-slate-600 text-white shadow-md scale-95 transition-all text-xs";
+  }
+}
+
+// Bind Join Form selectors
+$("joinSkillSection")?.querySelectorAll("button[data-join-skill]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentJoinSkill = btn.dataset.joinSkill;
+    updateJoinSkillUI();
+  });
+});
+
+$("btnJoinTeamA")?.addEventListener("click", () => {
+  currentJoinTeam = "A";
+  updateJoinTeamUI();
+});
+$("btnJoinTeamB")?.addEventListener("click", () => {
+  currentJoinTeam = "B";
+  updateJoinTeamUI();
+});
+$("btnJoinTeamNone")?.addEventListener("click", () => {
+  currentJoinTeam = null;
+  updateJoinTeamUI();
+});
+
+// Settings Modal controls
+function updateModalSkillUI() {
+  const container = $("playerModalSkillSection");
+  if (!container) return;
+  container.querySelectorAll("button[data-skill-opt]").forEach(btn => {
+    const s = btn.dataset.skillOpt;
+    if (s === editingPlayerSkill) {
+      btn.className = "py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-indigo-600 border-indigo-600 text-white shadow-md scale-95";
+    } else {
+      btn.className = "py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800";
+    }
+  });
+}
+
+function updateModalTeamUI() {
+  const btnA = $("btnPlayerTeamA");
+  const btnB = $("btnPlayerTeamB");
+  const btnNone = $("btnPlayerTeamNone");
+  if (!btnA) return;
+  
+  if (editingPlayerTeam === "A") {
+    btnA.className = "py-2.5 rounded-xl font-bold border bg-rose-600 border-rose-600 text-white shadow-md scale-95 transition-all text-xs";
+    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
+    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
+  } else if (editingPlayerTeam === "B") {
+    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
+    btnB.className = "py-2.5 rounded-xl font-bold border bg-sky-600 border-sky-600 text-white shadow-md scale-95 transition-all text-xs";
+    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
+  } else {
+    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
+    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
+    btnNone.className = "py-2.5 rounded-xl font-bold border bg-slate-600 border-slate-600 text-white shadow-md scale-95 transition-all text-xs";
+  }
+}
+
+// Bind Settings Modal selectors
+$("playerModalSkillSection")?.querySelectorAll("button[data-skill-opt]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    editingPlayerSkill = btn.dataset.skillOpt;
+    updateModalSkillUI();
+  });
+});
+
+$("btnPlayerTeamA")?.addEventListener("click", () => {
+  editingPlayerTeam = "A";
+  updateModalTeamUI();
+});
+$("btnPlayerTeamB")?.addEventListener("click", () => {
+  editingPlayerTeam = "B";
+  updateModalTeamUI();
+});
+$("btnPlayerTeamNone")?.addEventListener("click", () => {
+  editingPlayerTeam = null;
+  updateModalTeamUI();
+});
+
+// Close player modal
+$("btnClosePlayerSettings")?.addEventListener("click", () => $("playerSettingsModal").classList.add("hidden"));
+$("playerSettingsModal")?.addEventListener("click", e => {
+  if (e.target.id === "playerSettingsModal") $("playerSettingsModal").classList.add("hidden");
+});
+
+function openPlayerSettingsModal(idx, isAdminView) {
+  const members = currentSession?.members || [];
+  const m = members[idx];
+  if (!m) return;
+  
+  editingPlayerIdx = idx;
+  editingPlayerIsAdmin = isAdminView;
+  editingPlayerSkill = m.skill || null;
+  editingPlayerTeam = m.team || null;
+  
+  $("playerModalName").textContent = m.name;
+  
+  // Toggle visibility based on session config
+  const skillSec = $("playerModalSkillSection");
+  const teamSec = $("playerModalTeamSection");
+  
+  const adv = isAdvanceMode() || currentSession?.mode === "advance";
+  const teams = useTeams() || !!currentSession?.useTeams;
+  
+  if (skillSec) {
+    if (adv) skillSec.classList.remove("hidden");
+    else skillSec.classList.add("hidden");
+  }
+  if (teamSec) {
+    if (teams) teamSec.classList.remove("hidden");
+    else teamSec.classList.add("hidden");
+  }
+  
+  // Render current values
+  updateModalSkillUI();
+  updateModalTeamUI();
+  
+  $("playerSettingsModal").classList.remove("hidden");
+}
+
+$("btnSavePlayerSettings")?.addEventListener("click", async () => {
+  if (editingPlayerIdx === null) return;
+  
+  const saveBtn = $("btnSavePlayerSettings");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "กำลังบันทึก...";
+  
+  try {
+    const ref = doc(db, "sessions", currentSessionId);
+    
+    if (editingPlayerIsAdmin) {
+      // Admin View - modify in currentSession.members directly
+      const members = [...(currentSession.members || [])];
+      if (members[editingPlayerIdx]) {
+        members[editingPlayerIdx] = {
+          ...members[editingPlayerIdx],
+          skill: editingPlayerSkill || null,
+          team: editingPlayerTeam || null
+        };
+      }
+      await saveSession({ members });
+      toast("บันทึกการตั้งค่าผู้เล่นสำเร็จ ✨");
+    } else {
+      // User View - fetch snapshot to avoid race conditions, then save
+      const snap = await getDoc(ref);
+      if (!snap.exists()) throw new Error("ไม่พบข้อมูลก๊วน");
+      
+      const s = snap.data();
+      const members = [...(s.members || [])];
+      if (members[editingPlayerIdx]) {
+        members[editingPlayerIdx] = {
+          ...members[editingPlayerIdx],
+          skill: editingPlayerSkill || null,
+          team: editingPlayerTeam || null
+        };
+      }
+      await updateDoc(ref, { members });
+      toast("ตั้งค่าระดับมือ/ทีม เรียบร้อยครับ ✨");
+    }
+    
+    $("playerSettingsModal").classList.add("hidden");
+  } catch (err) {
+    console.error(err);
+    toast("เกิดข้อผิดพลาด: " + err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "บันทึกตั้งค่า";
+  }
+});
 
 // ============================================================
 // Init

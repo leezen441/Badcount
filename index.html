@@ -392,7 +392,22 @@
           <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">ตารางจัดเกม (<span id="matchCount">0</span>)</h3>
           <button id="btnViewStats" class="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-1"><span>📊</span> สถิติ</button>
         </div>
-        
+
+        <!-- โหมดจัดเกม + ทีม A/B (per-session settings) -->
+        <div class="flex flex-wrap items-center gap-2 mb-3 p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
+            โหมด
+            <select id="fldMatchMode" class="px-2 py-1 text-xs font-bold rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-emerald-500">
+              <option value="normal">🏸 ปกติ</option>
+              <option value="advance">🎖️ Advance (มีระดับมือ)</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 ml-auto cursor-pointer select-none">
+            <input type="checkbox" id="fldUseTeams" class="accent-emerald-600 w-4 h-4" />
+            <span>ทีม A / ทีม B</span>
+          </label>
+        </div>
+
         <div id="matchesList" class="space-y-2 mb-3">
           <p class="text-slate-400 text-center py-4 text-sm">ยังไม่มีเกม กดจัดเกมด้านล่าง</p>
         </div>
@@ -612,11 +627,51 @@
         </div>
 
         <div id="joinFormSection">
-          <label class="block mb-5">
+          <label class="block mb-4">
             <span class="text-sm font-semibold text-slate-600 dark:text-slate-400 block mb-2">ชื่อของคุณ</span>
             <input id="fldJoinName" type="text" placeholder="พิมพ์ชื่อเล่น..."
               class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-lg text-center bg-white dark:bg-slate-900" />
           </label>
+
+          <!-- Skill Level Selector (Join View - visible in Advance Mode) -->
+          <div id="joinSkillSection" class="hidden mb-4">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400 block mb-2">ระดับมือ (Skill Level)</span>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" data-join-skill="A" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                <span class="text-base">A</span>
+                <span class="text-[9px] font-normal opacity-80 mt-0.5">เก่งสุด</span>
+              </button>
+              <button type="button" data-join-skill="B" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                <span class="text-base">B</span>
+                <span class="text-[9px] font-normal opacity-80 mt-0.5">เก่ง</span>
+              </button>
+              <button type="button" data-join-skill="C" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                <span class="text-base">C</span>
+                <span class="text-[9px] font-normal opacity-80 mt-0.5">ทั่วไป</span>
+              </button>
+              <button type="button" data-join-skill="D" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                <span class="text-base">D</span>
+                <span class="text-[9px] font-normal opacity-80 mt-0.5">เริ่มต้น</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Team Selector (Join View - visible when useTeams is active) -->
+          <div id="joinTeamSection" class="hidden mb-5">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400 block mb-2">เลือกทีม (Team Assignment)</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" id="btnJoinTeamA" class="py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all text-xs">
+                Team A
+              </button>
+              <button type="button" id="btnJoinTeamB" class="py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all text-xs">
+                Team B
+              </button>
+              <button type="button" id="btnJoinTeamNone" class="py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-105 transition-all text-xs">
+                ไม่มีทีม
+              </button>
+            </div>
+          </div>
+
           <button id="btnSubmitJoin"
             class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-sm transition-transform active:scale-95 text-lg mb-6">
             ลงชื่อเข้าร่วม
@@ -788,10 +843,34 @@
         </button>
       </div>
       
-      <!-- Selected Box -->
+      <!-- Selected Box — โหมดปกติ (No teams) -->
       <div class="bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 mb-4 min-h-[100px]" id="selectedPlayersBox">
         <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">ผู้เล่นในสนาม (<span id="selPlayerCount">0</span>/4)</div>
         <div id="selectedPlayers" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Team Boxes — เมื่อ useTeams=on -->
+      <div id="teamBoxes" class="hidden mb-4 space-y-2">
+        <div class="bg-rose-50 dark:bg-rose-900/20 border-2 border-dashed border-rose-300 dark:border-rose-700 rounded-xl p-3 min-h-[70px]">
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wide">🅰️ Team A (<span id="teamACount">0</span>/2)</div>
+            <span id="teamAStrength" class="text-[10px] font-semibold text-rose-600 dark:text-rose-400"></span>
+          </div>
+          <div id="teamAPlayers" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="flex items-center justify-center gap-2">
+          <span class="text-slate-400 text-xs font-bold">VS</span>
+          <button id="btnAutoSplit" class="text-[11px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 px-3 py-1 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800/50">
+            ✨ จัดทีม Auto
+          </button>
+        </div>
+        <div class="bg-sky-50 dark:bg-sky-900/20 border-2 border-dashed border-sky-300 dark:border-sky-700 rounded-xl p-3 min-h-[70px]">
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="text-xs font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wide">🅱️ Team B (<span id="teamBCount">0</span>/2)</div>
+            <span id="teamBStrength" class="text-[10px] font-semibold text-sky-600 dark:text-sky-400"></span>
+          </div>
+          <div id="teamBPlayers" class="flex flex-wrap gap-2"></div>
+        </div>
       </div>
 
       <!-- Shuttlecock Input -->
@@ -901,6 +980,63 @@
     <div class="px-4 py-3 bg-black/80 text-white text-center">
       <p id="cameraScanStatus" class="text-sm">⏳ กำลังเปิดกล้อง...</p>
       <p class="text-xs opacity-60 mt-1">เล็งกล้องไปที่ QR ในสลิป (บนหน้าจอ member หรือกระดาษ)</p>
+    </div>
+  </div>
+
+  <!-- ===== PLAYER SETTINGS MODAL ===== -->
+  <div id="playerSettingsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          👤 <span id="playerModalName">—</span>
+        </h3>
+        <button id="btnClosePlayerSettings" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+
+      <!-- Skill Section (only shown if isAdvanceMode) -->
+      <div id="playerModalSkillSection" class="mb-5">
+        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">🎖️ ระดับมือ (Skill Level)</label>
+        <div class="grid grid-cols-4 gap-2">
+          <button data-skill-opt="A" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+            <span class="text-base">A</span>
+            <span class="text-[9px] font-normal opacity-80 mt-0.5">เก่งสุด</span>
+          </button>
+          <button data-skill-opt="B" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+            <span class="text-base">B</span>
+            <span class="text-[9px] font-normal opacity-80 mt-0.5">เก่ง</span>
+          </button>
+          <button data-skill-opt="C" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+            <span class="text-base">C</span>
+            <span class="text-[9px] font-normal opacity-80 mt-0.5">ทั่วไป</span>
+          </button>
+          <button data-skill-opt="D" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+            <span class="text-base">D</span>
+            <span class="text-[9px] font-normal opacity-80 mt-0.5">เริ่มต้น</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Team Section (only shown if useTeams) -->
+      <div id="playerModalTeamSection" class="mb-5">
+        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">🅰️/🅱️ เลือกทีม (Team Assignment)</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button id="btnPlayerTeamA" class="py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all text-xs">
+            Team A
+          </button>
+          <button id="btnPlayerTeamB" class="py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all text-xs">
+            Team B
+          </button>
+          <button id="btnPlayerTeamNone" class="py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-805 transition-all text-xs">
+            ไม่มีทีม
+          </button>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-2">
+        <button id="btnSavePlayerSettings" class="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3 rounded-xl font-bold text-sm shadow-md transition-transform active:scale-95">
+          บันทึกตั้งค่า
+        </button>
+      </div>
     </div>
   </div>
 
