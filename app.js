@@ -1864,11 +1864,19 @@ function renderMembers() {
       
       <div class="flex-1 min-w-0 flex items-center justify-between gap-1 sm:gap-2">
         <div class="min-w-0 flex-1 flex items-center gap-1">
-          <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate max-w-[65px] sm:max-w-none text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/ทีม">
+          <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate max-w-[65px] sm:max-w-none text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/Buddy">
             ${escapeHtml(m.name)}
           </button>
           ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
-          ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-extrabold rounded shrink-0">${m.team}</span>` : ''}
+          ${(() => {
+            if (m.buddyId) {
+              const buddy = members.find(x => x.id === m.buddyId);
+              if (buddy) {
+                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
+              }
+            }
+            return "";
+          })()}
           ${pStats[m.id].games > 0
             ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
             : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
@@ -2397,6 +2405,14 @@ function getSkillValue(memberId, members) {
   return s && SKILL_VALUE[s] ? SKILL_VALUE[s] : 2.5; // unknown → กลางๆ
 }
 
+// Check if two players are buddies
+function areBuddies(id1, id2, members) {
+  const m1 = (members || currentSession?.members || []).find(m => m.id === id1);
+  const m2 = (members || currentSession?.members || []).find(m => m.id === id2);
+  if (!m1 || !m2) return false;
+  return m1.buddyId === id2 || m2.buddyId === id1;
+}
+
 // คะแนน skill gap ของ 4 ใน combo — split เป็น 2 vs 2 ทั้ง 3 วิธี เลือก gap ต่ำสุด
 function bestSkillSplitGap(ids, members) {
   if (ids.length !== 4) return 0;
@@ -2427,7 +2443,23 @@ function findBestTeamSplit(ids, members, teammateCount) {
       teammateOverlap += (teammateCount[s.a[0]]?.[s.a[1]] || 0);
       teammateOverlap += (teammateCount[s.b[0]]?.[s.b[1]] || 0);
     }
-    return { teamA: s.a, teamB: s.b, gap, teammateOverlap, strA: va, strB: vb };
+    
+    // Add Buddy separation penalty
+    let buddyPenalty = 0;
+    for (let i = 0; i < 4; i++) {
+      for (let j = i + 1; j < 4; j++) {
+        const idI = ids[i];
+        const idJ = ids[j];
+        if (areBuddies(idI, idJ, members)) {
+          const separated = (s.a.includes(idI) && s.b.includes(idJ)) || (s.b.includes(idI) && s.a.includes(idJ));
+          if (separated) {
+            buddyPenalty += 99999;
+          }
+        }
+      }
+    }
+    
+    return { teamA: s.a, teamB: s.b, gap: gap + buddyPenalty, teammateOverlap, strA: va, strB: vb };
   });
   // ลำดับความสำคัญ: teammateOverlap ↑ → gap ↑
   scored.sort((x, y) => x.teammateOverlap - y.teammateOverlap || x.gap - y.gap);
@@ -2459,26 +2491,35 @@ function scoreMatchCombo(ids, gamesPlayed, partnerCount, minGames, opts) {
     skillGap = bestSkillSplitGap(ids, opts.members);
   }
   
-  // ใน Team mode → คำนวณความเบี่ยงเบนของทีม (teamImbalance) เพื่อให้ได้ Team A 2 คน และ Team B 2 คน
-  let teamImbalance = 0;
-  if (opts && opts.useTeams && n === 4) {
-    let countA = 0;
-    let countB = 0;
+  // ใน Buddy system → prioritized buddy pairing in auto draft
+  let buddyImbalance = 0;
+  if (opts && opts.members && n === 4) {
     ids.forEach(id => {
       const m = (opts.members || []).find(x => x.id === id);
-      if (m) {
-        if (m.team === "A") countA++;
-        else if (m.team === "B") countB++;
+      if (m && m.buddyId) {
+        // m has a buddy. Check if the buddy is registered in this session and NOT paid (eligible to play)
+        const buddyExists = (opts.members || []).some(x => x.id === m.buddyId && !x.isPaid);
+        if (buddyExists) {
+          const buddyInCombo = ids.includes(m.buddyId);
+          if (!buddyInCombo) {
+            // One buddy is selected but the other is left behind on the bench!
+            buddyImbalance += 10; // add a penalty to avoid splitting buddies
+          }
+        }
       }
     });
-    teamImbalance = Math.abs(countA - 2) + Math.abs(countB - 2);
   }
   
-  return { balance, max, unmet, sum, skillGap, teamImbalance };
+  let teamImbalance = 0;
+  
+  return { balance, max, unmet, sum, skillGap, teamImbalance, buddyImbalance };
 }
 
-// เปรียบเทียบ score: teamImbalance ↓ (ถ้าเปิด Team mode) → balance ↑ → max ↑ → skillGap ↑ (Advance only) → unmet ↓ → sum ↑
+// เปรียบเทียบ score: buddyImbalance ↓ (ถ้ามี) → balance ↑ → max ↑ → skillGap ↑ (Advance only) → unmet ↓ → sum ↑
 function compareScores(x, y) {
+  if ((x.buddyImbalance || 0) !== (y.buddyImbalance || 0)) {
+    return (x.buddyImbalance || 0) - (y.buddyImbalance || 0);
+  }
   if ((x.teamImbalance || 0) !== (y.teamImbalance || 0)) {
     return (x.teamImbalance || 0) - (y.teamImbalance || 0);
   }
@@ -2522,6 +2563,7 @@ function findOptimalAddition(availableMembers, fixedIds, slotsNeeded, gamesPlaye
     c.balance === best.balance && c.max === best.max &&
     c.unmet === best.unmet && c.sum === best.sum &&
     (c.teamImbalance || 0) === (best.teamImbalance || 0) &&
+    (c.buddyImbalance || 0) === (best.buddyImbalance || 0) &&
     (c.skillGap || 0) === (best.skillGap || 0)
   );
 
@@ -2856,7 +2898,15 @@ function renderMatchDraft() {
           <button data-draft-id="${m.id}" class="flex-1 text-left flex items-center gap-2 min-w-0 py-1">
             ${rankBadge}
             <span class="${nameClass} truncate">${escapeHtml(m.name)}</span>
-            ${m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-extrabold rounded shrink-0">${m.team}</span>` : ''}
+            ${(() => {
+              if (m.buddyId) {
+                const buddy = allMembers.find(x => x.id === m.buddyId);
+                if (buddy) {
+                  return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddy.name)}</span>`;
+                }
+              }
+              return "";
+            })()}
           </button>
           
           <div class="flex items-center gap-1.5 shrink-0">
@@ -3024,27 +3074,8 @@ if (autoDraftBtn) {
 
       if (picked && picked.length === 4) {
         if (useTeams()) {
-          let teamA = [];
-          let teamB = [];
-          picked.forEach(id => {
-            const m = allMembers.find(x => x.id === id);
-            if (m) {
-              if (m.team === "A") {
-                if (teamA.length < 2) teamA.push(id);
-                else teamB.push(id);
-              } else if (m.team === "B") {
-                if (teamB.length < 2) teamB.push(id);
-                else teamA.push(id);
-              }
-            }
-          });
-          picked.forEach(id => {
-            if (!teamA.includes(id) && !teamB.includes(id)) {
-              if (teamA.length < 2) teamA.push(id);
-              else teamB.push(id);
-            }
-          });
-          matchDraftPlayers = [teamA[0] || null, teamA[1] || null, teamB[0] || null, teamB[1] || null];
+          const split = findBestTeamSplit(picked, allMembers, null);
+          matchDraftPlayers = [split.teamA[0] || null, split.teamA[1] || null, split.teamB[0] || null, split.teamB[1] || null];
         } else {
           matchDraftPlayers = [...picked];
         }
@@ -3824,19 +3855,15 @@ async function setupJoinView(id) {
 
       // Show/hide join form skill and team sections based on session settings
       const joinSkillSec = $("joinSkillSection");
-      const joinTeamSec = $("joinTeamSection");
+      const joinBuddySec = $("joinBuddySection");
       if (joinSkillSec) {
         if (s.mode === "advance") {
           joinSkillSec.classList.remove("hidden");
+          joinBuddySec?.classList.remove("hidden");
+          populateBuddyDropdown($("fldJoinBuddy"), null);
         } else {
           joinSkillSec.classList.add("hidden");
-        }
-      }
-      if (joinTeamSec) {
-        if (s.useTeams) {
-          joinTeamSec.classList.remove("hidden");
-        } else {
-          joinTeamSec.classList.add("hidden");
+          joinBuddySec?.classList.add("hidden");
         }
       }
 
@@ -3846,7 +3873,14 @@ async function setupJoinView(id) {
       $("joinMembersList").innerHTML = mems.map((m, idx) => {
         const isPaid = !!m.isPaid;
         const badgeSkill = m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold rounded shrink-0">${m.skill}</span>` : '';
-        const badgeTeam = m.team ? `<span class="text-[9px] px-1.5 py-0.25 ${m.team === 'A' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300' : 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300'} font-bold rounded shrink-0">Team ${m.team}</span>` : '';
+        
+        let badgeBuddy = '';
+        if (m.buddyId) {
+          const buddyMember = mems.find(x => x.id === m.buddyId);
+          if (buddyMember) {
+            badgeBuddy = `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold rounded shrink-0">🤝 Buddy: ${escapeHtml(buddyMember.name)}</span>`;
+          }
+        }
 
         if (isClosed) {
           const cost = totals.perMember?.[idx] ?? 0;
@@ -3865,10 +3899,10 @@ async function setupJoinView(id) {
             <li class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 pr-2">
               <div class="flex items-center gap-2 min-w-0 flex-1">
                 <span class="${isPaid ? 'text-emerald-500' : 'text-rose-400'} shrink-0 text-xs">●</span>
-                <button data-act="edit-player-join" data-idx="${idx}" class="text-left font-medium hover:text-emerald-600 flex items-center gap-1.5 ${isPaid ? 'text-slate-500 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'} truncate" title="คลิกเพื่อตั้งค่าระดับมือ/ทีม">
+                <button data-act="edit-player-join" data-idx="${idx}" class="text-left font-medium hover:text-emerald-600 flex items-center gap-1.5 ${isPaid ? 'text-slate-500 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'} truncate" title="คลิกเพื่อตั้งค่าระดับมือ">
                   <span>${escapeHtml(m.name)}</span>
                   ${badgeSkill}
-                  ${badgeTeam}
+                  ${badgeBuddy}
                 </button>
               </div>
               <div class="flex items-center shrink-0 ml-2">
@@ -3883,10 +3917,10 @@ async function setupJoinView(id) {
         return `
           <li class="flex items-center gap-2 py-1.5 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0">
             <span class="text-emerald-500 text-xs shrink-0">●</span>
-            <button data-act="edit-player-join" data-idx="${idx}" class="text-left font-medium text-slate-800 dark:text-slate-200 hover:text-emerald-600 flex items-center gap-1.5 truncate" title="คลิกเพื่อตั้งค่าระดับมือ/ทีม">
+            <button data-act="edit-player-join" data-idx="${idx}" class="text-left font-medium text-slate-800 dark:text-slate-200 hover:text-emerald-600 flex items-center gap-1.5 truncate" title="คลิกเพื่อตั้งค่าระดับมือ">
               <span>${escapeHtml(m.name)}</span>
               ${badgeSkill}
-              ${badgeTeam}
+              ${badgeBuddy}
             </button>
           </li>
         `;
@@ -3953,14 +3987,14 @@ $("btnSubmitJoin").addEventListener("click", async () => {
     trackOwnSubmit(newId);
     
     const skill = (s.mode === "advance") ? currentJoinSkill : null;
-    const team = (s.useTeams) ? currentJoinTeam : null;
+    const buddyId = (s.mode === "advance") ? ($("fldJoinBuddy")?.value || null) : null;
     
     members.push({
       id: newId,
       name,
       shuttlesUsed: 0,
       skill: skill || null,
-      team: team || null
+      buddyId: buddyId || null
     });
     
     await updateDoc(ref, { members });
@@ -3968,9 +4002,9 @@ $("btnSubmitJoin").addEventListener("click", async () => {
 
     // รีเซ็ตการเลือกฟอร์มลงชื่อหลังกดเข้าร่วมสำเร็จ
     currentJoinSkill = null;
-    currentJoinTeam = null;
+    const joinBuddySelect = $("fldJoinBuddy");
+    if (joinBuddySelect) joinBuddySelect.value = "";
     updateJoinSkillUI();
-    updateJoinTeamUI();
 
     // Show success with the added name
     const successNameEl = $("joinSuccessName");
@@ -5309,17 +5343,25 @@ async function populatePlayerDatalist() {
   }
 }
 
-// ============================================================
-// 🎖️ PLAYER SETTINGS MODAL & PUBLIC SELECTORS
-// ============================================================
 let editingPlayerIdx = null;
 let editingPlayerIsAdmin = true;
 let editingPlayerSkill = null;
-let editingPlayerTeam = null;
+let editingPlayerBuddyId = null;
 
 // Public Join form state
 let currentJoinSkill = null;
-let currentJoinTeam = null;
+
+function populateBuddyDropdown(selectEl, currentBuddyId, excludeMemberId = null) {
+  if (!selectEl) return;
+  const members = currentSession?.members || [];
+  let html = '<option value="">ไม่มี Buddy</option>';
+  members.forEach(m => {
+    if (excludeMemberId && m.id === excludeMemberId) return;
+    const selected = m.id === currentBuddyId ? 'selected' : '';
+    html += `<option value="${m.id}" ${selected}>${escapeHtml(m.name)}</option>`;
+  });
+  selectEl.innerHTML = html;
+}
 
 function updateJoinSkillUI() {
   const container = $("joinSkillSection");
@@ -5334,50 +5376,12 @@ function updateJoinSkillUI() {
   });
 }
 
-function updateJoinTeamUI() {
-  const container = $("joinTeamSection");
-  if (!container) return;
-  
-  const btnA = $("btnJoinTeamA");
-  const btnB = $("btnJoinTeamB");
-  const btnNone = $("btnJoinTeamNone");
-  
-  if (!btnA) return;
-  
-  if (currentJoinTeam === "A") {
-    btnA.className = "py-2.5 rounded-xl font-bold border bg-rose-600 border-rose-600 text-white shadow-md scale-95 transition-all text-xs";
-    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
-    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
-  } else if (currentJoinTeam === "B") {
-    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
-    btnB.className = "py-2.5 rounded-xl font-bold border bg-sky-600 border-sky-600 text-white shadow-md scale-95 transition-all text-xs";
-    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
-  } else {
-    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
-    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
-    btnNone.className = "py-2.5 rounded-xl font-bold border bg-slate-600 border-slate-600 text-white shadow-md scale-95 transition-all text-xs";
-  }
-}
-
 // Bind Join Form selectors
 $("joinSkillSection")?.querySelectorAll("button[data-join-skill]").forEach(btn => {
   btn.addEventListener("click", () => {
     currentJoinSkill = btn.dataset.joinSkill;
     updateJoinSkillUI();
   });
-});
-
-$("btnJoinTeamA")?.addEventListener("click", () => {
-  currentJoinTeam = "A";
-  updateJoinTeamUI();
-});
-$("btnJoinTeamB")?.addEventListener("click", () => {
-  currentJoinTeam = "B";
-  updateJoinTeamUI();
-});
-$("btnJoinTeamNone")?.addEventListener("click", () => {
-  currentJoinTeam = null;
-  updateJoinTeamUI();
 });
 
 // Settings Modal controls
@@ -5394,46 +5398,12 @@ function updateModalSkillUI() {
   });
 }
 
-function updateModalTeamUI() {
-  const btnA = $("btnPlayerTeamA");
-  const btnB = $("btnPlayerTeamB");
-  const btnNone = $("btnPlayerTeamNone");
-  if (!btnA) return;
-  
-  if (editingPlayerTeam === "A") {
-    btnA.className = "py-2.5 rounded-xl font-bold border bg-rose-600 border-rose-600 text-white shadow-md scale-95 transition-all text-xs";
-    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
-    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
-  } else if (editingPlayerTeam === "B") {
-    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
-    btnB.className = "py-2.5 rounded-xl font-bold border bg-sky-600 border-sky-600 text-white shadow-md scale-95 transition-all text-xs";
-    btnNone.className = "py-2.5 rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all text-xs";
-  } else {
-    btnA.className = "py-2.5 rounded-xl font-bold border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 transition-all text-xs";
-    btnB.className = "py-2.5 rounded-xl font-bold border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-400 hover:bg-sky-50 transition-all text-xs";
-    btnNone.className = "py-2.5 rounded-xl font-bold border bg-slate-600 border-slate-600 text-white shadow-md scale-95 transition-all text-xs";
-  }
-}
-
 // Bind Settings Modal selectors
 $("playerModalSkillSection")?.querySelectorAll("button[data-skill-opt]").forEach(btn => {
   btn.addEventListener("click", () => {
     editingPlayerSkill = btn.dataset.skillOpt;
     updateModalSkillUI();
   });
-});
-
-$("btnPlayerTeamA")?.addEventListener("click", () => {
-  editingPlayerTeam = "A";
-  updateModalTeamUI();
-});
-$("btnPlayerTeamB")?.addEventListener("click", () => {
-  editingPlayerTeam = "B";
-  updateModalTeamUI();
-});
-$("btnPlayerTeamNone")?.addEventListener("click", () => {
-  editingPlayerTeam = null;
-  updateModalTeamUI();
 });
 
 // Close player modal
@@ -5450,21 +5420,24 @@ function openPlayerSettingsModal(idx, isAdminView) {
   editingPlayerIdx = idx;
   editingPlayerIsAdmin = isAdminView;
   editingPlayerSkill = m.skill || null;
-  editingPlayerTeam = m.team || null;
+  editingPlayerBuddyId = m.buddyId || null;
   
   $("playerModalName").textContent = m.name;
   
   // The settings modal is only accessible by administrators/managers.
-  // We always show both the Skill and Team sections so they can configure players at any time.
+  // We always show both the Skill and Buddy sections so they can configure players at any time.
   const skillSec = $("playerModalSkillSection");
-  const teamSec = $("playerModalTeamSection");
+  const buddySec = $("playerModalBuddySection");
   
   if (skillSec) skillSec.classList.remove("hidden");
-  if (teamSec) teamSec.classList.remove("hidden");
+  if (buddySec) {
+    buddySec.classList.remove("hidden");
+    // Populate Buddy dropdown
+    populateBuddyDropdown($("fldPlayerBuddy"), editingPlayerBuddyId, m.id);
+  }
   
   // Render current values
   updateModalSkillUI();
-  updateModalTeamUI();
   
   $("playerSettingsModal").classList.remove("hidden");
 }
@@ -5478,6 +5451,7 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
   
   try {
     const ref = doc(db, "sessions", currentSessionId);
+    const chosenBuddyId = $("fldPlayerBuddy")?.value || null;
     
     if (editingPlayerIsAdmin) {
       // Admin View - modify in currentSession.members directly
@@ -5486,7 +5460,7 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
         members[editingPlayerIdx] = {
           ...members[editingPlayerIdx],
           skill: editingPlayerSkill || null,
-          team: editingPlayerTeam || null
+          buddyId: chosenBuddyId
         };
       }
       await saveSession({ members });
@@ -5502,11 +5476,11 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
         members[editingPlayerIdx] = {
           ...members[editingPlayerIdx],
           skill: editingPlayerSkill || null,
-          team: editingPlayerTeam || null
+          buddyId: chosenBuddyId
         };
       }
       await updateDoc(ref, { members });
-      toast("ตั้งค่าระดับมือ/ทีม เรียบร้อยครับ ✨");
+      toast("ตั้งค่าระดับมือ/Buddy เรียบร้อยครับ ✨");
     }
     
     $("playerSettingsModal").classList.add("hidden");
