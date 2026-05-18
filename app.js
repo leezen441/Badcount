@@ -5462,8 +5462,14 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
       // Admin View - modify in currentSession.members directly
       const members = [...(currentSession.members || [])];
       if (members[editingPlayerIdx]) {
+        const currentPlayer = members[editingPlayerIdx];
+        members.forEach(y => {
+          if (y.id !== currentPlayer.id && y.buddyId === currentPlayer.id) {
+            if (chosenBuddyId !== y.id) y.buddyId = null;
+          }
+        });
         members[editingPlayerIdx] = {
-          ...members[editingPlayerIdx],
+          ...currentPlayer,
           skill: editingPlayerSkill || null,
           buddyId: chosenBuddyId
         };
@@ -5478,8 +5484,14 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
       const s = snap.data();
       const members = [...(s.members || [])];
       if (members[editingPlayerIdx]) {
+        const currentPlayer = members[editingPlayerIdx];
+        members.forEach(y => {
+          if (y.id !== currentPlayer.id && y.buddyId === currentPlayer.id) {
+            if (chosenBuddyId !== y.id) y.buddyId = null;
+          }
+        });
         members[editingPlayerIdx] = {
-          ...members[editingPlayerIdx],
+          ...currentPlayer,
           skill: editingPlayerSkill || null,
           buddyId: chosenBuddyId
         };
