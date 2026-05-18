@@ -2998,34 +2998,28 @@ $("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.ad
 $("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal") $("matchModal").classList.add("hidden"); });
 
 $("btnAutoSplit")?.addEventListener("click", () => {
-  if (matchDraftPlayers.filter(Boolean).length !== 4) return toast("กรุณาเลือกผู้เล่นให้ครบ 4 คนก่อนครับ");
+  const original = [...matchDraftPlayers];
+  const players = matchDraftPlayers.filter(Boolean);
+  if (players.length !== 4) return toast("กรุณาเลือกผู้เล่นให้ครบ 4 คนก่อนครับ");
   
-  // Calculate partner counts to minimize duplicate teammates
-  const matches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
-  const teammateCount = {};
-  const allMembers = currentSession.members || [];
-  allMembers.forEach(m => { teammateCount[m.id] = {}; });
-  
-  matches.forEach(match => {
-    const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
-    if (pIds.length === 4) {
-      const a1 = pIds[0], a2 = pIds[1];
-      if (teammateCount[a1] && teammateCount[a2]) {
-        teammateCount[a1][a2] = (teammateCount[a1][a2] || 0) + 1;
-        teammateCount[a2][a1] = (teammateCount[a2][a1] || 0) + 1;
-      }
-      const b1 = pIds[2], b2 = pIds[3];
-      if (teammateCount[b1] && teammateCount[b2]) {
-        teammateCount[b1][b2] = (teammateCount[b1][b2] || 0) + 1;
-        teammateCount[b2][b1] = (teammateCount[b2][b1] || 0) + 1;
-      }
+  // Shuffle until we get a different pairing/placement
+  let attempts = 0;
+  while (attempts < 10) {
+    // Fisher-Yates shuffle
+    for (let i = players.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [players[i], players[j]] = [players[j], players[i]];
     }
-  });
+    
+    // Check if it's different from the original order
+    const isDifferent = players.some((p, idx) => p !== original[idx]);
+    if (isDifferent) break;
+    attempts++;
+  }
   
-  const split = findBestTeamSplit(matchDraftPlayers.filter(Boolean), allMembers, teammateCount);
-  matchDraftPlayers = [split.teamA[0] || null, split.teamA[1] || null, split.teamB[0] || null, split.teamB[1] || null];
+  matchDraftPlayers = players;
   renderMatchDraft();
-  toast("จัดทีมให้สมดุลที่สุดแล้ว ✨");
+  toast("สุ่มสลับตำแหน่ง/ทีมเรียบร้อยครับ 🎲");
 });
 
 // ---------- Auto Draft (สุ่มจัดคิว) ----------
