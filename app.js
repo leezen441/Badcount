@@ -5573,35 +5573,16 @@ async function clearAllPlayerSkills() {
   try {
     await saveSession({ members });
     toast("ล้างระดับมือทั้งหมดเรียบร้อย");
+    $("playerSettingsModal")?.classList.add("hidden");
   } catch (e) {
     console.error("[clearAllPlayerSkills] save failed:", e);
     toast("บันทึกไม่สำเร็จ ลองอีกครั้ง");
   }
 }
 
-function ensureClearAllSkillsButton() {
-  const modeSelect = document.getElementById("fldMatchMode");
-  if (!modeSelect) return;
-  const toolbar = modeSelect.closest("div");
-  if (!toolbar) return;
-  let btn = document.getElementById("btnClearAllSkills");
-  if (!btn) {
-    btn = document.createElement("button");
-    btn.id = "btnClearAllSkills";
-    btn.type = "button";
-    btn.className = "basis-full mt-1 text-[11px] font-bold py-1.5 px-2.5 rounded-md border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition-colors flex items-center justify-center gap-1";
-    btn.innerHTML = "🧹 ล้างระดับมือทั้งหมด";
-    btn.addEventListener("click", clearAllPlayerSkills);
-    toolbar.appendChild(btn);
-  }
-  btn.style.display = (modeSelect.value === "advance") ? "" : "none";
-}
-
 document.addEventListener("DOMContentLoaded", () => {
-  ensureClearAllSkillsButton();
-  const modeSelect = document.getElementById("fldMatchMode");
-  if (modeSelect) modeSelect.addEventListener("change", ensureClearAllSkillsButton);
-  const obs = new MutationObserver(() => ensureClearAllSkillsButton());
-  const sessionView = document.getElementById("view-session");
-  if (sessionView) obs.observe(sessionView, { attributes: true, attributeFilter: ["class"] });
+  const clearBtn = document.getElementById("btnClearAllSkills");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", clearAllPlayerSkills);
+  }
 });
