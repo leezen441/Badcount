@@ -25,36 +25,125 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="BadCount" />
 
+  <!-- Google Fonts - Outfit & Sarabun for premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'Sarabun', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          boxShadow: {
+            'premium': '0 8px 30px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.02)',
+            'premium-hover': '0 20px 40px -8px rgba(16, 185, 129, 0.08), 0 1px 2px rgba(16, 185, 129, 0.02)',
+            'premium-dark': '0 8px 30px rgb(0 0 0 / 0.3), 0 1px 1px rgb(255 255 255 / 0.02)',
+            'premium-dark-hover': '0 20px 40px -8px rgba(16, 185, 129, 0.15), 0 1px 2px rgba(16, 185, 129, 0.03)',
+          }
+        }
+      }
     }
   </script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Sarabun", "Noto Sans Thai", sans-serif; }
+    body { 
+      font-family: 'Outfit', 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-image: radial-gradient(circle at 100% 0%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+                        radial-gradient(circle at 0% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 40%);
+    }
+    .dark body {
+      background-image: radial-gradient(circle at 100% 0%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
+                        radial-gradient(circle at 0% 100%, rgba(99, 102, 241, 0.05) 0%, transparent 45%);
+    }
     .view { display: none; }
-    .view.active { display: block; }
+    .view.active { display: block; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .premium-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(241, 245, 249, 0.9);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .dark .premium-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(51, 65, 85, 0.35);
+    }
+    .premium-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+    .btn-gradient-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.25);
+    }
+    .btn-gradient-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.35);
+    }
+    .btn-gradient-primary:active {
+      transform: scale(0.97);
+    }
+    .btn-gradient-indigo {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.25);
+    }
+    .btn-gradient-indigo:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.35);
+    }
+    .btn-gradient-indigo:active {
+      transform: scale(0.97);
+    }
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     input[type="number"] { -moz-appearance: textfield; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.2);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.4);
+    }
   </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 min-h-screen pb-20 transition-colors duration-200">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen pb-20 transition-colors duration-300">
 
   <!-- HEADER -->
-  <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-40">
+  <header class="backdrop-blur-lg bg-white/75 dark:bg-slate-950/75 border-b border-slate-200/40 dark:border-slate-800/40 sticky top-0 z-40 transition-colors duration-300">
     <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a id="logoLink" href="#/" class="flex items-center gap-2 font-bold text-lg">
-        <span class="text-2xl">🏸</span>
-        <span>BadCount</span>
+      <a id="logoLink" href="#/" class="flex items-center gap-2 font-black text-xl tracking-tight transition-transform active:scale-95">
+        <span class="text-2xl drop-shadow-sm select-none">🏸</span>
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 font-extrabold tracking-tight">BadCount</span>
       </a>
       <div class="flex items-center gap-2">
-        <button id="btnRefresh" class="p-1.5 rounded-md hover:bg-emerald-700 text-lg leading-none transition-colors" title="โหลดข้อมูลใหม่ (sync)">🔄</button>
-        <button id="btnThemeToggle" class="p-1.5 rounded-md hover:bg-emerald-700 text-lg leading-none transition-colors" title="Toggle Theme">🌙</button>
-        <nav id="mainNav" class="flex gap-1 text-sm items-center">
-          <a href="#/" class="px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors">Home</a>
-          <a id="navBack" href="javascript:void(0)" class="px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors">Back</a>
+        <button id="btnRefresh" class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 hover:bg-slate-200/80 dark:hover:bg-slate-800/80 text-slate-600 dark:text-slate-300 transition-all hover:scale-105 active:scale-95 flex items-center justify-center border border-slate-200/30 dark:border-slate-800/30 w-9 h-9" title="โหลดข้อมูลใหม่ (sync)">
+          <span class="text-sm">🔄</span>
+        </button>
+        <button id="btnThemeToggle" class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 hover:bg-slate-200/80 dark:hover:bg-slate-800/80 text-slate-600 dark:text-slate-300 transition-all hover:scale-105 active:scale-95 flex items-center justify-center border border-slate-200/30 dark:border-slate-800/30 w-9 h-9" title="Toggle Theme">
+          <span class="text-sm">🌙</span>
+        </button>
+        <nav id="mainNav" class="flex gap-1 text-sm font-semibold items-center pl-2 border-l border-slate-200/60 dark:border-slate-800/60">
+          <a href="#/" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/80 dark:hover:bg-emerald-950/50 transition-all">Home</a>
+          <a id="navBack" href="javascript:void(0)" class="px-3.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 transition-all">Back</a>
         </nav>
       </div>
     </div>
@@ -64,17 +153,17 @@
 
     <!-- ===== HOME VIEW ===== -->
     <section id="view-home" class="view active">
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 mb-6">
-        <h1 class="text-2xl font-bold mb-2 text-slate-800 dark:text-slate-100">Start your badminton session 🏸</h1>
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 sm:p-8 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-black mb-4 text-slate-800 dark:text-white tracking-tight leading-tight">Start your badminton session 🏸</h1>
 
         <button id="btnCreateSession"
-          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-lg">
+          class="w-full btn-gradient-primary text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2.5 text-lg transition-transform active:scale-98">
           <span class="text-xl">+</span> Open Court
         </button>
 
         <button id="btnCreateRecurring"
-          class="w-full mt-3 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-800 dark:text-emerald-300 font-semibold py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center gap-2 text-sm">
-          <span class="text-base">🔄</span>
+          class="w-full mt-3 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 font-bold py-3.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/80 flex items-center justify-center gap-2.5 text-sm transition-all hover:scale-[1.01] active:scale-98">
+          <span class="text-base select-none">🔄</span>
           <span>สร้างกลุ่มอาทิตย์หน้า (Copy กลุ่มล่าสุด)</span>
         </button>
       </div>
@@ -96,59 +185,65 @@
         </div>
       </div>
 
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Recent</h2>
-          <a href="#/history" class="text-sm text-emerald-600 hover:underline">ดูทั้งหมด →</a>
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 sm:p-8">
+        <div class="flex items-center justify-between mb-4.5">
+          <h2 class="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
+            <span class="w-1.5 h-6 rounded-full bg-emerald-500"></span>
+            <span>Recent Court Sessions</span>
+          </h2>
+          <a href="#/history" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:underline">ดูทั้งหมด →</a>
         </div>
-        <div id="recentSessions" class="space-y-2 mb-4">
+        <div id="recentSessions" class="space-y-2.5 mb-4">
           <p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีกลุ่ม เริ่มกลุ่มแรกได้เลย</p>
         </div>
-        <div class="grid grid-cols-2 gap-3 mt-4">
-          <button id="btnGotoAdminSummary" class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold py-3 rounded-xl border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
-            <span class="text-lg">💰</span> สรุปยอดรวม
+        <div class="grid grid-cols-2 gap-3.5 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+          <button id="btnGotoAdminSummary" class="bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold py-3.5 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 text-sm">
+            <span class="text-base">💰</span> สรุปยอดรวม
           </button>
-          <button id="btnGotoPersonalStatsHome" class="bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-bold py-3 rounded-xl border border-sky-200 dark:border-sky-800/50 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
-            <span class="text-lg">📈</span> สถิติส่วนตัว
+          <button id="btnGotoPersonalStatsHome" class="bg-sky-50/50 dark:bg-sky-950/20 hover:bg-sky-100/50 dark:hover:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-bold py-3.5 rounded-2xl border border-sky-100 dark:border-sky-900/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 text-sm">
+            <span class="text-base">📈</span> สถิติส่วนตัว
           </button>
         </div>
       </div>
 
       <!-- ===== Admin PromptPay Settings (Dynamic QR สำหรับ Join View) ===== -->
-      <div class="mt-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between mb-1">
-          <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">💸 PromptPay สำหรับรับเงิน</h3>
-          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">Dynamic QR</span>
+      <div class="mt-5 premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 border border-slate-200/50 dark:border-slate-800/80">
+        <div class="flex items-center justify-between mb-1.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
+          <h3 class="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <span>💸</span>
+            <span>PromptPay สำหรับรับเงิน</span>
+          </h3>
+          <span class="text-[9px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider scale-90 select-none">Dynamic QR</span>
         </div>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">ใช้สร้าง QR ล็อกยอดเงินอัตโนมัติให้ผู้จ่ายในหน้า Join View</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">ใช้สร้าง QR ล็อกยอดเงินอัตโนมัติให้ผู้จ่ายในหน้า Join View</p>
 
-        <label class="block mb-2">
-          <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400">เบอร์ / เลขบัตรประชาชน</span>
+        <label class="block mb-3.5">
+          <span class="text-xs font-bold text-slate-600 dark:text-slate-400">เบอร์ / เลขบัตรประชาชน</span>
           <input id="fldAdminPromptpayId" type="text" inputmode="numeric" placeholder="0812345678 หรือ 1234567890123"
-            class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-sm" />
+            class="w-full mt-1.5 px-3.5 py-3 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none bg-white dark:bg-slate-900 text-sm transition-all text-slate-800 dark:text-slate-100" />
         </label>
 
-        <label class="block mb-3">
-          <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400">ประเภท</span>
-          <select id="fldAdminPromptpayType" class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-sm">
+        <label class="block mb-4.5">
+          <span class="text-xs font-bold text-slate-600 dark:text-slate-400">ประเภท</span>
+          <select id="fldAdminPromptpayType" class="w-full mt-1.5 px-3.5 py-3 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none bg-white dark:bg-slate-900 text-sm cursor-pointer transition-all text-slate-850 dark:text-slate-200">
             <option value="phone">📱 เบอร์โทรศัพท์ (10 หลัก)</option>
             <option value="id">🆔 เลขบัตรประชาชน (13 หลัก)</option>
           </select>
         </label>
 
-        <div class="flex items-center gap-2">
-          <button id="btnSaveAdminPromptpay" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 rounded-lg transition-transform active:scale-95">
-            บันทึก
+        <div class="flex items-center gap-3">
+          <button id="btnSaveAdminPromptpay" class="flex-1 btn-gradient-primary text-white text-sm font-extrabold py-3 rounded-2xl transition-all">
+            บันทึกการตั้งค่า
           </button>
-          <span id="adminPromptpayStatus" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
+          <span id="adminPromptpayStatus" class="text-xs text-slate-500 dark:text-slate-400 font-medium"></span>
         </div>
       </div>
 
-      <button id="btnTestPromptPay" class="w-full mt-4 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 text-amber-700 dark:text-amber-300 font-semibold py-3 rounded-xl border border-amber-200 dark:border-amber-800/50 flex items-center justify-center gap-2 text-sm">
+      <button id="btnTestPromptPay" class="w-full mt-5 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold py-3.5 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-center justify-center gap-2.5 text-sm transition-all hover:scale-[1.01] active:scale-98">
         🧪 ทดสอบ PromptPay QR
       </button>
 
-      <button id="btnAdminLogout" class="w-full mt-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 dark:text-slate-400 font-semibold py-4 rounded-2xl transition-colors text-sm">
+      <button id="btnAdminLogout" class="w-full mt-6 bg-slate-100 dark:bg-slate-900 hover:bg-slate-250 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-450 font-bold py-4 rounded-2xl transition-all text-sm border border-slate-200/50 dark:border-slate-800/80 active:scale-98">
         ออกจากระบบ Admin (Log off)
       </button>
     </section>
@@ -223,237 +318,229 @@
           <!-- Step 2 -->
           <div class="flex items-start gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">
             <span class="bg-emerald-100 text-emerald-700 font-bold w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0">2</span>
-            <div>
-              <div class="font-semibold text-sm">เลื่อนหา "Add to Home Screen"</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">หรือ "เพิ่มที่หน้าจอโฮม"</div>
-            </div>
-          </div>
-          <!-- Step 3 -->
-          <div class="flex items-start gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">
-            <span class="bg-emerald-100 text-emerald-700 font-bold w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0">3</span>
-            <div>
-              <div class="font-semibold text-sm">กด "Add" หรือ "เพิ่ม"</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">BadCount จะปรากฏบน Home Screen ✨</div>
-            </div>
-          </div>
-        </div>
-
-        <button id="btnCloseIosModal"
-          class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-medium">
-          เข้าใจแล้ว 👍
-        </button>
-      </div>
-    </div>
-
-    <!-- ===== SESSION VIEW ===== -->
-    <section id="view-session" class="view">
-      <!-- Header card -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
-        <div class="flex items-start justify-between gap-3 mb-3">
+        <!-- Header card -->
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 mb-5">
+        <div class="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800/80">
           <div class="flex-1">
             <input id="fldLocation" type="text" placeholder="ชื่อสถานที่ / สนาม"
-              class="w-full text-lg font-semibold bg-transparent border-b border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:outline-none pb-1" />
-            <div class="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2">
-              <span>📅</span>
+              class="w-full text-xl font-black bg-transparent border-b-2 border-slate-200/50 dark:border-slate-800 focus:border-emerald-500 focus:outline-none pb-1.5 transition-all text-slate-850 dark:text-white" />
+            <div class="text-xs text-slate-500 dark:text-slate-400 mt-3 flex items-center gap-2 font-medium">
+              <span class="select-none">📅</span>
               <input id="fldDate" type="date"
-                class="bg-transparent focus:outline-none" />
+                class="bg-transparent focus:outline-none font-bold text-slate-700 dark:text-slate-350 cursor-pointer" />
             </div>
           </div>
           <span id="sessionStatusBadge"
-            class="text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap">เปิดอยู่</span>
+            class="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/55 text-emerald-700 dark:text-emerald-350 whitespace-nowrap select-none">เปิดอยู่</span>
         </div>
 
         <!-- Main action buttons — 4 columns equal height -->
-        <div class="grid grid-cols-4 gap-2 text-xs sm:text-sm mt-3">
+        <div class="grid grid-cols-4 gap-2.5 text-xs font-bold mt-4">
           <button id="btnShareJoin"
-            class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1 transition-colors">
-            <span class="text-base">✉️</span> Invite
+            class="bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-3 rounded-2xl border border-emerald-100/60 dark:border-emerald-900/40 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-102 active:scale-95">
+            <span class="text-lg">✉️</span> Invite
           </button>
           <button id="btnShare"
-            class="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 text-slate-600 dark:text-slate-400 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
-            <span class="text-base">🛡️</span> Temp Manager
+            class="bg-slate-55 dark:bg-slate-900/60 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 py-3 rounded-2xl border border-slate-200/40 dark:border-slate-800/40 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-102 active:scale-95">
+            <span class="text-lg">🛡️</span> Temp Mgr
           </button>
           <button id="btnExport"
-            class="bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 text-slate-600 dark:text-slate-400 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1">
-            <span class="text-base">📥</span> Export
+            class="bg-slate-55 dark:bg-slate-900/60 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 py-3 rounded-2xl border border-slate-200/40 dark:border-slate-800/40 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-102 active:scale-95">
+            <span class="text-lg">📥</span> Export
           </button>
           <button id="btnQR"
-            class="bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1">
-            <span class="text-base">💰</span> QR Payment
+            class="bg-emerald-55 dark:bg-emerald-950/20 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-3 rounded-2xl border border-emerald-100/60 dark:border-emerald-900/40 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-102 active:scale-95">
+            <span class="text-lg">💰</span> QR Pay
           </button>
         </div>
 
         <!-- Sub-row: 4 ช่อง สอดคล้องกับปุ่มหลัก -->
         <!-- col 1: ปิดรับ · col 2: temp PIN counter · col 3: ทวง · col 4: Mark all -->
-        <div class="grid grid-cols-4 gap-2 mt-1.5">
+        <div class="grid grid-cols-4 gap-2.5 mt-2">
           <button id="btnToggleRegistration"
-            class="col-start-1 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-600 dark:text-slate-400 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 transition-colors">
+            class="col-start-1 bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-2 px-2.5 rounded-xl text-[10px] font-bold border border-slate-200/50 dark:border-slate-800/60 flex items-center justify-center gap-1.5 transition-all active:scale-95">
             <span id="btnToggleRegistrationIcon">✅</span>
             <span id="btnToggleRegistrationLabel">เปิดรับ</span>
           </button>
           <button id="tempPinSmallDisplay" type="button"
-            class="col-start-2 hidden bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/40 border border-indigo-100 dark:border-indigo-800/50 py-1.5 px-2 rounded-md text-[11px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center justify-center gap-1 transition-all cursor-pointer active:scale-95"
+            class="col-start-2 hidden bg-indigo-50/70 dark:bg-indigo-950/20 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/30 border border-indigo-100/60 dark:border-indigo-900/40 py-2 px-2.5 rounded-xl text-[10px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center justify-center gap-1 transition-all cursor-pointer active:scale-95"
             title="กดเพื่อรีเซ็ต PIN ใหม่">
             <span>🔢</span>
-            <span id="tempPinValueSmall">----</span>
-            <span class="text-[9px] opacity-60 font-medium" id="tempPinExpirySmall">--:--</span>
-            <span id="tempPinResetIcon" class="text-[10px] opacity-50">🔄</span>
+            <span id="tempPinValueSmall" class="font-mono">----</span>
+            <span class="text-[9px] opacity-75 font-medium" id="tempPinExpirySmall">--:--</span>
+            <span id="tempPinResetIcon" class="text-[9px] opacity-60">🔄</span>
           </button>
           <button id="btnRemindUnpaid"
-            class="col-start-3 py-1.5 px-2 rounded-md text-[11px] font-semibold border flex items-center justify-center gap-1 transition-all"
+            class="col-start-3 bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-2 px-2.5 rounded-xl text-[10px] font-bold border border-slate-200/50 dark:border-slate-800/60 flex items-center justify-center gap-1.5 transition-all active:scale-95"
             title="ทวงเงินคนค้างจ่าย">
             <span>🔔</span>
             <span id="btnRemindUnpaidLabel">ทวง</span>
           </button>
           <button id="btnMarkAllPaid"
-            class="col-start-4 py-1.5 px-2 rounded-md text-[11px] font-semibold border flex items-center justify-center gap-1 transition-all"
+            class="col-start-4 bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-2 px-2.5 rounded-xl text-[10px] font-bold border border-slate-200/50 dark:border-slate-800/60 flex items-center justify-center gap-1.5 transition-all active:scale-95"
             title="ทำเครื่องหมายว่าทุกคนจ่ายครบแล้ว">
-            <span>✓</span>
+            <span class="text-xs">✓</span>
             <span id="btnMarkAllPaidLabel">Mark all</span>
           </button>
         </div>
       </div>
 
       <!-- Courts card -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">🏟️ สนาม (<span id="courtCount">0</span>)</h3>
-          <button id="btnAddCourt" class="text-xs text-emerald-600 font-medium hover:underline">+ เพิ่มสนาม</button>
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 mb-5 border border-slate-200/40 dark:border-slate-800/40">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2 select-none">
+            <span class="w-1 h-3 rounded bg-emerald-500"></span>
+            <span>🏟️ สนาม (<span id="courtCount" class="font-bold">0</span>)</span>
+          </h3>
+          <button id="btnAddCourt" class="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline">+ เพิ่มสนาม</button>
         </div>
-        <div id="courtSuggestions" class="flex flex-wrap items-center gap-1.5 mb-2"></div>
-        <div id="courtsList" class="space-y-2">
-          <p class="text-slate-400 text-center py-3 text-xs">ยังไม่ได้ระบุสนาม กดเพิ่มได้</p>
+        <div id="courtSuggestions" class="flex flex-wrap items-center gap-1.5 mb-3"></div>
+        <div id="courtsList" class="space-y-2.5">
+          <p class="text-slate-400 text-center py-4 text-xs font-medium">ยังไม่ได้ระบุสนาม กดเพิ่มได้</p>
         </div>
       </div>
 
       <!-- Settings card -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
-        <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">ตั้งค่าค่าใช้จ่าย</h3>
-        <div class="grid grid-cols-2 gap-3">
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 mb-5 border border-slate-200/40 dark:border-slate-800/40">
+        <h3 class="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-4.5 select-none">
+          <span class="w-1 h-3 rounded bg-emerald-500"></span>
+          <span>ตั้งค่าค่าใช้จ่าย</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
           <label class="block">
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-slate-500 dark:text-slate-400">ค่าคอร์ด</span>
-              <select id="fldCourtFeeType" class="text-xs text-emerald-600 dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-slate-500 dark:text-slate-400">ค่าคอร์ด</span>
+              <select id="fldCourtFeeType" class="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer hover:underline">
                 <option value="perPerson">คิดต่อคน</option>
                 <option value="total">รวม (หารเท่า)</option>
               </select>
             </div>
             <input id="fldCourtFee" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+              class="w-full px-3.5 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm transition-all font-semibold" />
           </label>
           <label class="block">
-            <span class="text-xs text-slate-500 dark:text-slate-400">ราคาลูก/ลูก (บาท)</span>
+            <span class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">ราคาลูก/ลูก (บาท)</span>
             <input id="fldShuttlePrice" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+              class="w-full px-3.5 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm transition-all font-semibold" />
           </label>
           <label class="block col-span-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-slate-500 dark:text-slate-400">ค่าใช้จ่ายอื่นๆ (น้ำ/อาหาร)</span>
-              <select id="fldOtherCostType" class="text-xs text-emerald-600 dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-slate-500 dark:text-slate-400">ค่าใช้จ่ายอื่นๆ (น้ำ/อาหาร)</span>
+              <select id="fldOtherCostType" class="text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer hover:underline">
                 <option value="perPerson">คิดต่อคน</option>
                 <option value="total">รวม (หารเท่า)</option>
               </select>
             </div>
             <input id="fldOtherCost" type="number" min="0" step="any" placeholder="0"
-              class="w-full mt-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+              class="w-full px-3.5 py-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm transition-all font-semibold" />
           </label>
         </div>
       </div>
 
       <!-- Members card -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">สมาชิก (<span id="memberCount">0</span>)<span id="memberStatus" class="ml-1.5 text-emerald-600 dark:text-emerald-400 font-bold normal-case tracking-normal"></span></h3>
-          <button id="btnCleanupSize" class="hidden text-[10px] bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 px-2 py-1 rounded-md font-bold border border-amber-200 dark:border-amber-800/50" title="ลบรูปสลิปเก่าที่ verify ด้วย QR เพื่อลดขนาด session">
-            🧹 <span id="cleanupSizeLabel">ลดขนาด</span>
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 mb-5 border border-slate-200/40 dark:border-slate-800/40">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2 select-none">
+            <span class="w-1 h-3 rounded bg-emerald-500"></span>
+            <span>สมาชิก (<span id="memberCount" class="font-bold">0</span>)<span id="memberStatus" class="ml-1.5 text-emerald-600 dark:text-emerald-400 font-bold normal-case tracking-normal"></span></span>
+          </h3>
+          <button id="btnCleanupSize" class="hidden text-[10px] bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100/80 px-3 py-1 rounded-xl font-black border border-amber-150 dark:border-amber-900/30 transition-all hover:scale-102 active:scale-95" title="ลบรูปสลิปเก่าเพื่อลดขนาด session">
+            🧹 <span id="cleanupSizeLabel">ลดขนาดสลิป</span>
           </button>
         </div>
 
         <!-- Add member -->
-        <div class="flex gap-2 mb-2">
+        <div class="flex gap-2.5 mb-3">
           <input id="fldNewMember" type="text" placeholder="ใส่ชื่อสมาชิก..."
-            class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            class="flex-1 px-3.5 py-3 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm transition-all font-semibold" />
           <button id="btnAddMember"
-            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg font-medium">+ เพิ่ม</button>
+            class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 rounded-2xl font-extrabold text-sm transition-transform active:scale-95 shadow-sm">เพิ่ม</button>
         </div>
 
         <!-- Name suggestions (chips) -->
-        <div id="memberSuggestions" class="mb-3"></div>
+        <div id="memberSuggestions" class="mb-3.5 flex flex-wrap gap-1.5"></div>
 
         <!-- Members list -->
-        <div id="membersList" class="divide-y divide-slate-100">
-          <p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีสมาชิก เพิ่มคนแรกได้เลย</p>
+        <div id="membersList" class="divide-y divide-slate-100 dark:divide-slate-800/80">
+          <p class="text-slate-400 text-center py-6 text-sm font-medium">ยังไม่มีสมาชิก เพิ่มคนแรกได้เลย</p>
         </div>
       </div>
 
       <!-- Matches card -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">ตารางจัดเกม (<span id="matchCount">0</span>)</h3>
-          <button id="btnViewStats" class="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-1"><span>📊</span> สถิติ</button>
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 mb-5 border border-slate-200/40 dark:border-slate-800/40">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2 select-none">
+            <span class="w-1 h-3 rounded bg-emerald-500"></span>
+            <span>ตารางจัดเกม (<span id="matchCount" class="font-bold">0</span>)</span>
+          </h3>
+          <button id="btnViewStats" class="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1.5 transition-transform active:scale-95"><span>📊</span> ดูสถิติ</button>
         </div>
 
         <!-- โหมดจัดเกม + ทีม A/B (per-session settings) -->
-        <div class="flex flex-wrap items-center gap-2 mb-3 p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
-          <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
-            โหมด
-            <select id="fldMatchMode" class="px-2 py-1 text-xs font-bold rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-emerald-500">
+        <div class="flex flex-wrap items-center gap-3 mb-4.5 p-3.5 bg-slate-50/50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+          <label class="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400">
+            <span>โหมดจัดทีม:</span>
+            <select id="fldMatchMode" class="px-3 py-1.5 text-xs font-extrabold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none cursor-pointer text-slate-800 dark:text-slate-200">
               <option value="normal">🏸 ปกติ</option>
               <option value="advance">🎖️ Advance (มีระดับมือ)</option>
             </select>
           </label>
-          <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 ml-auto cursor-pointer select-none">
-            <input type="checkbox" id="fldUseTeams" class="accent-emerald-600 w-4 h-4" />
-            <span>ทีม A / ทีม B</span>
+          <label class="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 ml-auto cursor-pointer select-none">
+            <input type="checkbox" id="fldUseTeams" class="accent-emerald-600 w-4.5 h-4.5 rounded-lg" />
+            <span>แบ่งทีม A / B</span>
           </label>
         </div>
 
-        <div id="matchesList" class="space-y-2 mb-3">
-          <p class="text-slate-400 text-center py-4 text-sm">ยังไม่มีเกม กดจัดเกมด้านล่าง</p>
+        <div id="matchesList" class="space-y-3 mb-4">
+          <p class="text-slate-400 text-center py-6 text-sm font-medium">ยังไม่มีเกม กดจัดเกมด้านล่าง</p>
         </div>
         
-        <button id="btnAddMatch" class="w-full bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 border border-dashed border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2">
-          <span>+ จัดเกมใหม่</span>
+        <button id="btnAddMatch" class="w-full bg-slate-55 dark:bg-slate-900/60 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 border border-dashed border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 py-3.5 rounded-2xl font-extrabold transition-all hover:scale-[1.01] active:scale-98 flex items-center justify-center gap-2 cursor-pointer shadow-sm">
+          <span class="text-base select-none">+</span>
+          <span>จัดเกมใหม่</span>
         </button>
       </div>
 
       <!-- Summary card -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
-        <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">สรุปยอด</h3>
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-slate-600 dark:text-slate-400">ค่าคอร์ด</span>
-            <span id="sumCourt" class="font-medium">0.00 ฿</span>
+      <div class="premium-card rounded-3xl shadow-premium dark:shadow-premium-dark p-6 mb-5 border border-slate-200/40 dark:border-slate-800/40">
+        <h3 class="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-4 select-none">
+          <span class="w-1 h-3 rounded bg-emerald-500"></span>
+          <span>สรุปยอดค่าใช้จ่าย</span>
+        </h3>
+        <div class="space-y-3 text-sm font-medium">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-400">ค่าสนาม / คอร์ด</span>
+            <span id="sumCourt" class="font-bold text-slate-800 dark:text-slate-200">0.00 ฿</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-slate-600 dark:text-slate-400">ค่าลูก (<span id="sumShuttleQty">0</span> ลูก)</span>
-            <span id="sumShuttle" class="font-medium">0.00 ฿</span>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-400">ค่าลูกแบด (<span id="sumShuttleQty" class="font-bold tabular-nums">0</span> ลูก)</span>
+            <span id="sumShuttle" class="font-bold text-slate-800 dark:text-slate-200">0.00 ฿</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-slate-600 dark:text-slate-400">ค่าอื่นๆ</span>
-            <span id="sumOther" class="font-medium">0.00 ฿</span>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-400">ค่าใช้จ่ายอื่นๆ</span>
+            <span id="sumOther" class="font-bold text-slate-800 dark:text-slate-200">0.00 ฿</span>
           </div>
-          <div class="border-t border-slate-200 dark:border-slate-700 pt-2 mt-2 flex justify-between items-center">
-            <span class="font-semibold">รวมทั้งหมด</span>
-            <span id="sumTotal" class="text-xl font-bold text-emerald-600">0.00 ฿</span>
+          <div class="border-t border-slate-100 dark:border-slate-800/80 pt-3 mt-3 flex justify-between items-center">
+            <span class="font-black text-slate-750 dark:text-slate-200">ยอดรวมก๊วนนี้</span>
+            <span id="sumTotal" class="text-2xl font-black text-emerald-600 dark:text-emerald-400 drop-shadow-sm">0.00 ฿</span>
           </div>
         </div>
       </div>
 
       <!-- Payment Reminder Card (auto-show when unpaid > 0) -->
-      <div id="paymentReminderCard" class="bg-rose-50 dark:bg-rose-900/40 border border-rose-200 dark:border-rose-800/50 rounded-2xl p-4 mb-4 hidden">
+      <div id="paymentReminderCard" class="bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100/60 dark:border-rose-900/40 rounded-3xl p-5 mb-5 hidden">
         <div class="flex items-center justify-between gap-3">
           <div class="flex-1 min-w-0">
-            <div class="text-sm font-bold text-rose-700 dark:text-rose-200 flex items-center gap-1.5">
-              <span>⏳</span>
-              <span>ยังไม่ได้จ่าย <span id="unpaidCount">0</span> คน</span>
+            <div class="text-sm font-extrabold text-rose-700 dark:text-rose-300 flex items-center gap-2">
+              <span class="text-base select-none">⏳</span>
+              <span>ยังไม่ได้จ่าย <span id="unpaidCount" class="font-black">0</span> คน</span>
             </div>
-            <div class="text-xs text-rose-600 dark:text-rose-400 mt-1">
-              ยอดค้าง <span class="font-bold" id="unpaidTotal">0.00</span> ฿
+            <div class="text-xs text-rose-600 dark:text-rose-400 font-bold mt-1.5">
+              ยอดเงินค้างรวม <span class="font-black text-sm text-rose-700 dark:text-rose-300 ml-1" id="unpaidTotal">0.00</span> ฿
             </div>
           </div>
           <button id="btnCopyDueList"
-            class="bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-1.5 shrink-0 shadow-md">
+            class="bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white px-5 py-3 rounded-2xl text-xs font-black flex items-center gap-1.5 shrink-0 shadow-md transition-transform active:scale-95">
             <span>📥</span>
             <span>บันทึกภาพทวง</span>
           </button>
@@ -461,13 +548,13 @@
       </div>
 
       <!-- Actions -->
-      <div class="flex gap-2">
+      <div class="flex gap-3">
         <button id="btnCloseSession"
-          class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold border border-slate-200 dark:border-slate-700 transition-colors">
+          class="flex-1 bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-200 py-4 rounded-2xl font-extrabold border border-slate-200 dark:border-slate-800 transition-all hover:scale-[1.01] active:scale-98 shadow-sm">
           ✅ ปิด Court
         </button>
         <button id="btnDeleteSession"
-          class="bg-rose-50 dark:bg-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 px-4 py-3 rounded-xl font-bold border border-rose-100 dark:border-rose-800/50 transition-colors" title="ลบก๊วนนี้">
+          class="bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 px-5 py-4 rounded-2xl font-black border border-rose-100/60 dark:border-rose-900/40 transition-all hover:scale-[1.01] active:scale-98" title="ลบก๊วนนี้">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
@@ -820,50 +907,52 @@
   </div>
 
   <!-- ===== MATCH MODAL ===== -->
-  <div id="matchModal" class="hidden fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
-    <div class="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
-      <div class="flex justify-between items-start mb-3 gap-2">
+  <div id="matchModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 sm:rounded-[32px] rounded-t-[32px] p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-premium dark:shadow-premium-dark border border-slate-200/40 dark:border-slate-850/40 transition-all">
+      <div class="flex justify-between items-start mb-4 gap-2">
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg font-bold" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
-          <div class="flex items-center flex-wrap gap-1.5 mt-1.5">
-            <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md text-[11px] font-bold">
-              เกมที่ <span id="matchModalGameNum">—</span>
+          <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 select-none" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
+          <div class="flex items-center flex-wrap gap-1.5 mt-2">
+            <span class="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wider">
+              เกมที่ <span id="matchModalGameNum" class="font-black">—</span>
             </span>
-            <span id="matchModalLastShuttle" class="hidden bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-md text-[11px] font-bold">
-              🏸 ลูกล่าสุด #<span id="matchModalLastShuttleNum">—</span>
+            <span id="matchModalLastShuttle" class="hidden bg-emerald-50/50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wider border border-emerald-100/50 dark:border-emerald-900/30">
+              🏸 ลูกล่าสุด #<span id="matchModalLastShuttleNum" class="font-black">—</span>
             </span>
           </div>
         </div>
-        <button id="btnAutoDraft" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800/50 shadow-sm flex items-center gap-1 transition-transform active:scale-95 shrink-0">
+        <button id="btnAutoDraft" class="text-xs bg-indigo-50/80 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/80 px-4 py-2.5 rounded-2xl font-extrabold border border-indigo-100/50 dark:border-indigo-900/30 shadow-sm flex items-center gap-1.5 transition-all hover:scale-102 active:scale-95 shrink-0">
           ✨ สุ่มจัดคิว
         </button>
       </div>
       
       <!-- Selected Box — โหมดปกติ (No teams) -->
-      <div class="bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 mb-4 min-h-[100px]" id="selectedPlayersBox">
-        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">ผู้เล่นในสนาม (<span id="selPlayerCount">0</span>/4)</div>
+      <div class="bg-slate-50/40 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl p-4 mb-4 min-h-[100px]" id="selectedPlayersBox">
+        <div class="text-[10px] font-black text-slate-400 dark:text-slate-555 mb-2.5 uppercase tracking-widest select-none">ผู้เล่นในสนาม (<span id="selPlayerCount" class="font-bold">0</span>/4)</div>
         <div id="selectedPlayers" class="flex flex-wrap gap-2"></div>
       </div>
 
       <!-- Team Boxes — เมื่อ useTeams=on -->
-      <div id="teamBoxes" class="hidden mb-4 space-y-2">
-        <div class="bg-rose-50 dark:bg-rose-900/20 border-2 border-dashed border-rose-300 dark:border-rose-700 rounded-xl p-3 min-h-[70px]">
-          <div class="flex items-center justify-between mb-1.5">
-            <div class="text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wide">🅰️ Team A (<span id="teamACount">0</span>/2)</div>
-            <span id="teamAStrength" class="text-[10px] font-semibold text-rose-600 dark:text-rose-400"></span>
+      <div id="teamBoxes" class="hidden mb-4 space-y-3">
+        <div class="bg-rose-50/20 dark:bg-rose-950/10 border border-dashed border-rose-200 dark:border-rose-900/40 rounded-2xl p-4 min-h-[70px]">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[10px] font-black text-rose-700 dark:text-rose-450 uppercase tracking-widest flex items-center gap-1 select-none">🅰️ Team A (<span id="teamACount" class="font-bold">0</span>/2)</div>
+            <span id="teamAStrength" class="text-[10px] font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wider bg-rose-50/50 dark:bg-rose-900/20 px-2 py-0.5 rounded-lg border border-rose-100/40 dark:border-rose-900/20"></span>
           </div>
           <div id="teamAPlayers" class="flex flex-wrap gap-2"></div>
         </div>
-        <div class="flex items-center justify-center gap-2">
-          <span class="text-slate-400 text-xs font-bold">VS</span>
-          <button id="btnAutoSplit" class="text-[11px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 px-3 py-1 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800/50">
+        <div class="flex items-center justify-center gap-3">
+          <span class="w-8 h-px bg-slate-200 dark:bg-slate-800"></span>
+          <span class="text-slate-400 dark:text-slate-500 text-xs font-black select-none tracking-widest">VS</span>
+          <button id="btnAutoSplit" class="text-[10px] bg-indigo-50/80 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 px-3.5 py-1.5 rounded-xl font-black border border-indigo-100/50 dark:border-indigo-900/30 transition-all hover:scale-102 active:scale-95">
             ✨ จัดทีม Auto
           </button>
+          <span class="w-8 h-px bg-slate-200 dark:bg-slate-800"></span>
         </div>
-        <div class="bg-sky-50 dark:bg-sky-900/20 border-2 border-dashed border-sky-300 dark:border-sky-700 rounded-xl p-3 min-h-[70px]">
-          <div class="flex items-center justify-between mb-1.5">
-            <div class="text-xs font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wide">🅱️ Team B (<span id="teamBCount">0</span>/2)</div>
-            <span id="teamBStrength" class="text-[10px] font-semibold text-sky-600 dark:text-sky-400"></span>
+        <div class="bg-sky-50/20 dark:bg-sky-950/10 border border-dashed border-sky-200 dark:border-sky-900/40 rounded-2xl p-4 min-h-[70px]">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[10px] font-black text-sky-700 dark:text-sky-450 uppercase tracking-widest flex items-center gap-1 select-none">🅱️ Team B (<span id="teamBCount" class="font-bold">0</span>/2)</div>
+            <span id="teamBStrength" class="text-[10px] font-extrabold text-sky-600 dark:text-sky-400 uppercase tracking-wider bg-sky-50/50 dark:bg-sky-900/20 px-2 py-0.5 rounded-lg border border-sky-100/40 dark:border-sky-900/20"></span>
           </div>
           <div id="teamBPlayers" class="flex flex-wrap gap-2"></div>
         </div>
@@ -871,96 +960,99 @@
 
       <!-- Shuttlecock Input -->
       <div class="mb-4">
-        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">เบอร์ลูกแบดที่ใช้ในเกมนี้ (เช่น 1, 2 หรือ 1-3)</label>
-        <input type="text" id="fldMatchShuttles" placeholder="เว้นว่างได้ถ้าไม่ระบุ" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-emerald-500 text-sm bg-white dark:bg-slate-900" />
+        <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest select-none">เบอร์ลูกแบดที่ใช้ในเกมนี้ (เช่น 1, 2 หรือ 1-3)</label>
+        <input type="text" id="fldMatchShuttles" placeholder="เว้นว่างได้ถ้าไม่ระบุ" class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-205 font-bold transition-all" />
       </div>
 
       <!-- Available List -->
       <div class="mb-5">
-        <div class="flex items-center justify-between mb-2">
-          <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">แตะชื่อเพื่อเลือก · ⭐ Top 4 แนะนำ</div>
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest select-none">แตะชื่อเพื่อเลือก · ⭐ Top 4 แนะนำ</div>
         </div>
-        <div id="availablePlayers" class="max-h-[360px] overflow-y-auto"></div>
+        <div id="availablePlayers" class="max-h-[320px] overflow-y-auto space-y-1.5 pr-1 select-none custom-scrollbar"></div>
       </div>
 
-      <div class="flex gap-2">
-        <button id="btnCancelMatch" class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-medium text-sm">ยกเลิก</button>
-        <button id="btnSaveMatch" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm disabled:opacity-50">บันทึกเกม</button>
+      <div class="flex gap-3">
+        <button id="btnCancelMatch" class="flex-1 bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3.5 rounded-2xl font-extrabold text-sm border border-slate-200 dark:border-slate-800 transition-all active:scale-95">ยกเลิก</button>
+        <button id="btnSaveMatch" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl font-black text-sm disabled:opacity-50 transition-all hover:scale-102 active:scale-95 shadow-md">บันทึกเกม</button>
       </div>
     </div>
   </div>
 
   <!-- ===== PAYMENT MODAL (Join View — สำหรับสมาชิกจ่ายเงิน) ===== -->
-  <div id="paymentModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">💰 จ่ายค่าก๊วน</h3>
-        <button id="btnClosePaymentModal" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+  <div id="paymentModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-[32px] shadow-premium dark:shadow-premium-dark w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto border border-slate-200/40 dark:border-slate-850/40 transition-all">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 select-none">💰 จ่ายค่าก๊วน</h3>
+        <button id="btnClosePaymentModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold leading-none select-none transition-transform active:scale-90">&times;</button>
       </div>
 
       <!-- Member info -->
-      <div class="bg-emerald-50 dark:bg-emerald-900/30 rounded-xl p-4 mb-4 text-center">
-        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wide font-semibold">ผู้จ่าย</div>
-        <div id="paymentMemberName" class="text-xl font-bold text-emerald-800 dark:text-emerald-200 mt-1">—</div>
-        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wide font-semibold mt-3">ยอดที่ต้องจ่าย</div>
-        <div id="paymentAmount" class="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mt-1">— ฿</div>
+      <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-900/30 rounded-2xl p-5 mb-5 text-center shadow-inner">
+        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-black select-none">ผู้จ่าย</div>
+        <div id="paymentMemberName" class="text-2xl font-black text-slate-850 dark:text-emerald-250 mt-1">—</div>
+        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-black mt-4 select-none">ยอดที่ต้องจ่าย</div>
+        <div id="paymentAmount" class="text-4xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5 drop-shadow-sm">— ฿</div>
       </div>
 
       <!-- Dynamic QR (PromptPay payload ล็อกยอด) -->
-      <div id="paymentQRWrap" class="hidden bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mb-3 text-center">
-        <div id="paymentQRMode" class="text-xs text-slate-600 dark:text-slate-300 mb-2 font-semibold">📱 สแกน QR — ยอดเงินถูกล็อกอัตโนมัติ ✓</div>
-        <div id="paymentQRCanvas" class="mx-auto inline-block bg-white p-2 rounded-lg shadow-sm"></div>
-        <img id="paymentQRImg" src="" alt="QR Code" class="hidden w-full max-w-[220px] mx-auto rounded-lg" />
-        <p class="text-[10px] text-slate-400 mt-2">เปิดแอปธนาคารแล้วสแกน QR นี้</p>
-        <button id="btnDownloadPaymentQR" class="mt-3 inline-flex items-center justify-center gap-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-transform active:scale-95">
+      <div id="paymentQRWrap" class="hidden bg-slate-50/50 dark:bg-slate-900/50 border border-slate-150 dark:border-slate-800 rounded-2xl p-5 mb-4 text-center">
+        <div id="paymentQRMode" class="text-xs text-slate-600 dark:text-slate-300 mb-3.5 font-extrabold flex items-center justify-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+          <span>สแกน QR ล็อกยอดอัตโนมัติ</span>
+        </div>
+        <div id="paymentQRCanvas" class="mx-auto inline-block bg-white p-3 rounded-2xl shadow-sm border border-slate-100"></div>
+        <img id="paymentQRImg" src="" alt="QR Code" class="hidden w-full max-w-[220px] mx-auto rounded-2xl shadow-sm border" />
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-3.5 select-none">เปิดแอปธนาคารของคุณเพื่อสแกน QR</p>
+        <button id="btnDownloadPaymentQR" class="mt-4 w-full inline-flex items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-extrabold px-4 py-3 rounded-2xl shadow-md transition-transform active:scale-95">
           💾 บันทึกรูป QR Code
         </button>
       </div>
 
       <!-- No QR fallback -->
-      <div id="paymentNoQR" class="hidden bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 mb-4 text-center">
-        <p class="text-xs text-amber-700 dark:text-amber-300">ผู้จัดยังไม่ได้ตั้ง PromptPay — โอนเงินตามวิธีอื่นแล้วแนบสลิป</p>
+      <div id="paymentNoQR" class="hidden bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 rounded-2xl p-4 mb-4 text-center">
+        <p class="text-xs text-amber-700 dark:text-amber-300 font-bold">ผู้จัดยังไม่ได้ตั้ง PromptPay — โอนเงินตามวิธีอื่นแล้วแนบสลิป</p>
       </div>
 
       <!-- Upload slip -->
-      <label id="paymentUploadLabel" class="block cursor-pointer">
+      <label id="paymentUploadLabel" class="block cursor-pointer select-none">
         <input type="file" id="paymentSlipInput" accept="image/*" class="hidden" />
-        <div class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3 px-4 rounded-xl text-center font-bold shadow-md transition-transform active:scale-95">
+        <div class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3.5 px-4 rounded-2xl text-center font-black text-sm shadow-md transition-all hover:scale-102 active:scale-95">
           📸 แนบสลิปการโอน
         </div>
-        <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2">แนบแล้วระบบจะทำเครื่องหมายจ่ายแล้วทันที</p>
+        <p class="text-[10px] text-slate-400 dark:text-slate-550 text-center mt-2.5">แนบแล้วระบบจะทำเครื่องหมายจ่ายแล้วทันที ✓</p>
       </label>
 
       <div id="paymentUploading" class="hidden text-center py-3 text-sm text-slate-500 dark:text-slate-400">
-        <span class="inline-block animate-pulse">⏳ กำลังบันทึก...</span>
+        <span class="inline-block animate-pulse font-extrabold">⏳ กำลังบันทึก...</span>
       </div>
     </div>
   </div>
 
   <!-- ===== SLIP VIEWER MODAL (Admin View — ดูสลิปย้อนหลัง) ===== -->
-  <div id="slipViewerModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-3">
-        <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">🖼️ สลิป — <span id="slipViewerName">—</span></h3>
-        <button id="btnCloseSlipViewer" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+  <div id="slipViewerModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-[32px] shadow-premium dark:shadow-premium-dark max-w-md w-full p-5 max-h-[90vh] overflow-y-auto border border-slate-200/40 dark:border-slate-850/40 transition-all">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-base font-black text-slate-850 dark:text-slate-100 flex items-center gap-1.5 select-none">🖼️ สลิป — <span id="slipViewerName" class="font-extrabold">—</span></h3>
+        <button id="btnCloseSlipViewer" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold leading-none select-none transition-transform active:scale-90">&times;</button>
       </div>
-      <img id="slipViewerImg" src="" alt="สลิปการโอน" class="w-full rounded-lg" />
-      <div class="flex gap-2 mt-4">
-        <button id="btnCloseSlipViewer2" class="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 py-2.5 rounded-lg font-medium text-sm">ปิด</button>
-        <button id="btnDownloadSlip" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-medium text-sm">📥 บันทึกรูป</button>
+      <img id="slipViewerImg" src="" alt="สลิปการโอน" class="w-full rounded-2xl border border-slate-100 dark:border-slate-900 shadow-sm" />
+      <div class="flex gap-3 mt-5">
+        <button id="btnCloseSlipViewer2" class="flex-1 bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3.5 rounded-2xl font-extrabold text-sm border border-slate-200 dark:border-slate-800 transition-all active:scale-95">ปิด</button>
+        <button id="btnDownloadSlip" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl font-black text-sm shadow-md transition-all hover:scale-102 active:scale-95">📥 บันทึกรูป</button>
       </div>
     </div>
   </div>
 
   <!-- ===== CAMERA QR SCAN MODAL (Admin/Manager scan slip QR from member's phone) ===== -->
-  <div id="cameraScanModal" class="hidden fixed inset-0 bg-black z-50 flex flex-col">
+  <div id="cameraScanModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex flex-col">
     <!-- Top bar -->
-    <div class="flex items-center justify-between px-4 py-3 bg-black/80 text-white">
+    <div class="flex items-center justify-between px-5 py-4 bg-slate-900/80 border-b border-slate-800 text-white">
       <div class="flex-1 min-w-0">
-        <h3 class="text-base font-bold">📷 สแกน QR จากสลิป</h3>
-        <p class="text-xs opacity-80 truncate">สมาชิก: <span id="cameraScanMemberName" class="font-semibold">—</span></p>
+        <h3 class="text-base font-black flex items-center gap-2 select-none">📷 สแกน QR จากสลิป</h3>
+        <p class="text-xs opacity-75 truncate mt-0.5">สมาชิก: <span id="cameraScanMemberName" class="font-bold text-emerald-400">—</span></p>
       </div>
-      <button id="btnCloseCameraScan" class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm font-bold ml-3">✕ ปิด</button>
+      <button id="btnCloseCameraScan" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 ml-3">✕ ปิด</button>
     </div>
 
     <!-- Camera preview -->
@@ -968,64 +1060,64 @@
       <video id="cameraScanVideo" class="max-w-full max-h-full" autoplay playsinline muted></video>
       <!-- Scan box overlay -->
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="w-64 h-64 sm:w-80 sm:h-80 border-4 border-emerald-400 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]"></div>
+        <div class="w-64 h-64 sm:w-80 sm:h-80 border-4 border-emerald-500 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"></div>
       </div>
     </div>
 
     <!-- Status / hint -->
-    <div class="px-4 py-3 bg-black/80 text-white text-center">
-      <p id="cameraScanStatus" class="text-sm">⏳ กำลังเปิดกล้อง...</p>
-      <p class="text-xs opacity-60 mt-1">เล็งกล้องไปที่ QR ในสลิป (บนหน้าจอ member หรือกระดาษ)</p>
+    <div class="px-5 py-4 bg-slate-900/80 text-white text-center border-t border-slate-800">
+      <p id="cameraScanStatus" class="text-sm font-extrabold">⏳ กำลังเปิดกล้อง...</p>
+      <p class="text-[10px] opacity-60 mt-1.5 select-none">เล็งกล้องไปที่ QR ในสลิป (บนหน้าจอ member หรือกระดาษ)</p>
     </div>
   </div>
 
   <!-- ===== PLAYER SETTINGS MODAL ===== -->
-  <div id="playerSettingsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+  <div id="playerSettingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-[32px] shadow-premium dark:shadow-premium-dark w-full max-w-sm p-6 relative border border-slate-200/40 dark:border-slate-850/40 transition-all">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-lg font-black text-slate-850 dark:text-slate-100 flex items-center gap-2 select-none">
           👤 <span id="playerModalName">—</span>
         </h3>
-        <button id="btnClosePlayerSettings" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+        <button id="btnClosePlayerSettings" class="text-slate-400 hover:text-slate-650 dark:hover:text-slate-250 text-2xl font-bold leading-none select-none transition-transform active:scale-90">&times;</button>
       </div>
 
       <!-- Skill Section (only shown if isAdvanceMode) -->
       <div id="playerModalSkillSection" class="mb-5">
-        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">🎖️ ระดับมือ (Skill Level)</label>
+        <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2.5 uppercase tracking-widest select-none">🎖️ ระดับมือ (Skill Level)</label>
         <div class="grid grid-cols-5 gap-2">
-          <button data-skill-opt="A" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-            <span class="text-base">A</span>
-            <span class="text-[9px] font-normal opacity-80 mt-0.5">เก่งสุด</span>
+          <button data-skill-opt="A" class="py-3 rounded-2xl font-black border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:scale-102 active:scale-95 shadow-sm">
+            <span class="text-base font-black">A</span>
+            <span class="text-[8px] font-extrabold opacity-75 mt-0.5">เก่งสุด</span>
           </button>
-          <button data-skill-opt="B" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-            <span class="text-base">B</span>
-            <span class="text-[9px] font-normal opacity-80 mt-0.5">เก่ง</span>
+          <button data-skill-opt="B" class="py-3 rounded-2xl font-black border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:scale-102 active:scale-95 shadow-sm">
+            <span class="text-base font-black">B</span>
+            <span class="text-[8px] font-extrabold opacity-75 mt-0.5">เก่ง</span>
           </button>
-          <button data-skill-opt="C" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-            <span class="text-base">C</span>
-            <span class="text-[9px] font-normal opacity-80 mt-0.5">ทั่วไป</span>
+          <button data-skill-opt="C" class="py-3 rounded-2xl font-black border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:scale-102 active:scale-95 shadow-sm">
+            <span class="text-base font-black">C</span>
+            <span class="text-[8px] font-extrabold opacity-75 mt-0.5">ทั่วไป</span>
           </button>
-          <button data-skill-opt="P" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-            <span class="text-base">P</span>
-            <span class="text-[9px] font-normal opacity-80 mt-0.5">เริ่มต้น</span>
+          <button data-skill-opt="P" class="py-3 rounded-2xl font-black border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:scale-102 active:scale-95 shadow-sm">
+            <span class="text-base font-black">P</span>
+            <span class="text-[8px] font-extrabold opacity-75 mt-0.5">เริ่มต้น</span>
           </button>
-          <button data-skill-opt="S" class="py-2.5 rounded-xl font-bold border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-            <span class="text-base">S</span>
-            <span class="text-[9px] font-normal opacity-80 mt-0.5">อ่อนสุด</span>
+          <button data-skill-opt="S" class="py-3 rounded-2xl font-black border transition-all text-sm flex flex-col items-center justify-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:scale-102 active:scale-95 shadow-sm">
+            <span class="text-base font-black">S</span>
+            <span class="text-[8px] font-extrabold opacity-75 mt-0.5">อ่อนสุด</span>
           </button>
         </div>
       </div>
 
       <!-- Buddy Section -->
       <div id="playerModalBuddySection" class="mb-5">
-        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">🤝 เลือก Buddy (จะได้คู่กันเสมอ)</label>
-        <select id="fldPlayerBuddy" class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm">
+        <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2.5 uppercase tracking-widest select-none">🤝 เลือก Buddy (จะได้คู่กันเสมอ)</label>
+        <select id="fldPlayerBuddy" class="w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm font-extrabold">
           <option value="">ไม่มี Buddy</option>
         </select>
       </div>
 
       <div class="flex gap-2 mt-2">
-        <button id="btnSavePlayerSettings" class="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3 rounded-xl font-bold text-sm shadow-md transition-transform active:scale-95">
+        <button id="btnSavePlayerSettings" class="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-4 rounded-2xl font-black text-sm shadow-md transition-all hover:scale-102 active:scale-95">
           บันทึกตั้งค่า
         </button>
       </div>
@@ -1033,13 +1125,13 @@
   </div>
 
   <!-- ===== STATS MODAL ===== -->
-  <div id="statsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 max-w-sm w-full max-h-[90vh] overflow-y-auto flex flex-col">
+  <div id="statsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-[32px] shadow-premium dark:shadow-premium-dark p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto flex flex-col border border-slate-200/40 dark:border-slate-850/40 transition-all">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold">📊 สถิติการลงสนาม</h3>
-        <button id="btnCloseStats" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+        <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 select-none">📊 สถิติการลงสนาม</h3>
+        <button id="btnCloseStats" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl font-bold leading-none select-none transition-transform active:scale-90">&times;</button>
       </div>
-      <div id="statsContent" class="space-y-3 flex-1"></div>
+      <div id="statsContent" class="space-y-3.5 flex-1 custom-scrollbar"></div>
     </div>
   </div>
 
