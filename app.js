@@ -5431,7 +5431,8 @@ function updateModalSkillUI() {
 // Bind Settings Modal selectors
 $("playerModalSkillSection")?.querySelectorAll("button[data-skill-opt]").forEach(btn => {
   btn.addEventListener("click", () => {
-    editingPlayerSkill = btn.dataset.skillOpt;
+    // Toggle: re-clicking the active skill clears it
+    editingPlayerSkill = (editingPlayerSkill === btn.dataset.skillOpt) ? null : btn.dataset.skillOpt;
     updateModalSkillUI();
   });
 });
@@ -5459,7 +5460,22 @@ function openPlayerSettingsModal(idx, isAdminView) {
   const skillSec = $("playerModalSkillSection");
   const buddySec = $("playerModalBuddySection");
   
-  if (skillSec) skillSec.classList.remove("hidden");
+  if (skillSec) {
+    skillSec.classList.remove("hidden");
+    // Inject "ล้างระดับมือ" button once
+    if (!skillSec.querySelector("#btnClearPlayerSkill")) {
+      const clearBtn = document.createElement("button");
+      clearBtn.id = "btnClearPlayerSkill";
+      clearBtn.type = "button";
+      clearBtn.className = "mt-2 w-full text-xs font-semibold py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center gap-1.5";
+      clearBtn.innerHTML = "<span>\u{1F5D1}\uFE0F</span><span>\u0E25\u0E49\u0E32\u0E07\u0E23\u0E30\u0E14\u0E31\u0E1A\u0E21\u0E37\u0E2D</span>";
+      clearBtn.addEventListener("click", () => {
+        editingPlayerSkill = null;
+        updateModalSkillUI();
+      });
+      skillSec.appendChild(clearBtn);
+    }
+  }
   if (buddySec) {
     buddySec.classList.remove("hidden");
     // Populate Buddy dropdown
