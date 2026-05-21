@@ -2820,6 +2820,8 @@ function renderMatchDraft() {
   // คนที่จ่ายเงินแล้ว = "ออกจากก๊วน" → ไม่อยู่ใน pool ให้เลือกจัดเกมใหม่
   // (ประวัติเกมเก่ายังมีชื่ออยู่ ไม่กระทบ — เพราะอ่านจาก currentSession.matches โดยตรง)
   const available = allMembers.filter(m => !matchDraftPlayers.includes(m.id) && !m.isPaid);
+  const activeAvailable = available.filter(m => !m.isPaused);
+  const pausedAvailable = available.filter(m => m.isPaused);
 
   if (available.length === 0) {
     availableDiv.innerHTML = `<div class="text-slate-400 text-sm py-2 w-full text-center">ไม่มีผู้เล่นเหลือ</div>`;
@@ -2846,7 +2848,7 @@ function renderMatchDraft() {
     let topPickIds = new Set();
     if (slotsNeeded > 0) {
       const optimal = findOptimalAddition(
-        available, matchDraftPlayers.filter(Boolean), slotsNeeded,
+        activeAvailable, matchDraftPlayers.filter(Boolean), slotsNeeded,
         gamesPlayed, partnerCount, minGames, true /* deterministic */,
         { advanceMode: isAdvanceMode(), members: allMembers, useTeams: useTeams() }
       );
@@ -2862,9 +2864,10 @@ function renderMatchDraft() {
       return restB - restA;
     };
 
-    // แยก Top picks (จาก joint optimization) ออกจาก rest
-    const topPicks = available.filter(m => topPickIds.has(m.id)).sort(indivSort);
-    const restPicks = available.filter(m => !topPickIds.has(m.id)).sort(indivSort);
+    // แยก Top picks (จาก joint optimization) ออกจาก rest และ paused
+    const topPicks = activeAvailable.filter(m => topPickIds.has(m.id)).sort(indivSort);
+    const restPicks = activeAvailable.filter(m => !topPickIds.has(m.id)).sort(indivSort);
+    const pausedPicks = pausedAvailable.sort(indivSort);
 
     // map: id → rank ใน top picks (สำหรับ badge ① ② ③ ④)
     const rankMap = new Map();
@@ -2898,10 +2901,12 @@ function renderMatchDraft() {
         }
       }
 
-      // Rank badge — top 4 only
+      // Rank badge — top 4 only, or pause icon for paused members
       const rankBadge = isTop
         ? `<span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold bg-emerald-500 text-white flex-shrink-0">${rank}</span>`
-        : `<span class="w-6 h-6 flex-shrink-0"></span>`;
+        : (m.isPaused
+            ? `<span class="w-6 h-6 flex items-center justify-center text-sm flex-shrink-0" title="พักคิวชั่วคราว">⏸️</span>`
+            : `<span class="w-6 h-6 flex-shrink-0"></span>`);
 
       // Partner pills — แสดงเฉพาะคนที่เคยจับคู่กับคนที่ selected
       let partnerHtml = "";
@@ -2925,11 +2930,15 @@ function renderMatchDraft() {
 
       const rowClass = isTop
         ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-l-4 border-emerald-500"
-        : "bg-white dark:bg-slate-800 border-l-4 border-transparent";
+        : (m.isPaused
+            ? "bg-amber-50/20 dark:bg-amber-950/10 border-l-4 border-amber-400/50 opacity-70"
+            : "bg-white dark:bg-slate-800 border-l-4 border-transparent");
 
       const nameClass = isTop
         ? "font-semibold text-slate-800 dark:text-slate-100"
-        : "font-medium text-slate-700 dark:text-slate-300";
+        : (m.isPaused
+            ? "font-medium text-slate-500 dark:text-slate-400"
+            : "font-medium text-slate-700 dark:text-slate-300");
 
       const editSkillBadge = isAdvanceMode()
         ? `<button data-act="edit-player-skill" data-player-id="${m.id}" class="text-[9px] px-1.5 py-0.5 rounded transition-all active:scale-95 shrink-0 ${m.skill ? 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold' : 'border border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400 font-bold bg-white dark:bg-slate-900 hover:border-indigo-500 hover:text-indigo-600'}" title="คลิกเพื่อตั้งระดับมือ">
@@ -2971,15 +2980,22 @@ function renderMatchDraft() {
 
     const topRowsHtml = topPicks.map(renderRow).join('');
     const restRowsHtml = restPicks.map(renderRow).join('');
+    const pausedRowsHtml = pausedPicks.map(renderRow).join('');
 
     // ถ้ามีทั้ง Top และ Rest → ใส่ section header เล็กๆ คั่น
     const restSection = restPicks.length > 0
       ? `<div class="px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 dark:bg-slate-900/50 uppercase tracking-wide border-t border-slate-200 dark:border-slate-700">อื่นๆ</div>${restRowsHtml}`
       : '';
 
+    // ถ้ามีคนถูกพักคิว → แสดง section พักคิว
+    const pausedSection = pausedPicks.length > 0
+      ? `<div class="px-3 py-1.5 text-[10px] font-semibold text-amber-600 dark:text-amber-500 bg-amber-50/50 dark:bg-amber-950/20 uppercase tracking-wide border-t border-amber-200 dark:border-amber-900/30 flex items-center gap-1"><span>⏸️</span> สมาชิกที่พักคิว</div>${pausedRowsHtml}`
+      : '';
+
     availableDiv.innerHTML = `<div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
       <div class="divide-y divide-slate-100">${topRowsHtml}</div>
       ${restSection ? `<div class="divide-y divide-slate-100">${restSection}</div>` : ''}
+      ${pausedSection ? `<div class="divide-y divide-slate-100">${pausedSection}</div>` : ''}
     </div>`;
   }
   
