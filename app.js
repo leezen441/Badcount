@@ -5460,22 +5460,7 @@ function openPlayerSettingsModal(idx, isAdminView) {
   const skillSec = $("playerModalSkillSection");
   const buddySec = $("playerModalBuddySection");
   
-  if (skillSec) {
-    skillSec.classList.remove("hidden");
-    // Inject "ล้างระดับมือ" button once
-    if (!skillSec.querySelector("#btnClearPlayerSkill")) {
-      const clearBtn = document.createElement("button");
-      clearBtn.id = "btnClearPlayerSkill";
-      clearBtn.type = "button";
-      clearBtn.className = "mt-2 w-full text-xs font-semibold py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center gap-1.5";
-      clearBtn.innerHTML = "<span>\u{1F5D1}\uFE0F</span><span>\u0E25\u0E49\u0E32\u0E07\u0E23\u0E30\u0E14\u0E31\u0E1A\u0E21\u0E37\u0E2D</span>";
-      clearBtn.addEventListener("click", () => {
-        editingPlayerSkill = null;
-        updateModalSkillUI();
-      });
-      skillSec.appendChild(clearBtn);
-    }
-  }
+  if (skillSec) skillSec.classList.remove("hidden");
   if (buddySec) {
     buddySec.classList.remove("hidden");
     // Populate Buddy dropdown
@@ -5565,3 +5550,58 @@ if ("serviceWorker" in navigator) {
       .catch((err) => console.warn("[PWA] SW registration failed:", err));
   });
 }
+
+
+// === [PATCH] Clear-all player skills (with confirm) ===
+async function clearAllPlayerSkills() {
+  if (!currentSession || !Array.isArray(currentSession.members) || currentSession.members.length === 0) {
+    toast("ยังไม่มีสมาชิก");
+    return;
+  }
+  const haveSkillCount = currentSession.members.filter(m => m && m.skill).length;
+  if (haveSkillCount === 0) {
+    toast("ยังไม่มีใครตั้งระดับมือ");
+    return;
+  }
+  const ok = confirm("ยืนยันล้างระดับมือของสมาชิกทั้งหมด " + haveSkillCount + " คน?\nการกระทำนี้ย้อนกลับไม่ได้");
+  if (!ok) return;
+  const members = currentSession.members.map(m => {
+    const copy = Object.assign({}, m || {});
+    delete copy.skill;
+    return copy;
+  });
+  try {
+    await saveSession({ members });
+    toast("ล้างระดับมือทั้งหมดเรียบร้อย");
+  } catch (e) {
+    console.error("[clearAllPlayerSkills] save failed:", e);
+    toast("บันทึกไม่สำเร็จ ลองอีกครั้ง");
+  }
+}
+
+function ensureClearAllSkillsButton() {
+  const modeSelect = document.getElementById("fldMatchMode");
+  if (!modeSelect) return;
+  const toolbar = modeSelect.closest("div");
+  if (!toolbar) return;
+  let btn = document.getElementById("btnClearAllSkills");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = "btnClearAllSkills";
+    btn.type = "button";
+    btn.className = "basis-full mt-1 text-[11px] font-bold py-1.5 px-2.5 rounded-md border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition-colors flex items-center justify-center gap-1";
+    btn.innerHTML = "🧹 ล้างระดับมือทั้งหมด";
+    btn.addEventListener("click", clearAllPlayerSkills);
+    toolbar.appendChild(btn);
+  }
+  btn.style.display = (modeSelect.value === "advance") ? "" : "none";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  ensureClearAllSkillsButton();
+  const modeSelect = document.getElementById("fldMatchMode");
+  if (modeSelect) modeSelect.addEventListener("change", ensureClearAllSkillsButton);
+  const obs = new MutationObserver(() => ensureClearAllSkillsButton());
+  const sessionView = document.getElementById("view-session");
+  if (sessionView) obs.observe(sessionView, { attributes: true, attributeFilter: ["class"] });
+});
