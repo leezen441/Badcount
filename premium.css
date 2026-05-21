@@ -1,0 +1,478 @@
+/* ============================================================
+   BADCOUNT — PREMIUM VISUAL SYSTEM
+   Visual layer only. Functionality untouched.
+   ============================================================ */
+
+:root {
+  --bc-emerald-50:  #ecfdf5;
+  --bc-emerald-100: #d1fae5;
+  --bc-emerald-400: #34d399;
+  --bc-emerald-500: #10b981;
+  --bc-emerald-600: #059669;
+  --bc-emerald-700: #047857;
+  --bc-emerald-800: #065f46;
+
+  --bc-ink:         #0f172a;
+  --bc-ink-soft:    #334155;
+  --bc-muted:       #64748b;
+  --bc-line:        rgba(15, 23, 42, 0.06);
+  --bc-line-strong: rgba(15, 23, 42, 0.10);
+
+  --bc-surface:        rgba(255, 255, 255, 0.78);
+  --bc-surface-solid:  #ffffff;
+  --bc-surface-glass:  rgba(255, 255, 255, 0.65);
+
+  --bc-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --bc-shadow-sm:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 2px 6px rgba(15, 23, 42, 0.04);
+  --bc-shadow-md:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 6px 16px -4px rgba(15, 23, 42, 0.08),
+    0 12px 28px -8px rgba(15, 23, 42, 0.06);
+  --bc-shadow-lg:
+    0 2px 4px rgba(15, 23, 42, 0.06),
+    0 12px 28px -6px rgba(15, 23, 42, 0.10),
+    0 24px 56px -12px rgba(15, 23, 42, 0.12);
+  --bc-shadow-emerald:
+    0 4px 14px -2px rgba(16, 185, 129, 0.35),
+    0 10px 30px -10px rgba(5, 150, 105, 0.45);
+  --bc-shadow-rose:
+    0 4px 14px -2px rgba(244, 63, 94, 0.35),
+    0 10px 30px -10px rgba(225, 29, 72, 0.4);
+
+  --bc-radius-sm: 10px;
+  --bc-radius:    14px;
+  --bc-radius-lg: 20px;
+  --bc-radius-xl: 26px;
+
+  --bc-ease:    cubic-bezier(0.22, 1, 0.36, 1);
+  --bc-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  --bc-ink:         #e2e8f0;
+  --bc-ink-soft:    #cbd5e1;
+  --bc-muted:       #94a3b8;
+  --bc-line:        rgba(255, 255, 255, 0.06);
+  --bc-line-strong: rgba(255, 255, 255, 0.10);
+
+  --bc-surface:        rgba(15, 23, 42, 0.7);
+  --bc-surface-solid:  #0f172a;
+  --bc-surface-glass:  rgba(15, 23, 42, 0.55);
+
+  --bc-shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+  --bc-shadow-md:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 6px 16px -4px rgba(0, 0, 0, 0.4),
+    0 12px 28px -8px rgba(0, 0, 0, 0.35);
+  --bc-shadow-lg:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 12px 28px -6px rgba(0, 0, 0, 0.45),
+    0 24px 56px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Base ---------- */
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', 'Plus Jakarta Sans', 'Noto Sans Thai', -apple-system,
+    BlinkMacSystemFont, "Segoe UI", "Sarabun", sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+  color: var(--bc-ink);
+  background:
+    radial-gradient(1200px 700px at -10% -10%, rgba(16, 185, 129, 0.10), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(99, 102, 241, 0.07), transparent 55%),
+    radial-gradient(800px 500px at 50% 110%, rgba(20, 184, 166, 0.08), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+html.dark body, .dark body {
+  color: var(--bc-ink);
+  background:
+    radial-gradient(1200px 700px at -10% -10%, rgba(16, 185, 129, 0.14), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(800px 500px at 50% 110%, rgba(20, 184, 166, 0.10), transparent 55%),
+    linear-gradient(180deg, #060b18 0%, #0a1224 60%, #0b1428 100%);
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Noto Sans Thai', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.view.active { animation: bc-view-in .35s var(--bc-ease) both; }
+@keyframes bc-view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- HEADER ---------- */
+header.bg-emerald-600 {
+  background:
+    linear-gradient(135deg, #047857 0%, #059669 45%, #10b981 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 24px -10px rgba(5, 150, 105, 0.5),
+    0 14px 40px -16px rgba(2, 44, 34, 0.35);
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+header.bg-emerald-600::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(600px 200px at 10% -40%, rgba(255, 255, 255, 0.22), transparent 60%),
+    radial-gradient(500px 200px at 90% 140%, rgba(0, 0, 0, 0.15), transparent 60%);
+  pointer-events: none;
+}
+header.bg-emerald-600 > div { position: relative; z-index: 1; }
+header.bg-emerald-600 #logoLink span:last-child {
+  background: linear-gradient(180deg, #ffffff 30%, #d1fae5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+header.bg-emerald-600 nav a,
+header.bg-emerald-600 button {
+  transition: background-color .2s var(--bc-ease), transform .15s var(--bc-ease);
+}
+header.bg-emerald-600 nav a:hover,
+header.bg-emerald-600 button:hover { background: rgba(255, 255, 255, 0.14) !important; }
+header.bg-emerald-600 button:active { transform: scale(.95); }
+
+/* ---------- CARDS ---------- */
+.bg-white {
+  background: var(--bc-surface) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--bc-line);
+}
+.dark .dark\:bg-slate-800 {
+  background: var(--bc-surface) !important;
+  border-color: var(--bc-line-strong);
+}
+
+main .bg-white.rounded-2xl,
+main .dark .dark\:bg-slate-800.rounded-2xl,
+main section > div.bg-white {
+  box-shadow: var(--bc-shadow-md);
+  transition: transform .25s var(--bc-ease), box-shadow .3s var(--bc-ease);
+}
+
+.rounded-2xl { border-radius: var(--bc-radius-lg) !important; }
+.rounded-xl  { border-radius: var(--bc-radius)    !important; }
+.rounded-lg  { border-radius: var(--bc-radius-sm) !important; }
+
+/* ---------- HEADINGS ---------- */
+h1.text-2xl, h2.text-2xl { font-weight: 800; letter-spacing: -0.025em; }
+h2.text-xl { font-weight: 800; letter-spacing: -0.02em; }
+h3.uppercase {
+  letter-spacing: 0.08em !important;
+  font-weight: 700 !important;
+  font-size: 0.7rem !important;
+}
+
+/* ---------- PRIMARY BUTTONS (emerald) ---------- */
+button.bg-emerald-600,
+.bg-emerald-600 {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: var(--bc-shadow-emerald);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform .15s var(--bc-ease), box-shadow .25s var(--bc-ease), filter .2s var(--bc-ease);
+  position: relative;
+  overflow: hidden;
+}
+button.bg-emerald-600::after,
+.bg-emerald-600::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 50%);
+  pointer-events: none;
+}
+button.bg-emerald-600:hover,
+.bg-emerald-600:hover {
+  filter: brightness(1.04) saturate(1.05);
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 18px -2px rgba(16, 185, 129, 0.5),
+    0 14px 36px -10px rgba(5, 150, 105, 0.55);
+}
+button.bg-emerald-600:active,
+.bg-emerald-600:active { transform: translateY(0) scale(.98); }
+
+/* keep header buttons NOT styled like primary cards (they share class bg-emerald-700 hover only via nav) */
+
+/* ---------- TINTED SOFT BUTTONS ---------- */
+.bg-emerald-50 {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.04)) !important;
+  backdrop-filter: blur(8px);
+  transition: transform .15s var(--bc-ease), background .2s var(--bc-ease), box-shadow .2s var(--bc-ease);
+}
+.dark .dark\:bg-emerald-900\/30,
+.dark .dark\:bg-emerald-900\/20 {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.18), rgba(16, 185, 129, 0.08)) !important;
+}
+.bg-emerald-50:hover { transform: translateY(-1px); }
+
+.bg-indigo-50 {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.10), rgba(99, 102, 241, 0.04)) !important;
+  backdrop-filter: blur(8px);
+}
+.dark .dark\:bg-indigo-900\/30 {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.22), rgba(99, 102, 241, 0.08)) !important;
+}
+
+.bg-sky-50 {
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.10), rgba(14, 165, 233, 0.04)) !important;
+  backdrop-filter: blur(8px);
+}
+.dark .dark\:bg-sky-900\/30 {
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.22), rgba(14, 165, 233, 0.08)) !important;
+}
+
+.bg-amber-50 {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.10), rgba(245, 158, 11, 0.04)) !important;
+  backdrop-filter: blur(8px);
+}
+.dark .dark\:bg-amber-900\/20,
+.dark .dark\:bg-amber-900\/30 {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.20), rgba(245, 158, 11, 0.08)) !important;
+}
+
+.bg-rose-50 {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.10), rgba(244, 63, 94, 0.04)) !important;
+  backdrop-filter: blur(8px);
+}
+.dark .dark\:bg-rose-900\/30,
+.dark .dark\:bg-rose-900\/40 {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.22), rgba(244, 63, 94, 0.08)) !important;
+}
+
+/* ---------- General button polish ---------- */
+button {
+  transition: transform .15s var(--bc-ease), background-color .2s var(--bc-ease),
+              box-shadow .2s var(--bc-ease), filter .2s var(--bc-ease);
+}
+button:active { transform: scale(.97); }
+
+.bg-rose-500 {
+  background: linear-gradient(180deg, #f43f5e 0%, #e11d48 100%) !important;
+  box-shadow: var(--bc-shadow-rose);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.bg-rose-500:hover { filter: brightness(1.05); transform: translateY(-1px); }
+
+.bg-amber-500 {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
+  box-shadow:
+    0 4px 14px -2px rgba(245, 158, 11, 0.45),
+    0 10px 30px -10px rgba(217, 119, 6, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- INSTALL BANNER ---------- */
+#installBanner .bg-gradient-to-r {
+  background:
+    linear-gradient(135deg, #0d9488 0%, #10b981 50%, #14b8a6 100%) !important;
+  box-shadow:
+    0 14px 40px -10px rgba(16, 185, 129, 0.5),
+    0 24px 60px -20px rgba(13, 148, 136, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: relative; overflow: hidden;
+}
+#installBanner .bg-gradient-to-r::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(400px 160px at 20% -30%, rgba(255, 255, 255, 0.25), transparent 60%),
+    radial-gradient(300px 140px at 90% 130%, rgba(0, 0, 0, 0.18), transparent 60%);
+  pointer-events: none;
+}
+#installBanner .bg-gradient-to-r > * { position: relative; z-index: 1; }
+
+/* ---------- INPUTS ---------- */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="tel"],
+input[type="email"],
+select,
+textarea {
+  transition: border-color .2s var(--bc-ease), box-shadow .2s var(--bc-ease),
+              background .2s var(--bc-ease);
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="tel"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: var(--bc-emerald-500) !important;
+  box-shadow:
+    0 0 0 4px rgba(16, 185, 129, 0.14),
+    0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* ---------- BADGES ---------- */
+.rounded-full.bg-emerald-100 {
+  background: linear-gradient(180deg, #d1fae5, #a7f3d0) !important;
+  color: #065f46 !important;
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.25);
+}
+
+/* ---------- LINKS ---------- */
+a.text-emerald-600 { transition: opacity .2s var(--bc-ease); }
+a.text-emerald-600:hover { opacity: .82; text-decoration: none; }
+
+/* ---------- LIST ITEMS ---------- */
+#recentSessions > *,
+#historyList > *,
+#managerSessionsList > *,
+#membersList > *,
+#matchesList > *,
+#courtsList > * {
+  transition: transform .2s var(--bc-ease), box-shadow .2s var(--bc-ease),
+              background .2s var(--bc-ease);
+}
+
+/* ---------- MODALS ---------- */
+.fixed.inset-0.bg-black\/50 {
+  background: rgba(2, 6, 23, 0.55) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  animation: bc-fade-in .25s var(--bc-ease) both;
+}
+.fixed.inset-0.bg-black\/50 > div {
+  animation: bc-pop .35s var(--bc-ease) both;
+  box-shadow: var(--bc-shadow-lg) !important;
+}
+@keyframes bc-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes bc-pop {
+  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------- SCROLLBAR ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.15);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.28); background-clip: padding-box; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); background-clip: padding-box; }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); background-clip: padding-box; }
+
+/* ---------- ACCENT TEXT ---------- */
+#sumTotal {
+  background: linear-gradient(135deg, #059669 0%, #10b981 60%, #14b8a6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- SPACING ---------- */
+main { padding-top: 1.5rem; padding-bottom: 6rem; }
+
+/* ---------- DIVIDERS ---------- */
+.divide-y > * + * { border-top-color: var(--bc-line) !important; }
+.border-t        { border-top-color: var(--bc-line-strong) !important; }
+
+/* ---------- DARK MODE TEXT ---------- */
+.dark .text-slate-800 { color: #e2e8f0 !important; }
+.dark .text-slate-600 { color: #cbd5e1 !important; }
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .text-slate-400 { color: #94a3b8 !important; }
+
+/* ---------- FOCUS VISIBLE ---------- */
+:focus-visible {
+  outline: 2px solid var(--bc-emerald-500);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ---------- REDUCED MOTION ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- DECORATIVE ORBS ---------- */
+body::before, body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(60px);
+  opacity: .35;
+}
+body::before {
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, #34d399, transparent 70%);
+  top: -120px; left: -120px;
+  animation: bc-float 18s ease-in-out infinite alternate;
+}
+body::after {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, #818cf8, transparent 70%);
+  bottom: -160px; right: -140px;
+  opacity: .25;
+  animation: bc-float 22s ease-in-out infinite alternate-reverse;
+}
+.dark body::before { opacity: .25; }
+.dark body::after  { opacity: .2; }
+@keyframes bc-float {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(20px, 30px, 0) scale(1.08); }
+}
+main, header { position: relative; z-index: 1; }
+
+/* ---------- CHIPS ---------- */
+#memberSuggestions button,
+#courtSuggestions button {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7)) !important;
+  border: 1px solid var(--bc-line-strong) !important;
+  box-shadow: var(--bc-shadow-xs);
+  transition: transform .15s var(--bc-ease), box-shadow .2s var(--bc-ease);
+}
+.dark #memberSuggestions button,
+.dark #courtSuggestions button {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.7)) !important;
+}
+#memberSuggestions button:hover,
+#courtSuggestions button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--bc-shadow-sm);
+}
+
+/* ---------- TOAST ---------- */
+#toast {
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--bc-shadow-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- SELECTION ---------- */
+::selection { background: rgba(16, 185, 129, 0.28); color: inherit; }
