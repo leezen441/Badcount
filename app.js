@@ -1852,58 +1852,69 @@ function renderMembers() {
     const matchShuttles = totals.matchShuttlesMap ? totals.matchShuttlesMap[m.id] || 0 : 0;
     const displayShuttles = (m.shuttlesUsed || 0) + matchShuttles;
     const isPaid = !!m.isPaid;
+    const isPaused = !!m.isPaused;
     const priceColor = isPaid ? "text-emerald-500" : "text-rose-500";
     
-    return `
-    <div class="py-2.5 sm:py-3 flex items-center gap-1 sm:gap-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
+    const leadingButton = isPaused ? `
+      <button data-act="toggle-pause-row" data-idx="${idx}" class="w-6 h-6 shrink-0 flex items-center justify-center text-base hover:scale-110 active:scale-95 transition-transform" title="ยกเลิกการพักคิว (กลับเข้าคิวจัดเกม)">
+        ⏸️
+      </button>
+    ` : `
       <button data-act="toggle-paid" data-idx="${idx}" class="w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-400'}" title="ทำเครื่องหมายว่าจ่ายแล้ว">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
       </button>
+    `;
+
+    return `
+    <div class="py-2.5 sm:py-3 flex items-center gap-1 sm:gap-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
+      ${leadingButton}
       
-      <div class="flex-1 min-w-0 flex items-center justify-between gap-1 sm:gap-2">
-        <div class="min-w-0 flex-1 flex items-center gap-1">
-          <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate max-w-[65px] sm:max-w-none text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/Buddy">
-            ${escapeHtml(m.name)}
-          </button>
-          ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
-          ${(() => {
-            const buddy = m.buddyId 
-              ? members.find(x => x.id === m.buddyId) 
-              : members.find(x => x.buddyId === m.id);
-            if (buddy) {
-              return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
+      <div class="flex-1 min-w-0 flex items-center justify-between gap-2 sm:gap-3 rounded-xl transition-all ${isPaused ? 'bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/40 px-2 py-1.5' : ''}">
+        <div class="flex-1 min-w-0 flex items-center justify-between gap-1 sm:gap-2">
+          <div class="min-w-0 flex-1 flex items-center gap-1">
+            <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate max-w-[65px] sm:max-w-none text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/Buddy">
+              ${escapeHtml(m.name)}
+            </button>
+            ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
+            ${(() => {
+              const buddy = m.buddyId 
+                ? members.find(x => x.id === m.buddyId) 
+                : members.find(x => x.buddyId === m.id);
+              if (buddy) {
+                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
+              }
+              return "";
+            })()}
+            ${pStats[m.id].games > 0
+              ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
+              : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
             }
-            return "";
-          })()}
-          ${pStats[m.id].games > 0
-            ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
-            : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
-          }
-        </div>
-        
-        <div class="flex flex-col items-end justify-center shrink-0 min-w-[60px] sm:min-w-[85px]">
-          <div class="font-extrabold text-xs sm:text-base ${priceColor} whitespace-nowrap">${fmt(totals.perMember[idx])} ฿</div>
-          <div class="flex gap-1 mt-0.5">
-            ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
-              <button data-act="view-slip" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="ดูสลิป">
-                <span>🖼️</span>
-              </button>
-            ` : ''}
-            ${!isPaid ? `
-              <button data-act="show-dyn-qr" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="สแกน QR">
-                <span>💸</span>
-              </button>
-            ` : ''}
+          </div>
+          
+          <div class="flex flex-col items-end justify-center shrink-0 min-w-[60px] sm:min-w-[85px]">
+            <div class="font-extrabold text-xs sm:text-base ${priceColor} whitespace-nowrap">${fmt(totals.perMember[idx])} ฿</div>
+            <div class="flex gap-1 mt-0.5">
+              ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
+                <button data-act="view-slip" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="ดูสลิป">
+                  <span>🖼️</span>
+                </button>
+              ` : ''}
+              ${!isPaid ? `
+                <button data-act="show-dyn-qr" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="สแกน QR">
+                  <span>💸</span>
+                </button>
+              ` : ''}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="flex items-center gap-0.5 sm:gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 sm:p-1 shrink-0">
-        <button data-act="dec" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">−</button>
-        <div class="w-6 sm:w-10 text-center font-semibold text-xs sm:text-sm" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
-        <button data-act="inc" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">+</button>
+        <div class="flex items-center gap-0.5 sm:gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 sm:p-1 shrink-0 ${isPaused ? 'opacity-90' : ''}">
+          <button data-act="dec" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">−</button>
+          <div class="w-6 sm:w-10 text-center font-semibold text-xs sm:text-sm" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
+          <button data-act="inc" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">+</button>
+        </div>
       </div>
       
       <button data-act="del" data-idx="${idx}" class="text-slate-300 hover:text-red-500 pl-1 pr-2 text-xl shrink-0 leading-none">×</button>
@@ -1935,6 +1946,17 @@ function renderMembers() {
       // edit-player = แสดงตั้งค่าผู้เล่น
       if (act === "edit-player") {
         openPlayerSettingsModal(idx, true);
+        return;
+      }
+
+      // toggle-pause-row = ยกเลิกสถานะ pause
+      if (act === "toggle-pause-row") {
+        const members = [...(currentSession.members || [])];
+        if (members[idx]) {
+          members[idx].isPaused = false;
+        }
+        saveSession({ members });
+        toast(`พาคุณ ${members[idx].name} กลับเข้าคิวเรียบร้อย 🏸`);
         return;
       }
 
@@ -3051,10 +3073,10 @@ const autoDraftBtn = $("btnAutoDraft");
 if (autoDraftBtn) {
   autoDraftBtn.addEventListener("click", () => {
     const allMembers = (currentSession && currentSession.members) || [];
-    // คนที่จ่ายเงินแล้ว = ไม่อยู่ใน pool — ใช้เฉพาะคนยังไม่จ่าย
-    const eligibleMembers = allMembers.filter(m => !m.isPaid);
+    // คนที่จ่ายเงินแล้ว หรือพักคิวอยู่ = ไม่อยู่ใน pool — ใช้เฉพาะคนที่ยังไม่จ่ายและไม่พักคิว
+    const eligibleMembers = allMembers.filter(m => !m.isPaid && !m.isPaused);
     if (eligibleMembers.length < 4) {
-      return toast("ต้องมีสมาชิกที่ยังไม่จ่ายอย่างน้อย 4 คน");
+      return toast("ต้องมีสมาชิกที่พร้อมเล่น (ยังไม่จ่ายและไม่พักคิว) อย่างน้อย 4 คน");
     }
 
     try {
@@ -5552,6 +5574,64 @@ if ("serviceWorker" in navigator) {
 }
 
 
+// ---------- พักคิวสมาชิก (Pause Queue Management) ----------
+function openPauseMembersModal() {
+  if (!currentSession) return;
+  const container = $("pauseMembersListContainer");
+  if (!container) return;
+
+  const members = currentSession.members || [];
+  if (members.length === 0) {
+    container.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีสมาชิก</p>`;
+  } else {
+    container.innerHTML = members.map((m, idx) => {
+      const isPaused = !!m.isPaused;
+      return `
+        <div class="flex items-center justify-between py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/30 px-2 rounded-lg transition-colors cursor-pointer">
+          <label class="flex items-center gap-3 w-full cursor-pointer select-none">
+            <input type="checkbox" data-pause-idx="${idx}" class="w-5 h-5 accent-amber-600 rounded cursor-pointer border-slate-300 dark:border-slate-600 dark:bg-slate-900" ${isPaused ? 'checked' : ''} />
+            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">${escapeHtml(m.name)}</span>
+          </label>
+        </div>
+      `;
+    }).join("");
+  }
+
+  $("pauseMembersModal").classList.remove("hidden");
+}
+
+async function savePauseMembers() {
+  if (!currentSession) return;
+  const container = $("pauseMembersListContainer");
+  if (!container) return;
+
+  const saveBtn = $("btnSavePauseMembers");
+  saveBtn.disabled = true;
+  const originalText = saveBtn.textContent;
+  saveBtn.textContent = "กำลังบันทึก...";
+
+  try {
+    const members = [...(currentSession.members || [])];
+    const checkboxes = container.querySelectorAll("input[data-pause-idx]");
+    checkboxes.forEach(cb => {
+      const idx = parseInt(cb.dataset.pauseIdx, 10);
+      if (members[idx]) {
+        members[idx].isPaused = cb.checked;
+      }
+    });
+
+    await saveSession({ members });
+    toast("✓ บันทึกสถานะการพักคิวแล้ว ⏸️");
+    $("pauseMembersModal").classList.add("hidden");
+  } catch (err) {
+    console.error(err);
+    toast("เกิดข้อผิดพลาด: " + err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalText;
+  }
+}
+
 // === [PATCH] Clear-all player skills (with confirm) ===
 async function clearAllPlayerSkills() {
   if (!currentSession || !Array.isArray(currentSession.members) || currentSession.members.length === 0) {
@@ -5583,5 +5663,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearBtn = document.getElementById("btnClearAllSkills");
   if (clearBtn) {
     clearBtn.addEventListener("click", clearAllPlayerSkills);
+  }
+
+  // Bind Pause Queue event listeners
+  const pauseBtn = document.getElementById("btnPauseMembers");
+  if (pauseBtn) {
+    pauseBtn.addEventListener("click", openPauseMembersModal);
+  }
+  const closePauseBtn = document.getElementById("btnClosePauseMembers");
+  if (closePauseBtn) {
+    closePauseBtn.addEventListener("click", () => {
+      $("pauseMembersModal").classList.add("hidden");
+    });
+  }
+  const savePauseBtn = document.getElementById("btnSavePauseMembers");
+  if (savePauseBtn) {
+    savePauseBtn.addEventListener("click", savePauseMembers);
+  }
+  const pauseModal = $("pauseMembersModal");
+  if (pauseModal) {
+    pauseModal.addEventListener("click", (e) => {
+      if (e.target === pauseModal) {
+        pauseModal.classList.add("hidden");
+      }
+    });
   }
 });

@@ -369,6 +369,9 @@
         <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">สมาชิก (<span id="memberCount">0</span>)<span id="memberStatus" class="ml-1.5 text-emerald-600 dark:text-emerald-400 font-bold normal-case tracking-normal"></span></h3>
           <div class="flex gap-1.5">
+            <button id="btnPauseMembers" type="button" class="text-[10px] bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 px-2 py-1 rounded-md font-bold border border-amber-200 dark:border-amber-800/50 transition-colors" title="พักคิวชั่วคราว">
+              ⏸️ พักคิว
+            </button>
             <button id="btnClearAllSkills" type="button" class="text-[10px] bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 px-2 py-1 rounded-md font-bold border border-rose-200 dark:border-rose-800/50 transition-colors" title="ล้างระดับมือของสมาชิกทั้งหมด">
               🧹 ล้างระดับมือ
             </button>
@@ -1030,6 +1033,32 @@
       <div class="flex gap-2 mt-2">
         <button id="btnSavePlayerSettings" class="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3 rounded-xl font-bold text-sm shadow-md transition-transform active:scale-95">
           บันทึกตั้งค่า
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ===== PAUSE MEMBERS MODAL ===== -->
+  <div id="pauseMembersModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative border border-slate-100 dark:border-slate-700/50">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          ⏸️ พักคิวสมาชิก
+        </h3>
+        <button id="btnClosePauseMembers" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+        เลือกสมาชิกที่ต้องการพักคิวชั่วคราว (จะไม่ถูกดึงไปสุ่มจัดคิวเกม)
+      </p>
+
+      <div id="pauseMembersListContainer" class="max-h-60 overflow-y-auto space-y-1 mb-5 divide-y divide-slate-100 dark:divide-slate-800/50 pr-1">
+        <!-- Rendered dynamically in JS -->
+      </div>
+
+      <div class="flex gap-2">
+        <button id="btnSavePauseMembers" class="flex-1 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95">
+          ตกลง
         </button>
       </div>
     </div>
