@@ -5573,7 +5573,6 @@ async function clearAllPlayerSkills() {
   try {
     await saveSession({ members });
     toast("ล้างระดับมือทั้งหมดเรียบร้อย");
-    $("playerSettingsModal")?.classList.add("hidden");
   } catch (e) {
     console.error("[clearAllPlayerSkills] save failed:", e);
     toast("บันทึกไม่สำเร็จ ลองอีกครั้ง");
