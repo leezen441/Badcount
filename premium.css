@@ -473,3 +473,12 @@ main, header { position: relative; z-index: 1; }
 
 /* SELECTION */
 ::selection { background: rgba(16, 185, 129, 0.28); color: inherit; }
+
+
+/* ============================================================
+   JOIN/INVITE VIEW — hide Buddy & Skill sections per user request
+   ============================================================ */
+#view-join #joinSkillSection,
+#view-join #joinBuddySection {
+  display: none !important;
+}
