@@ -1229,7 +1229,6 @@ function renderSession() {
   setIfNotFocused($("fldShuttlePrice"), s.shuttlePrice || "");
   setIfNotFocused($("fldOtherCostType"), s.otherCostType || "perPerson");
   setIfNotFocused($("fldOtherCost"), s.otherCost || "");
-  setIfNotFocused($("fldMatchMode"), s.mode || "normal");
   
   const chkUseTeams = $("fldUseTeams");
   if (chkUseTeams) {
@@ -2314,7 +2313,6 @@ $("fldOtherCostType").addEventListener("change", e => {
   saveSession({ otherCostType: val });
 });
 
-$("fldMatchMode")?.addEventListener("change", e => saveSession({ mode: e.target.value }));
 $("fldUseTeams")?.addEventListener("change", e => saveSession({ useTeams: e.target.checked }));
 
 // Add member
@@ -2412,8 +2410,10 @@ $("btnAddMatch").addEventListener("click", () => {
 const SKILL_VALUE = { A: 5, B: 4, C: 3, P: 2, S: 1 };
 const SKILL_LEVELS = ["A", "B", "C", "P", "S"];
 
-function getMode() { return currentSession?.mode === "advance" ? "advance" : "normal"; }
-function isAdvanceMode() { return getMode() === "advance"; }
+function isAdvanceMode() {
+  if (!currentSession || !Array.isArray(currentSession.members)) return false;
+  return currentSession.members.some(m => m && m.skill);
+}
 function useTeams() { return !!currentSession?.useTeams; }
 
 function getSkillValue(memberId, members) {
