@@ -1242,14 +1242,16 @@ function renderSession() {
 
   if (s.status === "closed") {
     badge.textContent = "ปิดแล้ว";
-    badge.className = "text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-750 dark:text-slate-350 whitespace-nowrap select-none";
+    badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-slate-200 text-slate-700 whitespace-nowrap";
     btnClose.innerHTML = "🔓 เปิด Court อีกครั้ง";
-    btnClose.className = "flex-1 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-350 py-4 rounded-2xl font-extrabold border border-emerald-100/60 dark:border-emerald-900/40 transition-all hover:scale-[1.01] active:scale-98 shadow-sm";
+    // เปลี่ยนเป็นปุ่มสีเขียวอ่อนเมื่อก๊วนปิดแล้ว
+    btnClose.className = "flex-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 py-3 rounded-lg font-medium transition-colors";
   } else {
     badge.textContent = "เปิดอยู่";
-    badge.className = "text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/55 text-emerald-700 dark:text-emerald-350 whitespace-nowrap select-none";
+    badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap";
     btnClose.innerHTML = "✅ ปิด Court";
-    btnClose.className = "flex-1 bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-200 py-4 rounded-2xl font-extrabold border border-slate-200 dark:border-slate-800 transition-all hover:scale-[1.01] active:scale-98 shadow-sm";
+    // กลับเป็นปุ่มสีเทาปกติเมื่อก๊วนยังเปิดอยู่
+    btnClose.className = "flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg font-medium transition-colors";
   }
 
   // ✨ NEW: Update Invite button + Toggle Registration button based on state
@@ -1288,13 +1290,13 @@ function updateInviteButtonState() {
   // ===== Invite Button Color =====
   if (courtClosed) {
     // 🔴 แดง
-    inviteBtn.className = "bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/50 dark:hover:bg-rose-900/30 text-rose-700 dark:text-rose-400 py-3 rounded-2xl border border-rose-100/60 dark:border-rose-900/40 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-102 active:scale-95 shadow-sm";
+    inviteBtn.className = "bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-700 dark:text-rose-400 py-2.5 rounded-lg font-medium border border-rose-300 dark:border-rose-700 flex flex-col items-center justify-center gap-1 transition-colors";
   } else if (regClosed) {
     // 🟡 เหลือง
-    inviteBtn.className = "bg-amber-50/50 dark:bg-amber-955/20 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-3 rounded-2xl border border-amber-100/60 dark:border-amber-900/40 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-102 active:scale-95 shadow-sm";
+    inviteBtn.className = "bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-800 dark:text-amber-400 py-2.5 rounded-lg font-medium border border-amber-300 dark:border-amber-700 flex flex-col items-center justify-center gap-1 transition-colors";
   } else {
     // 🟢 เขียว (default)
-    inviteBtn.className = "bg-emerald-50/50 dark:bg-emerald-955/20 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-3 rounded-2xl border border-emerald-100/60 dark:border-emerald-900/40 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-102 active:scale-95 shadow-sm";
+    inviteBtn.className = "bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1 transition-colors";
   }
 
   // ===== Toggle Registration Button =====
@@ -1303,19 +1305,19 @@ function updateInviteButtonState() {
     toggleBtn.disabled = true;
     toggleIcon.textContent = "🔒";
     toggleLabel.textContent = "ปิดรับ";
-    toggleBtn.className = "bg-slate-100/80 dark:bg-slate-900/80 text-slate-400 dark:text-slate-650 py-2 px-2.5 rounded-xl text-[10px] font-bold border border-slate-200/50 dark:border-slate-800/60 flex items-center justify-center gap-1.5 cursor-not-allowed opacity-60";
+    toggleBtn.className = "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 cursor-not-allowed opacity-60";
   } else if (regClosed) {
     // Registration closed (active state — yellow)
     toggleBtn.disabled = false;
     toggleIcon.textContent = "🔒";
     toggleLabel.textContent = "ปิดรับ";
-    toggleBtn.className = "bg-amber-100/80 dark:bg-amber-955/40 hover:bg-amber-200/85 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 py-2 px-2.5 rounded-xl text-[10px] font-bold border border-amber-200/50 dark:border-amber-800/60 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm";
+    toggleBtn.className = "bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 text-amber-800 dark:text-amber-300 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-amber-300 dark:border-amber-700 flex items-center justify-center gap-1 transition-colors";
   } else {
     // Open (default — show "เปิดรับ")
     toggleBtn.disabled = false;
     toggleIcon.textContent = "✅";
     toggleLabel.textContent = "เปิดรับ";
-    toggleBtn.className = "bg-white/70 dark:bg-slate-900/70 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-2 px-2.5 rounded-xl text-[10px] font-bold border border-slate-200/50 dark:border-slate-800/60 flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm";
+    toggleBtn.className = "bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-600 dark:text-slate-400 py-1.5 px-2 rounded-md text-[11px] font-semibold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 transition-colors";
   }
 }
 
@@ -1854,44 +1856,44 @@ function renderMembers() {
     const priceColor = isPaid ? "text-emerald-500" : "text-rose-500";
     
     return `
-    <div class="py-3 flex items-center gap-2 sm:gap-3 border-b border-slate-100 dark:border-slate-900 last:border-0 transition-colors">
-      <button data-act="toggle-paid" data-idx="${idx}" class="w-6 h-6 shrink-0 rounded-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-90 ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-transparent hover:border-emerald-400'}" title="ทำเครื่องหมายว่าจ่ายแล้ว">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+    <div class="py-2.5 sm:py-3 flex items-center gap-1 sm:gap-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
+      <button data-act="toggle-paid" data-idx="${idx}" class="w-6 h-6 shrink-0 rounded-md border flex items-center justify-center transition-colors ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-300 dark:border-slate-600 text-transparent hover:border-emerald-400'}" title="ทำเครื่องหมายว่าจ่ายแล้ว">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
         </svg>
       </button>
       
       <div class="flex-1 min-w-0 flex items-center justify-between gap-1 sm:gap-2">
-        <div class="min-w-0 flex-1 flex items-center gap-1.5">
-          <button data-act="edit-player" data-idx="${idx}" class="font-black truncate max-w-[85px] sm:max-w-none text-left hover:text-emerald-500 dark:hover:text-emerald-450 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-650 line-through' : 'text-slate-800 dark:text-slate-200'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/Buddy">
+        <div class="min-w-0 flex-1 flex items-center gap-1">
+          <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate max-w-[65px] sm:max-w-none text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/Buddy">
             ${escapeHtml(m.name)}
           </button>
-          ${m.skill ? `<span class="text-[9px] px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-black rounded-lg border border-indigo-100/30 dark:border-indigo-900/20 shrink-0 select-none">${m.skill}</span>` : ''}
+          ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
           ${(() => {
             const buddy = m.buddyId 
               ? members.find(x => x.id === m.buddyId) 
               : members.find(x => x.buddyId === m.id);
             if (buddy) {
-              return `<span class="text-[9px] px-2 py-0.5 bg-emerald-50 dark:bg-emerald-955/65 text-emerald-600 dark:text-emerald-450 font-black rounded-lg border border-emerald-100/30 dark:border-emerald-900/20 shrink-0 select-none">🤝 ${escapeHtml(buddy.name)}</span>`;
+              return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
             }
             return "";
           })()}
           ${pStats[m.id].games > 0
-            ? `<span class="hidden sm:inline text-xs text-slate-450 dark:text-slate-555 ml-1 font-medium select-none">(ตี ${pStats[m.id].games} เกม)</span>`
-            : `<span class="hidden sm:inline text-xs text-slate-355 dark:text-slate-700 ml-1 font-medium select-none">(ยังไม่ได้ลงสนาม)</span>`
+            ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
+            : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
           }
         </div>
         
-        <div class="flex flex-col items-end justify-center shrink-0 min-w-[60px] sm:min-w-[85px] mr-1">
-          <div class="font-black text-xs sm:text-base ${priceColor} whitespace-nowrap drop-shadow-sm">${fmt(totals.perMember[idx])} ฿</div>
-          <div class="flex gap-1.5 mt-0.5">
+        <div class="flex flex-col items-end justify-center shrink-0 min-w-[60px] sm:min-w-[85px]">
+          <div class="font-extrabold text-xs sm:text-base ${priceColor} whitespace-nowrap">${fmt(totals.perMember[idx])} ฿</div>
+          <div class="flex gap-1 mt-0.5">
             ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
-              <button data-act="view-slip" data-idx="${idx}" class="text-[9px] px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-extrabold rounded-lg border border-emerald-100/40 dark:border-emerald-900/20 flex items-center gap-0.5 hover:scale-105 active:scale-95 transition-all shadow-sm" title="ดูสลิป">
+              <button data-act="view-slip" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="ดูสลิป">
                 <span>🖼️</span>
               </button>
             ` : ''}
             ${!isPaid ? `
-              <button data-act="show-dyn-qr" data-idx="${idx}" class="text-[9px] px-2 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-extrabold rounded-lg border border-amber-100/40 dark:border-amber-900/20 flex items-center gap-0.5 hover:scale-105 active:scale-95 transition-all shadow-sm" title="สแกน QR">
+              <button data-act="show-dyn-qr" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="สแกน QR">
                 <span>💸</span>
               </button>
             ` : ''}
@@ -1899,13 +1901,13 @@ function renderMembers() {
         </div>
       </div>
 
-      <div class="flex items-center gap-0.5 sm:gap-1.5 bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/40 rounded-xl p-0.5 sm:p-1 shrink-0 shadow-inner">
-        <button data-act="dec" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-90 flex items-center justify-center font-black text-slate-600 dark:text-slate-400 text-xs sm:text-sm shadow-sm transition-all">−</button>
-        <div class="w-6 sm:w-10 text-center font-extrabold text-xs sm:text-sm text-slate-800 dark:text-slate-200" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
-        <button data-act="inc" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-90 flex items-center justify-center font-black text-slate-600 dark:text-slate-400 text-xs sm:text-sm shadow-sm transition-all">+</button>
+      <div class="flex items-center gap-0.5 sm:gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 sm:p-1 shrink-0">
+        <button data-act="dec" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">−</button>
+        <div class="w-6 sm:w-10 text-center font-semibold text-xs sm:text-sm" title="ลูกในเกม: ${matchShuttles}, ลูกเบิกเอง: ${m.shuttlesUsed || 0}">${displayShuttles}</div>
+        <button data-act="inc" data-idx="${idx}" class="w-6 h-6 sm:w-8 sm:h-8 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs sm:text-base">+</button>
       </div>
       
-      <button data-act="del" data-idx="${idx}" class="text-slate-300 dark:text-slate-750 hover:text-rose-500 pl-1 pr-2 text-xl shrink-0 leading-none transition-colors">×</button>
+      <button data-act="del" data-idx="${idx}" class="text-slate-300 hover:text-red-500 pl-1 pr-2 text-xl shrink-0 leading-none">×</button>
     </div>
     `
   }).join("");
@@ -4901,12 +4903,12 @@ function renderSessionList(container, snap, isHome, isManager = false) {
     const isClosed = s.status === "closed";
 
     const cardClass = isClosed
-      ? "block p-4 pr-10 rounded-2xl border border-emerald-500/20 dark:border-emerald-400/10 bg-emerald-50/40 dark:bg-emerald-950/5 backdrop-blur-xl hover:bg-emerald-50/70 dark:hover:bg-emerald-950/10 shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
-      : "block p-4 pr-10 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl hover:bg-white/90 dark:hover:bg-slate-900/80 shadow-md hover:shadow-lg hover:scale-[1.01] transition-all duration-300";
-    const priceClass = "font-black text-base tracking-tight text-slate-800 dark:text-slate-100";
+      ? "block p-3 pr-10 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:border-emerald-400 transition"
+      : "block p-3 pr-10 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-slate-800/50 transition";
+    const priceClass = isClosed ? "font-bold text-emerald-700 dark:text-emerald-400" : "font-bold text-emerald-600 dark:text-emerald-500";
     const statusBadge = isClosed
-      ? `<span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-350 shadow-sm border border-emerald-200/20">✓ Closed</span>`
-      : `<span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-350 shadow-sm border border-blue-200/20">● Active</span>`;
+      ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded">✓ ปิดแล้ว</span>`
+      : `<span class="text-xs text-emerald-600 dark:text-emerald-500">เปิดอยู่</span>`;
 
     // Courts compact summary
     const courtNums = (s.courts || []).map(c => c.number).filter(Boolean);
@@ -4914,7 +4916,7 @@ function renderSessionList(container, snap, isHome, isManager = false) {
       ? ` · 🏟️ ${escapeHtml(courtNums.join(","))}`
       : "";
 
-    // 1. ตรวจสอบรายชื่อคนที่ยังไม่ได้จ่ายเงิน
+// 1. ตรวจสอบรายชื่อคนที่ยังไม่ได้จ่ายเงิน
     let unpaidListHtml = "";
     if (isClosed) {
       const unpaidMembers = [];
@@ -4928,16 +4930,13 @@ function renderSessionList(container, snap, isHome, isManager = false) {
       // 2. ถ้ามีคนค้างจ่าย ให้สร้าง HTML แสดงรายชื่อและจำนวนเงิน
       if (unpaidMembers.length > 0) {
         unpaidListHtml = `
-          <div class="mt-3 pt-3 border-t border-emerald-250/20 dark:border-slate-800/60">
-            <div class="text-[10px] font-black uppercase tracking-wider text-rose-500/80 dark:text-rose-450 mb-2 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-              <span>Pending Payment:</span>
-            </div>
+          <div class="mt-2 pt-2 border-t border-emerald-100/50 dark:border-slate-700">
+            <div class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 mb-1">ค้างชำระ:</div>
             <div class="flex flex-wrap gap-1.5">
               ${unpaidMembers.map(u => `
-                <span class="inline-flex items-center gap-1 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-250/20 dark:border-rose-900/30 text-rose-700 dark:text-rose-350 text-[10px] px-2 py-0.5 rounded-full shadow-sm">
-                  <span class="truncate max-w-[80px] font-medium">${escapeHtml(u.name)}</span>
-                  <span class="font-bold border-l border-rose-250/30 dark:border-rose-900/30 pl-1.5 tabular-nums">${fmt(u.amount)}฿</span>
+                <span class="inline-flex items-center gap-1 bg-white dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 text-[10px] px-1.5 py-0.5 rounded shadow-sm">
+                  <span class="truncate max-w-[80px]">${escapeHtml(u.name)}</span>
+                  <span class="font-bold border-l border-rose-200 dark:border-rose-800/50 pl-1">${fmt(u.amount)}฿</span>
                 </span>
               `).join("")}
             </div>
@@ -4948,29 +4947,22 @@ function renderSessionList(container, snap, isHome, isManager = false) {
 
     // 3. วาดการ์ดแสดงผล
     rows.push(`
-      <div class="relative font-sans">
+      <div class="relative">
         <a href="#/${isManager ? 'm' : 'session'}/${d.id}" class="${cardClass}">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
-              <div class="font-bold truncate ${isClosed ? "text-emerald-950 dark:text-emerald-300" : "text-slate-850 dark:text-slate-100"}">${escapeHtml(s.location || "ก๊วน")}</div>
-              <div class="text-xs ${isClosed ? "text-emerald-800/70 dark:text-emerald-400/70" : "text-slate-500 dark:text-slate-400"} mt-1 flex flex-wrap items-center gap-1.5 font-medium">
-                <span>📅 ${formatDate(s.date)}</span>
-                <span>•</span>
-                <span>👥 ${members.length} คน</span>
-                <span>•</span>
-                <span>🏸 ${totals.totalShuttles} ลูก</span>
-                ${courtSummary ? `<span>•</span><span>${courtSummary}</span>` : ""}
-              </div>
+              <div class="font-semibold truncate ${isClosed ? "text-emerald-900 dark:text-emerald-300" : "text-slate-800 dark:text-slate-200"}">${escapeHtml(s.location || "ก๊วน")}</div>
+              <div class="text-xs ${isClosed ? "text-emerald-700/70 dark:text-emerald-400/70" : "text-slate-500 dark:text-slate-400"} mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก${courtSummary}</div>
             </div>
-            <div class="text-right flex flex-col items-end shrink-0 gap-1">
+            <div class="text-right flex flex-col items-end shrink-0">
               <div class="${priceClass}">${fmt(totals.totalAll)} ฿</div>
-              <div>${statusBadge}</div>
+              <div class="mt-0.5">${statusBadge}</div>
             </div>
           </div>
           ${unpaidListHtml}
         </a>
         ${isManager ? '' : `
-        <button data-quick-del="${d.id}" class="absolute top-4 right-3 w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-650 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-450 transition-all duration-200 active:scale-90" title="ลบก๊วนนี้">
+        <button data-quick-del="${d.id}" class="absolute top-3 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors" title="ลบก๊วนนี้">
           ✕
         </button>
         `}
@@ -4995,7 +4987,6 @@ function renderSessionList(container, snap, isHome, isManager = false) {
     });
   });
 }
-
 
 function calcSessionTotals(s) {
   const members = s.members || [];
