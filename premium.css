@@ -84,7 +84,6 @@
 html {
   scroll-behavior: smooth;
   touch-action: manipulation;
-  overflow-x: hidden;
 }
 
 /* FRESH LIME GRADIENT BACKGROUND */
@@ -103,7 +102,6 @@ body {
     linear-gradient(180deg, #f4f6f0 0%, #e8ebe0 100%);
   background-attachment: fixed;
   min-height: 100vh;
-  overflow-x: hidden;
   touch-action: manipulation;
 }
 html.dark body, .dark body {
@@ -464,13 +462,13 @@ body::before, body::after {
 body::before {
   width: 400px; height: 400px;
   background: radial-gradient(circle, rgba(163, 230, 53, 0.35), transparent 70%);
-  top: -120px; left: -120px;
+  top: -120px; left: -60px;
   animation: bc-float 18s ease-in-out infinite alternate;
 }
 body::after {
-  width: 450px; height: 450px;
+  width: 350px; height: 350px;
   background: radial-gradient(circle, rgba(132, 204, 22, 0.2), transparent 70%);
-  bottom: -160px; right: -140px;
+  bottom: -100px; right: -40px;
   opacity: .15;
   animation: bc-float 22s ease-in-out infinite alternate-reverse;
 }
@@ -530,38 +528,6 @@ main, header { position: relative; z-index: 1; }
 #view-join #joinSkillSection,
 #view-join #joinBuddySection {
   display: none !important;
-}
-
-/* ============================================================
-   MATCH MODAL — full screen on mobile (จัดเกม)
-   Works WITH Tailwind's existing layout, not against it.
-   HTML: fixed inset-0 flex flex-col items-center justify-end
-   ============================================================ */
-
-/* Inner dialog: override Tailwind constraints to fill screen on mobile */
-#matchModal > div {
-  width: 100% !important;
-  max-width: 100% !important;
-  height: 100dvh !important;
-  max-height: 100dvh !important;
-  border-radius: 0 !important;
-  margin: 0 !important;
-  overflow-y: auto !important;
-  box-shadow: none !important;
-}
-
-/* Desktop: restore centered card layout */
-@media (min-width: 768px) {
-  #matchModal > div {
-    max-width: 720px !important;
-    height: 85vh !important;
-    max-height: 85vh !important;
-    border-radius: var(--bc-radius-lg) !important;
-    box-shadow: var(--bc-shadow-lg) !important;
-  }
-}
-@media (min-width: 1024px) {
-  #matchModal > div { max-width: 880px !important; }
 }
 
 #matchModalTitle { font-size: 1.4rem !important; font-weight: 800; letter-spacing: -0.02em; }
