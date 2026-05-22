@@ -533,7 +533,7 @@ main, header { position: relative; z-index: 1; }
 /* ============================================================
    MATCH MODAL — full screen (จัดเกม)
    ============================================================ */
-#matchModal {
+#matchModal:not(.hidden) {
   padding: 0 !important;
   display: flex !important;
   align-items: stretch !important;
@@ -585,7 +585,7 @@ main, header { position: relative; z-index: 1; }
 #availablePlayers { flex: 1 1 auto; min-height: 120px; }
 
 @media (min-width: 768px) {
-  #matchModal {
+  #matchModal:not(.hidden) {
     align-items: center !important;
     justify-content: center !important;
   }
