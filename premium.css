@@ -217,7 +217,7 @@ button:disabled,
 /* Secondary / Soft Buttons */
 .bg-emerald-50 {
   background: var(--bc-primary-tint) !important;
-  color: var(--bc-primary-hover) !important;
+  color: #047857 !important;
   border: 1px solid rgba(181, 247, 20, 0.25) !important;
   font-weight: 700;
   transition: all .2s var(--bc-ease);
@@ -377,7 +377,7 @@ textarea:focus {
 }
 
 .text-emerald-600 {
-  color: var(--bc-primary-hover) !important;
+  color: #047857 !important;
 }
 .dark .text-emerald-600 {
   color: var(--bc-primary) !important;
@@ -417,7 +417,7 @@ textarea:focus {
 
 /* Session cost total accent color */
 #sumTotal {
-  color: var(--bc-primary-hover) !important;
+  color: #047857 !important;
   font-weight: 900;
 }
 .dark #sumTotal {
