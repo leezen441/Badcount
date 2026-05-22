@@ -535,22 +535,34 @@ main, header { position: relative; z-index: 1; }
    ============================================================ */
 #matchModal {
   padding: 0 !important;
+  display: flex !important;
   align-items: stretch !important;
   justify-content: stretch !important;
+  background: rgba(2, 6, 23, 0.6) !important;
 }
+
 #matchModal > div {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
   height: 100dvh !important;
   max-height: 100dvh !important;
   border-radius: 0 !important;
+  margin: 0 !important;
   padding: 1.25rem 1rem !important;
   padding-top: max(1.25rem, env(safe-area-inset-top)) !important;
   padding-bottom: max(1.25rem, env(safe-area-inset-bottom)) !important;
+  background: var(--bc-surface-solid) !important; /* Premium solid background on mobile */
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important;
-  animation: none !important; /* ขึ้นมาเต็มหน้าจอทันที ไม่เลื่อนสไลด์ */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  z-index: 51 !important;
+  animation: none !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 #matchModal > div > div:first-child {
@@ -570,17 +582,25 @@ main, header { position: relative; z-index: 1; }
   flex-shrink: 0;
 }
 
-#matchModal > div { overflow-y: auto !important; }
-
 #availablePlayers { flex: 1 1 auto; min-height: 120px; }
 
 @media (min-width: 768px) {
+  #matchModal {
+    align-items: center !important;
+    justify-content: center !important;
+  }
   #matchModal > div {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
     max-width: 720px !important;
-    margin: 0 auto;
-    border-radius: var(--bc-radius-lg) !important;
     height: 85vh !important;
     max-height: 85vh !important;
+    border-radius: var(--bc-radius-lg) !important;
+    margin: 0 auto !important;
+    background: var(--bc-surface) !important; /* Desktop standard card background */
+    box-shadow: var(--bc-shadow-lg) !important;
   }
 }
 @media (min-width: 1024px) {
