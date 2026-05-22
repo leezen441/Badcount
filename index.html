@@ -14,11 +14,11 @@
   <meta name="twitter:title" content="BadCount 🏸 — Count Every Game." />
   <meta name="twitter:description" content=" " />
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏸%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="./icon.svg" />
 
   <!-- PWA: Manifest + Theme + Apple Touch Icon -->
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#10b981" />
+  <meta name="theme-color" content="#b5f714" />
   <link rel="apple-touch-icon" href="/icon.svg" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css">
+  <link rel="stylesheet" href="./premium.css?v=3.0.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -50,7 +50,13 @@
   <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-40">
     <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
       <a id="logoLink" href="#/" class="flex items-center gap-2 font-bold text-lg">
-        <span class="text-2xl">🏸</span>
+        <svg viewBox="0 0 24 24" class="w-7 h-7 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--bc-primary);">
+          <circle cx="10" cy="10" r="6" />
+          <line x1="5.8" y1="14.2" x2="2" y2="18" />
+          <line x1="10" y1="4" x2="10" y2="16" stroke-width="1" opacity="0.4" />
+          <line x1="4" y1="10" x2="16" y2="10" stroke-width="1" opacity="0.4" />
+          <path d="M 17 7 L 22 2 M 17 7 L 19 12 L 22 2 M 17 7 L 12 9 L 22 2" stroke-width="1.8" />
+        </svg>
         <span>BadCount</span>
       </a>
       <div class="flex items-center gap-2">
@@ -1081,6 +1087,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=3.0.0"></script>
 </body>
 </html>

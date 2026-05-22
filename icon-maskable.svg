@@ -1,4 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#10b981"/>
-  <text x="256" y="370" font-size="240" text-anchor="middle">🏸</text>
+  <defs>
+    <linearGradient id="limeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bef264" />
+      <stop offset="100%" stop-color="#84cc16" />
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2025" />
+      <stop offset="100%" stop-color="#0f1013" />
+    </linearGradient>
+  </defs>
+  <!-- Fully filled background for maskable compatibility -->
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+  
+  <g transform="scale(0.85) translate(45, 45)">
+    <!-- Modern Abstract Badminton Brandmark -->
+    <!-- Diagonal shaft -->
+    <path d="M 120 392 L 235 277" stroke="url(#limeGrad)" stroke-width="16" stroke-linecap="round" />
+    <!-- Leather grip representation -->
+    <path d="M 95 417 L 130 382" stroke="#ffffff" stroke-width="22" stroke-linecap="round" />
+    <path d="M 95 417 L 130 382" stroke="url(#limeGrad)" stroke-width="16" stroke-linecap="round" />
+    
+    <!-- Racket head circle -->
+    <circle cx="280" cy="232" r="75" stroke="url(#limeGrad)" stroke-width="18" fill="none" />
+    
+    <!-- Minimalist string lines inside head (abstract, premium look) -->
+    <path d="M 235 232 H 325" stroke="url(#limeGrad)" stroke-width="6" opacity="0.3" stroke-linecap="round" />
+    <path d="M 280 187 V 277" stroke="url(#limeGrad)" stroke-width="6" opacity="0.3" stroke-linecap="round" />
+    
+    <!-- Abstract flying Shuttlecock (top-right, intersecting, looking energetic) -->
+    <g transform="translate(330, 150) rotate(45)">
+      <!-- Cork Base -->
+      <path d="M -15 20 A 15 15 0 0 1 15 20 Z" fill="url(#limeGrad)" />
+      <!-- Outer Wing Flares -->
+      <path d="M -25 -20 L -15 10 L 0 5 L 15 10 L 25 -20 L 0 -10 Z" fill="url(#limeGrad)" />
+      <!-- Inner feather details -->
+      <path d="M -10 -35 L -5 -5 L 0 -8 L 5 -5 L 10 -35 L 0 -25 Z" fill="#ffffff" />
+    </g>
+  </g>
 </svg>
