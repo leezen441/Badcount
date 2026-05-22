@@ -96,6 +96,10 @@ h1, h2, h3, h4 {
 /* ============================================================
    HEADER SYSTEM (Sleek Graphite-Black Header for both modes)
    ============================================================ */
+#btnThemeToggle {
+  display: none !important;
+}
+
 header.bg-emerald-600 {
   background: #111317 !important; /* Premium Graphite-Black Background */
   box-shadow:

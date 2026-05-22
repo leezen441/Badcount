@@ -460,33 +460,11 @@ const fmt = (n) => (Number(n) || 0).toLocaleString("th-TH", { minimumFractionDig
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-// ---------- Dark Mode Init ----------
-function updateThemeIcon() {
-  const btn = $("btnThemeToggle");
-  if (!btn) return;
-  btn.textContent = document.documentElement.classList.contains("dark") ? "☀️" : "🌙";
-}
-
+// ---------- Dark Mode Init (Forced Dark Mode) ----------
 function initTheme() {
-  const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  if (isDark) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-  updateThemeIcon();
+  document.documentElement.classList.add('dark');
 }
 initTheme();
-
-const btnThemeToggle = $("btnThemeToggle");
-if (btnThemeToggle) {
-  btnThemeToggle.addEventListener("click", () => {
-    document.documentElement.classList.toggle("dark");
-    const isDark = document.documentElement.classList.contains("dark");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-    updateThemeIcon();
-  });
-}
 
 // คืนค่าเป็น array ของเบอร์ลูกแบด (อาจมีซ้ำได้) เพื่อให้ตรวจสอบเบอร์ซ้ำได้
 function listShuttleNumbers(str) {
