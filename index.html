@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.0.5">
+  <link rel="stylesheet" href="./premium.css?v=3.0.7">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -44,7 +44,7 @@
     input[type="number"] { -moz-appearance: textfield; }
   </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 min-h-screen pb-20 transition-colors duration-200">
+<body class="bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-200">
 
   <!-- HEADER -->
   <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-40">
@@ -170,8 +170,8 @@
     </section>
 
     <!-- ===== Test PromptPay Modal ===== -->
-    <div id="testPromptPayModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div class="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl p-6 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto">
+    <div id="testPromptPayModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto">
         <div class="text-center mb-4">
           <span class="text-4xl">🧪</span>
           <h3 class="text-lg font-bold mt-2">ทดสอบ PromptPay QR</h3>
@@ -219,8 +219,8 @@
     </div>
 
     <!-- ===== iOS Install Modal ===== -->
-    <div id="iosInstallModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div class="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl p-6 w-full max-w-sm shadow-xl">
+    <div id="iosInstallModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
         <div class="text-center mb-5">
           <span class="text-5xl block mb-3">🏸</span>
           <h3 class="text-xl font-bold">Install BadCount</h3>
@@ -838,8 +838,8 @@
   </div>
 
   <!-- ===== MATCH MODAL ===== -->
-  <div id="matchModal" class="hidden fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
-    <div class="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+  <div id="matchModal" class="hidden fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
       <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
           <h3 class="text-lg font-bold" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
@@ -1093,6 +1093,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.0.4"></script>
+  <script type="module" src="./app.js?v=3.0.6"></script>
 </body>
 </html>

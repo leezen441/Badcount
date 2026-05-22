@@ -447,7 +447,7 @@ textarea:focus {
 .border-slate-200 { border-color: var(--bc-line) !important; }
 .dark .border-slate-700 { border-color: var(--bc-line) !important; }
 
-main { padding-top: 1.5rem; padding-bottom: 6rem; }
+main { padding-top: 1.5rem; padding-bottom: 2rem; }
 
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
