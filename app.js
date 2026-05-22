@@ -5547,7 +5547,8 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   let openModalsStack = [];
-  let ignoreNextPop = false;
+  let popActiveCount = 0;
+  let ignorePopCount = 0;
 
   // มอนิเตอร์การเปิด-ปิด Modals ด้วย MutationObserver
   const observer = new MutationObserver((mutations) => {
@@ -5572,13 +5573,13 @@ document.addEventListener("DOMContentLoaded", () => {
             openModalsStack.splice(index, 1);
             console.log(`[ModalHistory] Closed: ${modalId}, stack:`, openModalsStack);
             
-            // ถ้าเป็นการปิดด้วยการกดปุ่ม (ไม่ใช่กด Back ของเบราว์เซอร์)
-            // ให้ลบประวัติศาสตร์ dummy ออกจาก stack ของเบราว์เซอร์
-            if (!ignoreNextPop) {
-              ignoreNextPop = true;
-              history.back();
+            if (popActiveCount > 0) {
+              // เป็นการปิดที่เกิดจากปุ่ม Back/Popstate
+              popActiveCount--;
             } else {
-              ignoreNextPop = false; // ปิด flag เมื่อเคลียร์เสร็จแล้ว
+              // เป็นการปิดแบบแมนนวล (กดปุ่มปิดหน้าจอ) -> ต้อง pop ประวัติศาสตร์ dummy ออก
+              ignorePopCount++;
+              history.back();
             }
           }
         }
@@ -5601,20 +5602,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ฟังการเคลื่อนไหวย้อนกลับ (Back)
     window.addEventListener("popstate", (event) => {
-      if (ignoreNextPop) {
-        // Popstate เกิดจากการเรียก history.back() ตอนเราซ่อน Modal โปรแกรมมิ่งเอง
-        ignoreNextPop = false;
+      if (ignorePopCount > 0) {
+        ignorePopCount--;
         return;
       }
 
       if (openModalsStack.length > 0) {
-        // มี Modal เปิดอยู่ และผู้ใช้กด Back (ฮาร์ดแวร์/ซอฟต์แวร์บนแอนดรอยด์ หรือสไลด์ถอยหลังบน iOS)
-        const topModalId = openModalsStack.pop();
+        // มี Modal เปิดอยู่ และผู้ใช้กด Back
+        const topModalId = openModalsStack[openModalsStack.length - 1]; // อ่านเฉยๆ อย่าเพิ่ง pop
         const el = document.getElementById(topModalId);
         if (el) {
           console.log(`[ModalHistory] Intercepted back button! Closing modal: ${topModalId}`);
-          // บังคับซ่อน Modal นั้น
-          ignoreNextPop = true; // ไม่ให้ฟังก์ชัน MutationObserver ไปสั่ง history.back() ซ้ำอีกรอบ
+          popActiveCount++;
           el.classList.add("hidden");
         }
       }
@@ -5625,8 +5624,6 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("hashchange", () => {
       if (openModalsStack.length > 0) {
         console.log("[ModalHistory] Hash changed, closing all modals:", openModalsStack);
-        // ตั้ง ignoreNextPop เพื่อไม่ให้ MutationObserver สั่ง history.back() ระหว่างที่เราเคลียร์
-        ignoreNextPop = true;
         while (openModalsStack.length > 0) {
           const modalId = openModalsStack.pop();
           const el = document.getElementById(modalId);
@@ -5634,7 +5631,8 @@ document.addEventListener("DOMContentLoaded", () => {
             el.classList.add("hidden");
           }
         }
-        ignoreNextPop = false;
+        popActiveCount = 0;
+        ignorePopCount = 0;
       }
     });
   }
