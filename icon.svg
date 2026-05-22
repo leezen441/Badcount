@@ -11,27 +11,17 @@
   </defs>
   <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
   
-  <!-- Modern Abstract Badminton Brandmark -->
-  <!-- Diagonal shaft -->
-  <path d="M 120 392 L 235 277" stroke="url(#limeGrad)" stroke-width="16" stroke-linecap="round" />
-  <!-- Leather grip representation -->
-  <path d="M 95 417 L 130 382" stroke="#ffffff" stroke-width="22" stroke-linecap="round" />
-  <path d="M 95 417 L 130 382" stroke="url(#limeGrad)" stroke-width="16" stroke-linecap="round" />
-  
-  <!-- Racket head circle -->
-  <circle cx="280" cy="232" r="75" stroke="url(#limeGrad)" stroke-width="18" fill="none" />
-  
-  <!-- Minimalist string lines inside head (abstract, premium look) -->
-  <path d="M 235 232 H 325" stroke="url(#limeGrad)" stroke-width="6" opacity="0.3" stroke-linecap="round" />
-  <path d="M 280 187 V 277" stroke="url(#limeGrad)" stroke-width="6" opacity="0.3" stroke-linecap="round" />
-  
-  <!-- Abstract flying Shuttlecock (top-right, intersecting, looking energetic) -->
-  <g transform="translate(330, 150) rotate(45)">
-    <!-- Cork Base -->
-    <path d="M -15 20 A 15 15 0 0 1 15 20 Z" fill="url(#limeGrad)" />
-    <!-- Outer Wing Flares -->
-    <path d="M -25 -20 L -15 10 L 0 5 L 15 10 L 25 -20 L 0 -10 Z" fill="url(#limeGrad)" />
-    <!-- Inner feather details -->
-    <path d="M -10 -35 L -5 -5 L 0 -8 L 5 -5 L 10 -35 L 0 -25 Z" fill="#ffffff" />
+  <g fill="url(#limeGrad)">
+    <!-- Racket Handle (Thick diagonal line) -->
+    <path d="M 110 390 L 190 310" stroke="url(#limeGrad)" stroke-width="45" stroke-linecap="round" fill="none" />
+    <!-- Racket Head (Solid Circle) -->
+    <circle cx="246" cy="266" r="90" />
+    <!-- Shuttlecock (Abstract shape flying top-right) -->
+    <g transform="translate(348, 164) rotate(45)">
+      <!-- Cork base -->
+      <path d="M -30 40 A 30 30 0 0 1 30 40 Z" />
+      <!-- Feathers -->
+      <path d="M -60 -60 L -30 20 L 30 20 L 60 -60 L 0 -30 Z" />
+    </g>
   </g>
 </svg>

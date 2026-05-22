@@ -116,7 +116,6 @@ header.bg-emerald-600 #logoLink {
 header.bg-emerald-600 #logoLink svg {
   width: 28px;
   height: 28px;
-  fill: var(--bc-primary);
 }
 
 header.bg-emerald-600 #logoLink span:last-child {
