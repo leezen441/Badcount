@@ -46,12 +46,13 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 ### 📲 หน้าต่างโต้ตอบสมบูรณ์แบบบนมือถือ (Optimized Mobile Modals & Layout)
 - ✅ **จัดตำแหน่งกึ่งกลางหน้าจอถาวร (Centered Modals)**: หน้าต่างจัดการเกมใหม่ (Match Modal), หน้าต่างทดสอบ PromptPay และหน้าต่างอื่นๆ จัดกึ่งกลางหน้าจออย่างสวยงามด้วยมุมโค้งมนขนาดใหญ่ (`rounded-2xl`)
 - ✅ **มองเห็นปุ่มล่างชัดเจน 100%**: ป้องกันขอบจอมือถือและแถบเบราว์เซอร์บังปุ่ม ด้วยการควบคุมขอบเขตความสูงหน้าต่างสูงสุดที่ 90% ของความสูงจอพร้อมแถบเลื่อนแนวตั้งภายในตัว ทำให้ปุ่ม **"ยกเลิก"** และ **"บันทึกเกม"** ปรากฏชัดและกดง่ายเสมอ
+- ✅ **รองรับปุ่มย้อนกลับบนมือถือ (Hardware Back Button Integration)**: แก้ไขปัญหาการกดปุ่ม Back หรือปัดนิ้วเพื่อถอยกลับบน Android/iOS แล้วหน้าเว็บเปลี่ยนเส้นทางหลังฉาก โดยระบบพัฒนาการทำงานร่วมกับ History API และ LIFO Modal Stack เพื่อดักจับและทำหน้าที่ปิด Modal ล่าสุดที่เปิดค้างอยู่ให้ก่อนอย่างราบรื่น
 - ✅ **แก้ปัญหาพื้นที่ด้านล่างเกินขอบ (Bottom Spacing Optimized)**: เอา Padding เกินขนาดออกจากโครงสร้างหลัก เหลือเพียง `2rem` (32px) ด้านล่างสุดของแอป เพื่อสิ้นสุดการเลื่อนหน้าเว็บได้อย่างเรียบร้อยพอดีใต้ปุ่มออกจากระบบ (Log off)
 - ✅ **PWA Install**: รองรับการติดตั้งแบบแอปพลิเคชันเดี่ยว (Standalone) เต็มหน้าจอ ไร้แถบ URL เบราว์เซอร์ ทำงานได้รวดเร็ว
 
 ### ⚡ ระบบ Cache-Busting & PWA Resilient Updates
-- ✅ **การควบคุม Cache ออฟไลน์**: ใช้ **Service Worker Cache Namespace (`badcount-v12`)** ในไฟล์ `sw.js` เพื่อเคลียร์แคชเก่าเมื่ออัปเดตระบบ
-- ✅ **Cache-Busting Query Parameters**: กำหนดเวอร์ชันให้การโหลดไฟล์ใน `index.html` เสมอ เช่น `premium.css?v=3.0.7` และ `app.js?v=3.0.6` เพื่อบังคับให้เบราว์เซอร์รับรู้การอัปเดตไฟล์แบบทันที (Instant load)
+- ✅ **การควบคุม Cache ออฟไลน์**: ใช้ **Service Worker Cache Namespace (`badcount-v13`)** ในไฟล์ `sw.js` เพื่อเคลียร์แคชเก่าเมื่ออัปเดตระบบ
+- ✅ **Cache-Busting Query Parameters**: กำหนดเวอร์ชันให้การโหลดไฟล์ใน `index.html` เสมอ เช่น `premium.css?v=3.0.7` และ `app.js?v=3.0.7` เพื่อบังคับให้เบราว์เซอร์รับรู้การอัปเดตไฟล์แบบทันที (Instant load)
 - ✅ **Resilient Realtime Sync**: ตรวจจับสถานะการเชื่อมต่อเครือข่าย (Online/Offline notifications) และระบบตรวจจับ Visibility ของแอป เพื่อบังคับเชื่อมต่อ Firestore ใหม่หากผู้ใช้เปิดหน้าต่างกลับมาจาก background ช่วยแก้ปัญหาข้อมูล Staleness
 
 ### 📤 Export & Sharing
@@ -92,14 +93,14 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 
 ```
 Badminton/
-  ├─ index.html          ← หน้า UI หลัก ปรับโครงสร้างจัดกึ่งกลางและ Cache-busted ( premium.css?v=3.0.7 / app.js?v=3.0.6 )
+  ├─ index.html          ← หน้า UI หลัก ปรับโครงสร้างจัดกึ่งกลางและ Cache-busted ( premium.css?v=3.0.7 / app.js?v=3.0.7 )
   ├─ premium.css         ← ธีมสไตล์ชีทพรีเมียมเขียวนีออน-ดำกราไฟต์ (มีตัวแปรระบบสี)
   ├─ app.js              ← ส่วนการประมวลผล Logic หลัก, ระบบแบ่งทีม, คำนวณเงิน และ PWA
   ├─ firebase-config.js  ← ตั้งค่าการเชื่อมต่อฐานข้อมูล Firebase ของคุณ
   ├─ manifest.json       ← แฟ้มข้อมูลสำหรับติดตั้ง PWA แอปพลิเคชัน
   ├─ icon.svg            ← ไอคอนเวกเตอร์ของแอปสไตล์ Abstract Sporty 🏸
   ├─ icon-maskable.svg   ← ไอคอนสำหรับการติดตั้งบนอุปกรณ์ Android
-  ├─ sw.js               ← Service Worker จัดการ Cache-Busting ( badcount-v12 )
+  ├─ sw.js               ← Service Worker จัดการ Cache-Busting ( badcount-v13 )
   ├─ qrcode.min.js       ← ไลบรารีสำหรับสร้างและแสดงผล QR Code (Local)
   ├─ fix_dark.js         ← สคริปต์ยูทิลิตี้สำหรับช่วยฉีดคลาส dark mode ลงในองค์ประกอบ
   ├─ .gitignore

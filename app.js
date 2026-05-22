@@ -5528,3 +5528,120 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// ============================================================
+// 📱 Android Hardware Back Button Modal Closing Integration
+// ============================================================
+(function() {
+  const modalIds = [
+    "testPromptPayModal",
+    "iosInstallModal",
+    "qrModal",
+    "matchModal",
+    "paymentModal",
+    "slipViewerModal",
+    "cameraScanModal",
+    "playerSettingsModal",
+    "pauseMembersModal",
+    "statsModal"
+  ];
+
+  let openModalsStack = [];
+  let ignoreNextPop = false;
+
+  // มอนิเตอร์การเปิด-ปิด Modals ด้วย MutationObserver
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === "class") {
+        const target = mutation.target;
+        const isHidden = target.classList.contains("hidden");
+        const modalId = target.id;
+
+        if (!isHidden) {
+          // Modal ถูกเปิด!
+          if (!openModalsStack.includes(modalId)) {
+            openModalsStack.push(modalId);
+            console.log(`[ModalHistory] Opened: ${modalId}, stack:`, openModalsStack);
+            // ดึงระดับประวัติศาสตร์: pushState
+            history.pushState({ isModal: true, modalId: modalId }, "");
+          }
+        } else {
+          // Modal ถูกปิด!
+          const index = openModalsStack.indexOf(modalId);
+          if (index !== -1) {
+            openModalsStack.splice(index, 1);
+            console.log(`[ModalHistory] Closed: ${modalId}, stack:`, openModalsStack);
+            
+            // ถ้าเป็นการปิดด้วยการกดปุ่ม (ไม่ใช่กด Back ของเบราว์เซอร์)
+            // ให้ลบประวัติศาสตร์ dummy ออกจาก stack ของเบราว์เซอร์
+            if (!ignoreNextPop) {
+              ignoreNextPop = true;
+              history.back();
+            } else {
+              ignoreNextPop = false; // ปิด flag เมื่อเคลียร์เสร็จแล้ว
+            }
+          }
+        }
+      }
+    });
+  });
+
+  // รอให้ DOM โหลดเต็มที่แล้วเริ่มการผูกการสังเกตการณ์
+  function initModalObserver() {
+    modalIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        observer.observe(el, { attributes: true, attributeFilter: ["class"] });
+        // กรณีเริ่มต้นถ้าเปิดอยู่ (ปกติจะซ่อนอยู่)
+        if (!el.classList.contains("hidden")) {
+          openModalsStack.push(id);
+        }
+      }
+    });
+
+    // ฟังการเคลื่อนไหวย้อนกลับ (Back)
+    window.addEventListener("popstate", (event) => {
+      if (ignoreNextPop) {
+        // Popstate เกิดจากการเรียก history.back() ตอนเราซ่อน Modal โปรแกรมมิ่งเอง
+        ignoreNextPop = false;
+        return;
+      }
+
+      if (openModalsStack.length > 0) {
+        // มี Modal เปิดอยู่ และผู้ใช้กด Back (ฮาร์ดแวร์/ซอฟต์แวร์บนแอนดรอยด์ หรือสไลด์ถอยหลังบน iOS)
+        const topModalId = openModalsStack.pop();
+        const el = document.getElementById(topModalId);
+        if (el) {
+          console.log(`[ModalHistory] Intercepted back button! Closing modal: ${topModalId}`);
+          // บังคับซ่อน Modal นั้น
+          ignoreNextPop = true; // ไม่ให้ฟังก์ชัน MutationObserver ไปสั่ง history.back() ซ้ำอีกรอบ
+          el.classList.add("hidden");
+        }
+      }
+    });
+
+    // เมื่อ URL Hash เปลี่ยน (เช่น ผู้ใช้กดปุ่มเมนู Home หรือ Back เพื่อเปลี่ยนหน้า)
+    // ให้ปิด Modals ทั้งหมดที่เปิดค้างอยู่
+    window.addEventListener("hashchange", () => {
+      if (openModalsStack.length > 0) {
+        console.log("[ModalHistory] Hash changed, closing all modals:", openModalsStack);
+        // ตั้ง ignoreNextPop เพื่อไม่ให้ MutationObserver สั่ง history.back() ระหว่างที่เราเคลียร์
+        ignoreNextPop = true;
+        while (openModalsStack.length > 0) {
+          const modalId = openModalsStack.pop();
+          const el = document.getElementById(modalId);
+          if (el) {
+            el.classList.add("hidden");
+          }
+        }
+        ignoreNextPop = false;
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initModalObserver);
+  } else {
+    initModalObserver();
+  }
+})();
