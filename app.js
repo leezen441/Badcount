@@ -5081,15 +5081,23 @@ $("btnLoadAdminSummary")?.addEventListener("click", () => {
 // --- Personal Stats ---
 async function loadPersonalStatsData(playerName, filterType) {
   const container = $("personalStatsResult");
-  const nameToSearch = (playerName || "").trim().toLowerCase();
+  const namesToSearch = (playerName || "")
+    .split("+")
+    .map(n => n.trim().toLowerCase())
+    .filter(Boolean);
   
-  if (!nameToSearch) {
+  if (namesToSearch.length === 0) {
     toast("กรุณาใส่ชื่อผู้เล่น");
     return;
   }
 
-  // จดจำชื่อไว้แนะนำคราวหน้า
-  addKnownMember(playerName);
+  // จดจำชื่อไว้แนะนำคราวหน้า (แยกทีละชื่อ)
+  (playerName || "").split("+").forEach(n => {
+    const trimmed = n.trim();
+    if (trimmed) {
+      addKnownMember(trimmed);
+    }
+  });
 
   container.classList.add("hidden");
   $("psPeriod").textContent = "กำลังคำนวณ...";
@@ -5115,34 +5123,56 @@ async function loadPersonalStatsData(playerName, filterType) {
 
       if (!match) return;
 
-      const memberIdx = s.members.findIndex(m => (m.name || "").toLowerCase() === nameToSearch);
-      if (memberIdx >= 0) {
+      // ค้นหาสมาชิกทั้งหมดในสัญจรนี้ที่มีชื่อตรงกับในรายการค้นหา
+      const matchedMembers = [];
+      s.members.forEach((m, idx) => {
+        const mNameNormalized = (m.name || "").trim().toLowerCase();
+        if (namesToSearch.includes(mNameNormalized)) {
+          matchedMembers.push({ member: m, index: idx });
+        }
+      });
+
+      if (matchedMembers.length > 0) {
         sessionsCount++;
-        const m = s.members[memberIdx];
         const totals = calcTotals(s);
         
-        // Count games for this player
-        let pGames = 0;
-        (s.matches || []).forEach(matchObj => {
-          const pIds = matchObj.players || [matchObj.a1, matchObj.a2, matchObj.b1, matchObj.b2].filter(Boolean);
-          if (pIds.includes(m.id)) pGames++;
+        let sGames = 0;
+        let sShuttles = 0;
+        let sCost = 0;
+        let sPaid = true;
+
+        matchedMembers.forEach(({ member, index }) => {
+          // Count games for this player
+          let pGames = 0;
+          (s.matches || []).forEach(matchObj => {
+            const pIds = matchObj.players || [matchObj.a1, matchObj.a2, matchObj.b1, matchObj.b2].filter(Boolean);
+            if (pIds.includes(member.id)) pGames++;
+          });
+          sGames += pGames;
+
+          // Shuttles
+          const pShuttles = (member.shuttlesUsed || 0) + (totals.matchShuttlesMap ? totals.matchShuttlesMap[member.id] || 0 : 0);
+          sShuttles += pShuttles;
+
+          // Cost
+          const pCost = totals.perMember[index] || 0;
+          sCost += pCost;
+
+          if (!member.isPaid) {
+            sPaid = false;
+          }
         });
-        gamesPlayed += pGames;
 
-        // Shuttles
-        const pShuttles = (m.shuttlesUsed || 0) + (totals.matchShuttlesMap ? totals.matchShuttlesMap[m.id] || 0 : 0);
-        shuttlesUsed += pShuttles;
+        gamesPlayed += sGames;
+        shuttlesUsed += sShuttles;
+        totalCost += sCost;
 
-        // Cost
-        const pCost = totals.perMember[memberIdx] || 0;
-        totalCost += pCost;
-        
         if (historyList.length < 10) {
           historyList.push({
             date: s.date,
             location: s.location,
-            cost: pCost,
-            paid: m.isPaid
+            cost: sCost,
+            paid: sPaid
           });
         }
       }
