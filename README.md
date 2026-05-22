@@ -1,71 +1,90 @@
 # 🏸 BadCount — แอปบันทึกเกมแบดมินตัน
 
-Web App (PWA) สำหรับจดสมาชิก นับลูก คำนวณค่าใช้จ่าย และจัดเกมแบดมินตัน
+Web App (PWA) ระดับพรีเมียมในธีม **Sporty Neon-Lime & Sleek Graphite-Black** ใช้งานง่ายสำหรับจดสมาชิก นับลูก คำนวณค่าใช้จ่าย และจัดเกมแบดมินตัน
 Real-time sync ทุกคนเห็นพร้อมกัน — ใช้ฟรี 100%
 
-🌐 **Live Demo**: https://badcount.vercel.app
+🌐 **Live Demo**: [badcount.vercel.app](https://badcount.vercel.app)
 
 ---
 
 ## ✨ คุณสมบัติหลัก
 
-### 👥 จัดการกลุ่ม
-- ✅ สร้างกลุ่มของแต่ละวัน
-- ✅ ปุ่ม **"ก๊วนอาทิตย์หน้า"** Copy ค่าจากกลุ่มล่าสุด + auto-set วันอาทิตย์ใกล้ที่สุด
-- ✅ แชร์ลิงก์ **Invite** / **Manager Link** ให้เพื่อน (real-time)
-- ✅ เพิ่ม/ลบสมาชิกได้ตลอด + suggestion จากประวัติชื่อเก่า
-- ✅ ประวัติย้อนหลัง (โหลด 50 รายการล่าสุด)
-- ✅ Highlight กลุ่มที่ปิดแล้วด้วยกรอบเขียว
+### 🎨 ธีมพรีเมียม Sporty Neon-Lime & Sleek Graphite-Black (CI 100%)
+- ✅ **บังคับธีมดาร์กโหมดถาวร (Forced Dark Mode)**: ปรับปรุงความสวยงามและถนอมสายตาขณะใช้งานในสนามแบดมินตัน ดีไซน์สปอร์ตหรูหราคมชัดด้วยคู่สี เขียวสะท้อนแสงนีออน (`#b5f714`) และ ดำกราไฟต์เข้ม (`#0d0e12`) เพื่อความประหยัดพลังงานและการอ่านที่ง่ายที่สุด
+- ✅ **เน้นการอ่านออกได้ง่ายและชัดเจน (High Legibility)**: ใช้คอนทราสต์อักษรสีดำเข้ม (`#121315`) บนปุ่มและองค์ประกอบที่เป็นสีเขียวนีออน เพื่อให้อ่านข้อความและสัญลักษณ์ได้ชัดเจนที่สุดภายใต้แสงสว่างที่สะท้อนจากสนามแบดมินตัน
+- ✅ **ดีไซน์ Opaque Card เรียบหรู**: หลีกเลี่ยงเลเยอร์โปร่งแสงที่ทับซ้อนแล้วทำให้ตัวหนังสือกลืนกัน ทำให้การอ่านประวัติ ข้อมูลราคา และตารางคะแนนมีความเด่นชัดสูงสุดในแบบหน้าต่างทึบแสงสไตล์ Modern Material
+- ✅ **สปอร์ตไอคอนเฉพาะตัว (Abstract Brand Identity)**: โลโก้แอป PWA และ Favicon เป็นภาพเวกเตอร์แบบเรียบหรูสไตล์แบรนด์กีฬา (Abstract Rackets & Shuttlecock) ออกแบบขึ้นใหม่ทั้งหมดเพื่อสร้างเอกลักษณ์เฉพาะตัว
+- ✅ **ปุ่มหลักพร้อม Micro-Animations**: ปุ่มหลักในหน้ารายละเอียดกลุ่ม (**Invite**, **Temp Manager**, **Export**, **QR Payment**) ใช้สีเขียวนีออนเรืองแสง โดดเด่น พร้อมเอฟเฟกต์การย่อตัวเมื่อกด (Click scale down) และเรืองแสงเมื่อวางเมาส์ (Hover lift & glow)
+- ✅ **ตัวเลือกปฏิทิน/เวลาความคมชัดสูง**: ในดาร์กโหมด ตัวเลือกวันและเวลา (Native Date/Time Picker) แสดงไอคอนปฏิทินและนาฬิกาเป็นสีขาวคมชัด สะดวกในการปรับแต่งข้อมูล
 
-### 🏟️ จัดการสนาม
-- ✅ ระบุเลขสนาม + เวลา (เปิด-ปิดแต่ละสนามไม่พร้อมกันได้)
-- ✅ Time picker dropdown 24-hour
-- ✅ Suggestion จากกลุ่มก่อนหน้า
+### 👥 จัดการกลุ่ม (Session Management)
+- ✅ **สร้างกลุ่ม/ก๊วนของแต่ละวัน**: จัดการรายชื่อสมาชิก จำนวนสนาม และราคาคอร์ตรวม
+- ✅ **ปุ่ม "ก๊วนอาทิตย์หน้า" (Recurring Session)**: คลิกเดียวคัดลอกรายชื่อสมาชิกและค่าต่างๆ จากกลุ่มล่าสุด พร้อมคำนวณวันอาทิตย์ถัดไปให้โดยอัตโนมัติ
+- ✅ **การจัดการสมาชิกแบบยืดหยุ่น**: เพิ่ม/ลบสมาชิกได้ตลอดเวลา พร้อมระบบ Suggestion จากประวัติชื่อเก่าที่เคยลงเล่น
+- ✅ **พักคิวสมาชิกชั่วคราว (Pause Members)**: หยุดการสุ่มจัดคิวสมาชิกบางท่านชั่วคราว (เช่น กรณีขอพักเหนื่อย หรือไปทำธุระ) โดยไม่ต้องลบชื่อออกจากก๊วน
+- ✅ **ประวัติย้อนหลัง (History)**: แสดงรายการประวัติกลุ่มย้อนหลังสูงสุด 50 รายการล่าสุด
+- ✅ **Highlight สถานะกลุ่ม**: กลุ่มที่ปิดยอดแล้วจะแสดงด้วยกรอบเขียวนีออนเรืองแสงหรูหรา และกลุ่มที่กำลังดำเนินการอยู่จะเด่นชัดเป็นเอกลักษณ์
 
-### 💰 คำนวณค่าใช้จ่าย
-- ✅ ค่าคอร์ด: toggle **"รวม (หารเท่ากัน)"** หรือ **"ต่อคน"**
-- ✅ ค่าลูกแบดตามที่ใช้จริง (พิมพ์ range เช่น `1-5, 8`)
-- ✅ ค่าอื่นๆ (น้ำ/อาหาร) toggle เดียวกัน
-- ✅ Mark สถานะ "จ่ายแล้ว" รายคน + strikethrough
+### 🏟️ จัดการสนาม (Court Management)
+- ✅ **ระบุเลขสนาม + ช่วงเวลา**: เปิด-ปิดแต่ละสนามไม่พร้อมกันได้ เพื่อสอดคล้องกับค่าใช้จ่ายจริง
+- ✅ **Time Picker Dropdown**: รูปแบบนาฬิกา 24-hour dropdown เพื่อความแม่นยำสูงสุด
+- ✅ **Suggestion จากกลุ่มก่อน**: ดึงค่าสนามล่าสุดมาใช้งานต่อได้รวดเร็ว
 
-### 🎮 จัดเกม + สถิติ
-- ✅ จัดเกม 4 คน — AI recommend ("แนะนำ" คนที่เล่นน้อย/ยังไม่เคยเล่นด้วยกัน)
-- ✅ บันทึกเบอร์ลูกที่ใช้ในแต่ละเกม
-- ✅ สถิติ **"เคยเล่นด้วยกัน"** รายคน (badge สี 3 ระดับ)
+### 💰 คำนวณค่าใช้จ่าย (Expense Calculation)
+- ✅ **ค่าคอร์ดแบบยืดหยุ่น**: เลือก toggle **"รวม (หารเท่ากัน)"** หรือ **"ต่อคน"** ตามจริงของแต่ละสนามได้
+- ✅ **ค่าลูกแบดตามใช้จริง**: พิมพ์ระบุหมายเลขลูกที่ผู้เล่นใช้จริง (เช่น พิมพ์ range `1-5, 8`) เพื่อระบบคำนวณยอดเงินรายบุคคลตามความถี่การใช้ลูก
+- ✅ **ค่าใช้จ่ายอื่นๆ (ค่าน้ำ/อาหาร)**: ตั้งค่าแบบหารเท่ากันทุกคน หรือแยกค่าใช้จ่ายรายคนได้
+- ✅ **ระบบติดตามสถานะการชำระเงิน**: ทำเครื่องหมาย "จ่ายแล้ว" รายคนแบบ Real-time พร้อมขีดฆ่าชื่อแสดงความโปร่งใส
+
+### 🎮 จัดเกม + สถิติ (Matchmaking & Stats)
+- ✅ **ระบบสุ่มจัดคิวอัตโนมัติ (Auto Draft)**: ระบบจัดทีม 4 คนอัจฉริยะ แนะนำผู้เล่นที่ลงสนามน้อยที่สุด หรือไม่เคยเล่นด้วยกัน เพื่อความเท่าเทียมในก๊วน
+- ✅ **ระบบแบ่งทีม (Auto Split)**: คำนวณความแกร่งของทีม (Team Strength) จากระดับมือแบดมินตันเพื่อแบ่งฝั่งอย่างยุติธรรม (Team A vs Team B)
+- ✅ **ระบบเลือก Buddy (คู่หู)**: สมาชิกสามารถระบุ Buddy เพื่อให้ระบบจัดทีมให้อยู่ฝั่งเดียวกันเสมอเมื่อลงสนาม
+- ✅ **สถิติการเล่นร่วมกัน (Co-play Badges)**: Badge สีแสดงสถานะ 3 ระดับว่าใครเคยเล่นด้วยกันกี่ครั้ง เพื่อสลับคู่แข่งขันให้น่าสนใจยิ่งขึ้น
+- ✅ **บันทึกประวัติเกมนับลูก**: บันทึกเบอร์ลูกที่ใช้และคะแนนในแต่ละคู่แข่งขันได้ละเอียด
+
+### 📲 หน้าต่างโต้ตอบสมบูรณ์แบบบนมือถือ (Optimized Mobile Modals & Layout)
+- ✅ **จัดตำแหน่งกึ่งกลางหน้าจอถาวร (Centered Modals)**: หน้าต่างจัดการเกมใหม่ (Match Modal), หน้าต่างทดสอบ PromptPay และหน้าต่างอื่นๆ จัดกึ่งกลางหน้าจออย่างสวยงามด้วยมุมโค้งมนขนาดใหญ่ (`rounded-2xl`)
+- ✅ **มองเห็นปุ่มล่างชัดเจน 100%**: ป้องกันขอบจอมือถือและแถบเบราว์เซอร์บังปุ่ม ด้วยการควบคุมขอบเขตความสูงหน้าต่างสูงสุดที่ 90% ของความสูงจอพร้อมแถบเลื่อนแนวตั้งภายในตัว ทำให้ปุ่ม **"ยกเลิก"** และ **"บันทึกเกม"** ปรากฏชัดและกดง่ายเสมอ
+- ✅ **แก้ปัญหาพื้นที่ด้านล่างเกินขอบ (Bottom Spacing Optimized)**: เอา Padding เกินขนาดออกจากโครงสร้างหลัก เหลือเพียง `2rem` (32px) ด้านล่างสุดของแอป เพื่อสิ้นสุดการเลื่อนหน้าเว็บได้อย่างเรียบร้อยพอดีใต้ปุ่มออกจากระบบ (Log off)
+- ✅ **PWA Install**: รองรับการติดตั้งแบบแอปพลิเคชันเดี่ยว (Standalone) เต็มหน้าจอ ไร้แถบ URL เบราว์เซอร์ ทำงานได้รวดเร็ว
+
+### ⚡ ระบบ Cache-Busting & PWA Resilient Updates
+- ✅ **การควบคุม Cache ออฟไลน์**: ใช้ **Service Worker Cache Namespace (`badcount-v12`)** ในไฟล์ `sw.js` เพื่อเคลียร์แคชเก่าเมื่ออัปเดตระบบ
+- ✅ **Cache-Busting Query Parameters**: กำหนดเวอร์ชันให้การโหลดไฟล์ใน `index.html` เสมอ เช่น `premium.css?v=3.0.7` และ `app.js?v=3.0.6` เพื่อบังคับให้เบราว์เซอร์รับรู้การอัปเดตไฟล์แบบทันที (Instant load)
+- ✅ **Resilient Realtime Sync**: ตรวจจับสถานะการเชื่อมต่อเครือข่าย (Online/Offline notifications) และระบบตรวจจับ Visibility ของแอป เพื่อบังคับเชื่อมต่อ Firestore ใหม่หากผู้ใช้เปิดหน้าต่างกลับมาจาก background ช่วยแก้ปัญหาข้อมูล Staleness
 
 ### 📤 Export & Sharing
-- ✅ **Bill JPG** — สรุปยอดสวยๆ พร้อม QR เงิน
-- ✅ **บันทึกภาพทวงค่า** — รูปสำหรับส่งไลน์ทวงคนค้างจ่าย
-- ✅ **Bank QR (Promptpay)** — แชร์ทั้งระบบ ทุกคนเห็นเดียวกัน (Cloud sync)
+- ✅ **Bill JPG (สลิปสรุปยอด)**: สร้างภาพบิลสรุปค่าใช้จ่ายของก๊วนอย่างสวยงาม พร้อม QR Code รับเงินอัตโนมัติ
+- ✅ **บันทึกภาพทวงค่า (Share Receipt)**: ออกแบบรูปภาพสำหรับส่งต่อทางแชต (Line / Messenger) เพื่อแจ้งยอดค้างจ่ายรายคน
+- ✅ **Bank QR (PromptPay) Cloud Sync**: ทุกคนแชร์ยอดการโอนและ QR Code เดียวกันผ่าน Cloud database แบบ Real-time
 
-### 🔔 Notification (Real-time แจ้งเตือนเมื่อคนใหม่เข้าร่วม)
-- ✅ Toast ในแอป + ping sound
-- ✅ Tab title กระพริบ + count
-- ✅ **Native OS notification** (admin/manager เท่านั้น)
-- ✅ คลิก notification → focus tab BadCount ทันที
+### 🔔 Notification System
+- ✅ **Toast + Alert Sound**: แสดงข้อความแจ้งเตือนสีเขียวนีออน พร้อมเสียง Ping เมื่อมีผู้เล่นมาลงชื่อใหม่
+- ✅ **Dynamic Tab Title**: กระพริบข้อความแถบเบราว์เซอร์พร้อมจำนวนผู้เล่นสะสมเพื่อดึงความสนใจ
+- ✅ **Native OS Notifications**: แจ้งเตือนระดับระบบปฏิบัติการสำหรับ Admin/Manager เมื่อย่อหน้าต่างลง
 
-### 📲 PWA — Install เป็นแอปได้
-- ✅ Manifest + Service Worker
-- ✅ Install บน home screen (Android / iOS / Desktop)
-- ✅ เปิดเต็มจอ ไม่มี URL bar
-- ✅ Offline support (cache HTML/JS/CSS)
-
-### 🔒 Authentication
-- ✅ Passcode login (SHA-256 hashed)
-- ✅ Session 30 วัน
-- ✅ 3 ระดับสิทธิ์ผ่าน URL pattern
+### 🔒 Authentication & Access Level
+- ✅ **Passcode Access**: เข้ารหัสล็อกอินด้วย SHA-256 ปลอดภัยสูง
+- ✅ **Session Persistence**: ล็อกอินยาวนานต่อเนื่อง 30 วันไม่ต้องใส่รหัสซ้ำ
+- ✅ **3-Tier Permission Control**: ควบคุมระดับสิทธิ์การเข้าถึงข้อมูลผ่านรูปแบบ URL Pattern
 
 ---
 
 ## 🌐 Routes / URL Patterns
 
-| URL | สิทธิ์ | ใช้ทำอะไร |
+การสลับหน้าจอใช้ Client-side Hash Router ทำงานร่วมกับระดับสิทธิ์อย่างสมบูรณ์แบบ:
+
+| URL | สิทธิ์การใช้งาน | หน้าที่ / การทำงาน |
 |---|---|---|
-| `/#/` | Admin (ต้อง login) | หน้าหลัก + สร้างกลุ่มใหม่ |
-| `/#/history` | Admin (ต้อง login) | ดูประวัติย้อนหลัง 50 รายการ |
-| `/#/session/{id}` | Admin (ต้อง login) | จัดการกลุ่ม (เต็มสิทธิ์) |
-| `/#/m/{id}` | Manager (ไม่ต้อง login) | จัดการเฉพาะกลุ่มนี้ (lock nav) |
-| `/#/join/{id}` | Member (public) | ลงชื่อเข้าร่วม + ดูยอดของตัวเอง |
+| `/#/` | Admin (ต้อง Login) | หน้าหลักแดชบอร์ด แสดงประวัติสั้น สร้างและเปิดกลุ่มใหม่ |
+| `/#/history` | Admin (ต้อง Login) | หน้าแสดงรายการประวัติกลุ่มย้อนหลัง 50 รายการล่าสุด |
+| `/#/personal-stats` | Admin & Manager | ตรวจดูสถิติส่วนบุคคลของผู้เล่น จำนวนเกม ค่าน้ำ ค่าลูก ยอดเงินที่จ่าย แยกตามช่วงเวลา |
+| `/#/admin-summary` | Admin & Manager | สรุปภาพรวมการชำระเงิน ค่าคอร์ตรวม ยอดที่ได้รับ ยอดค้างชำระ ยอดจ่ายจริง |
+| `/#/session/{id}` | Admin (ต้อง Login) | หน้าจัดการกลุ่มแบบเต็มสิทธิ์ เพิ่ม/ลดสมาชิก จัดสนาม คำนวณเงิน จัดเกมนับแต้ม |
+| `/#/m-home` | Manager ( Temp Manager ) | หน้าหลักแสดงรายการกลุ่มล่าสุดสำหรับสิทธิ์ผู้จัดการชั่วคราว |
+| `/#/m/{id}` | Temp Manager | หน้าจัดการเฉพาะกลุ่มนี้ชั่วคราว (ต้องยืนยันตัวตนด้วย PIN 4 หลักของกลุ่มนั้นก่อนเข้าใช้) |
+| `/#/join/{id}` | Member (Public) | ลงชื่อเข้าร่วมกลุ่มระบุ Buddy เลือกมือเล่น ดูยอดค่าใช้จ่าย อัปโหลดรูปสลิปหลักฐานการโอนเงิน |
 
 ---
 
@@ -73,16 +92,18 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 
 ```
 Badminton/
-  ├─ index.html          ← UI ทั้งหมด
-  ├─ app.js              ← Logic + Firebase + PWA registration
-  ├─ firebase-config.js  ← Firebase config (แก้ไฟล์นี้)
-  ├─ manifest.json       ← PWA manifest
-  ├─ icon.svg            ← App icon (gradient + 🏸)
-  ├─ icon-maskable.svg   ← Android adaptive icon
-  ├─ sw.js               ← Service Worker (cache + notification click)
-  ├─ qrcode.min.js       ← QR Code library (สำหรับสร้าง QR แชร์ลิงก์)
+  ├─ index.html          ← หน้า UI หลัก ปรับโครงสร้างจัดกึ่งกลางและ Cache-busted ( premium.css?v=3.0.7 / app.js?v=3.0.6 )
+  ├─ premium.css         ← ธีมสไตล์ชีทพรีเมียมเขียวนีออน-ดำกราไฟต์ (มีตัวแปรระบบสี)
+  ├─ app.js              ← ส่วนการประมวลผล Logic หลัก, ระบบแบ่งทีม, คำนวณเงิน และ PWA
+  ├─ firebase-config.js  ← ตั้งค่าการเชื่อมต่อฐานข้อมูล Firebase ของคุณ
+  ├─ manifest.json       ← แฟ้มข้อมูลสำหรับติดตั้ง PWA แอปพลิเคชัน
+  ├─ icon.svg            ← ไอคอนเวกเตอร์ของแอปสไตล์ Abstract Sporty 🏸
+  ├─ icon-maskable.svg   ← ไอคอนสำหรับการติดตั้งบนอุปกรณ์ Android
+  ├─ sw.js               ← Service Worker จัดการ Cache-Busting ( badcount-v12 )
+  ├─ qrcode.min.js       ← ไลบรารีสำหรับสร้างและแสดงผล QR Code (Local)
+  ├─ fix_dark.js         ← สคริปต์ยูทิลิตี้สำหรับช่วยฉีดคลาส dark mode ลงในองค์ประกอบ
   ├─ .gitignore
-  └─ README.md           ← ไฟล์นี้
+  └─ README.md           ← คู่มือฉบับปรับปรุงนี้
 ```
 
 ---
@@ -91,43 +112,49 @@ Badminton/
 
 ### ขั้นที่ 1: สร้าง Firebase Project (ฟรี)
 
-1. ไปที่ https://console.firebase.google.com/
-2. คลิก **Add project** → ตั้งชื่อ เช่น `badcount`
+1. ไปที่ [Firebase Console](https://console.firebase.google.com/)
+2. คลิก **Add project** → ตั้งชื่อโครงการ เช่น `badcount`
 3. **ปิด Google Analytics** (ไม่จำเป็น)
-4. รอจนสร้างเสร็จ → Continue
+4. รอโครงการสร้างเสร็จ → กด Continue
 
 ### ขั้นที่ 2: เพิ่ม Web App
 
-1. ที่หน้า Project Overview → กดไอคอน **`</>`** (Web)
-2. ตั้งชื่อ app เช่น `badcount-web` → **Register app**
-3. **Copy `firebaseConfig`** (เก็บไว้ใช้ในขั้นที่ 5)
+1. ที่หน้า Project Overview → กดไอคอน **`</>`** (Web App)
+2. ตั้งชื่อแอป เช่น `badcount-web` → กด **Register app**
+3. **คัดลอกข้อมูลเฉพาะในโครงสร้างวัตถุ `firebaseConfig`** (เก็บไว้ใช้ในขั้นที่ 5)
 4. กด **Continue to console**
 
-### ขั้นที่ 3: เปิด Firestore Database
+### ขั้นที่ 3: เปิดใช้งาน Firestore Database
 
-1. เมนูซ้าย → **Build** → **Firestore Database**
-2. **Create database** → เลือก **Standard edition**
-3. **Location**: เลือก **`asia-southeast3 (Bangkok)`** ⚠️ เลือกครั้งเดียวเปลี่ยนไม่ได้
-4. **Start in test mode** → Create
-5. รอจนเสร็จ ~30 วินาที
+1. เมนูหลักด้านซ้าย → **Build** → **Firestore Database**
+2. กด **Create database** → เลือก **Standard edition**
+3. **Location**: เลือก **`asia-southeast3 (Bangkok)`** ⚠️ *กรุณาเลือกให้ถูกต้องเพราะเปลี่ยนไม่ได้ภายหลัง*
+4. เลือก **Start in test mode** → กด Create
+5. รอการดำเนินการสร้างฐานข้อมูลประมาณ 30 วินาที
 
-### ขั้นที่ 4: ตั้ง Security Rules (สำคัญมาก!)
+### ขั้นที่ 4: ตั้งค่า Security Rules ป้องกันข้อมูล (สำคัญมาก!)
 
-ใน Firestore → tab **Rules** → ลบทั้งหมด แล้วแปะอันนี้:
+ใน Firestore → ไปที่แท็บ **Rules** → ลบคำสั่งเดิมทั้งหมดแล้วใส่ค่าดังนี้:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // กลุ่มแบดแต่ละครั้ง
+    // กลุ่มแบดแต่ละครั้ง (Session)
     match /sessions/{sessionId} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(['date', 'members', 'status'])
                     && request.resource.data.members.size() <= 50;
       allow update: if request.resource.data.members.size() <= 50;
       allow delete: if true;
+
+      // สลิปหลักฐานการโอนเงิน (Receipts subcollection แยกส่วนเพื่อเลี่ยงข้อจำกัดขนาด 1MB)
+      match /receipts/{memberId} {
+        allow read: if true;
+        allow write: if true;
+      }
     }
-    // Global settings (Bank QR ที่ใช้ร่วมกัน)
+    // Global settings (ข้อมูลบัญชีธนาคาร QR Code ที่ใช้ร่วมกัน)
     match /settings/{docId} {
       allow read: if true;
       allow write: if true;
@@ -136,11 +163,11 @@ service cloud.firestore {
 }
 ```
 
-กด **Publish** → ยืนยัน
+กด **Publish** เพื่อบันทึกการตั้งค่าสิทธิ์ความปลอดภัย
 
-### ขั้นที่ 5: ใส่ Firebase Config
+### ขั้นที่ 5: ตั้งค่าข้อมูลเชื่อมต่อในแอปพลิเคชัน
 
-เปิดไฟล์ `firebase-config.js` แทนที่ด้วยค่าที่ copy จากขั้นที่ 2:
+เปิดไฟล์ [firebase-config.js](file:///c:/Users/Ball/Desktop/Claude/Badminton/firebase-config.js) แล้วนำค่าเชื่อมต่อที่คัดลอกไว้จากขั้นที่ 2 มาใส่แทนที่:
 
 ```javascript
 export const firebaseConfig = {
@@ -153,16 +180,15 @@ export const firebaseConfig = {
 };
 ```
 
-> 💡 ค่าเหล่านี้ **ไม่ใช่ความลับ** — Firebase ออกแบบให้ใส่ใน frontend ได้
-> ความปลอดภัยจริงๆ มาจาก Security Rules (ขั้นที่ 4)
+> 💡 *ข้อมูลเหล่านี้ไม่ใช่ความลับและมีความปลอดภัยสูง เนื่องจากได้รับการจำกัดสิทธิ์ผ่าน Security Rules ในขั้นที่ 4 เรียบร้อยแล้ว*
 
-### ขั้นที่ 6: ตั้งรหัส Passcode
+### ขั้นที่ 6: ตั้งค่ารหัสผ่านเข้าใช้งาน (Passcode)
 
-ในไฟล์ `app.js` หา `PASSCODE_HASH` แล้วเปลี่ยน
+ในไฟล์ `app.js` ค้นหาตัวแปร `PASSCODE_HASH` แล้วนำรหัสผ่านที่คุณต้องการมาแปลงเป็น SHA-256 เพื่อความปลอดภัย
 
-**วิธีสร้าง SHA-256 hash**:
-1. เปิด Browser Console (F12)
-2. รันโค้ดนี้ (เปลี่ยน `YOUR_PASSWORD` เป็นรหัสที่ต้องการ):
+**วิธีเข้ารหัสแบบ SHA-256 ผ่านเบราว์เซอร์**:
+1. เปิดเครื่องมือสำหรับนักพัฒนาซอฟต์แวร์ของเบราว์เซอร์ (F12) → เข้าแท็บ **Console**
+2. คัดลอกและวางคำสั่งนี้ลงไป (แทนที่ข้อความ `"YOUR_PASSWORD"` ด้วยรหัสที่คุณต้องการ):
 
 ```javascript
 const buf = await crypto.subtle.digest(
@@ -176,164 +202,150 @@ console.log(
 );
 ```
 
-3. Copy hash ที่ได้ ไปใส่ใน `PASSCODE_HASH`
+3. กด Enter แล้วคัดลอกค่าผลลัพธ์ Hash ยาวๆ ที่แสดงขึ้น มาวางใส่ตัวแปร `PASSCODE_HASH` ในไฟล์ `app.js`
 
-### ขั้นที่ 7: Push ขึ้น GitHub
+### ขั้นที่ 7: อัปโหลดโปรเจกต์ขึ้น GitHub
+
+เปิด Terminal ในโฟลเดอร์โปรเจกต์ แล้วรันคำสั่งเหล่านี้:
 
 ```bash
-cd Badminton/
 git init
 git add .
-git commit -m "Initial BadCount app"
+git commit -m "Initial BadCount App Setup with Premium Theme"
 
-# สร้าง repo ใหม่บน GitHub แล้วลิงก์
+# เชื่อมโยงกับคลังเก็บข้อมูลบน GitHub ของคุณ
 git remote add origin https://github.com/USERNAME/badcount.git
 git branch -M main
 git push -u origin main
 ```
 
-### ขั้นที่ 8: Deploy บน Vercel
+### ขั้นที่ 8: Deploy ขึ้น Vercel สำหรับใช้งานฟรี
 
-1. ไปที่ https://vercel.com → Sign up with GitHub
-2. **Add New Project** → Import repo `badcount`
-3. ไม่ต้องตั้งค่าอะไรเพิ่ม → **Deploy**
-4. รอ ~30 วินาที → ได้ URL `https://your-app.vercel.app`
-5. (Optional) Project settings → เปลี่ยนชื่อ subdomain
+1. ไปที่เว็บไซต์ [Vercel](https://vercel.com) → กดสมัครสมาชิกหรือลงชื่อเข้าใช้ด้วย GitHub
+2. กดปุ่ม **Add New Project** → นำเข้า (Import) Repository `badcount` จาก GitHub ของคุณ
+3. ในส่วนการตั้งค่าต่างๆ ไม่ต้องแก้ไขใดๆ → กด **Deploy**
+4. รอประมาณ 30 วินาที โปรเจกต์จะถูกอัปโหลดเสร็จสิ้น พร้อมให้ลิงก์ URL การใช้งาน เช่น `https://your-app.vercel.app`
+5. (แนะนำ) สามารถเปลี่ยนชื่อโดเมนได้ที่โปรเจกต์ตั้งค่าของ Vercel
 
-✅ ทุกครั้งที่ commit + push GitHub → Vercel auto-deploy
+### ขั้นที่ 9: ลงทะเบียนโดเมนในฐานข้อมูล Firebase
 
-### ขั้นที่ 9: Firebase Authorized domains
+กลับไปที่ Firebase Console → **Authentication** → แท็บ **Settings** → เมนู **Authorized domains**
+→ กด **Add domain** → กรอกโดเมนที่ได้รับจาก Vercel เช่น `your-app.vercel.app` เพื่อความปลอดภัยในการดึงข้อมูล
 
-Firebase Console → **Authentication** → Settings → **Authorized domains**
-→ Add domain → ใส่ `your-app.vercel.app`
-
-🎉 **เสร็จ!** แชร์ URL ให้เพื่อนใช้ได้เลย
+🎉 **พร้อมใช้งาน!** สามารถส่งต่อลิงก์ให้สมาชิกก๊วนลงชื่อและสแกนจ่ายค่าสนามได้ทันที
 
 ---
 
 ## 🧮 สูตรคำนวณค่าใช้จ่าย
 
+ระบบใช้สูตรคำนวณค่าใช้จ่ายรายบุคคลที่แม่นยำและแฟร์กับผู้เล่นทุกคน:
+
 ```
-จำนวนคนทั้งหมด = N
+จำนวนผู้เล่นทั้งหมดที่ลงทะเบียน = N
 
-ค่าคอร์ดต่อคน  = (รวม ÷ N) หรือ (ต่อคนตามที่ตั้ง)
-ค่าอื่นๆ ต่อคน = (รวม ÷ N) หรือ (ต่อคนตามที่ตั้ง)
-ค่าลูกของคน X = (จำนวนลูกที่ X ใช้) × ราคาลูก/ลูก
+ค่าสนามและค่าคอร์ตต่อคน  = (ผลรวมค่าสนามทั้งหมดที่แชร์ ÷ N) หรือ (ราคาต่อคนคงที่ตามที่ระบุ)
+ค่าใช้จ่ายอื่นๆ ต่อคน (น้ำ) = (ค่าน้ำรวมทั้งหมด ÷ N) หรือ (ราคาต่อคนคงที่ตามที่ระบุ)
+ค่าลูกแบดมินตันของสมาชิก X = (จำนวนลูกแบดมินตันทั้งหมดที่สมาชิก X ใช้) × ราคาต่อลูก
 
-ยอดที่คน X จ่าย = ค่าคอร์ดต่อคน + ค่าอื่นๆ ต่อคน + ค่าลูกของ X
+ยอดสุทธิที่สมาชิก X ต้องชำระ = ค่าสนามต่อคน + ค่าใช้จ่ายอื่นๆ ต่อคน + ค่าลูกแบดมินตันของสมาชิก X
 ```
 
-**ตัวอย่าง**: ค่าคอร์ดรวม 400, ลูกละ 25, ค่าน้ำ 100, 4 คน (A,B,C,D), ลูกใช้ A=2, B=1, C=2, D=1
+### ตัวอย่างการคำนวณเงินจริง:
+ก๊วนมีสมาชิก 4 คน (A, B, C, D) 
+- ค่าคอร์ตรวม 400 บาท (หารเท่ากัน)
+- ค่าน้ำรวม 100 บาท (หารเท่ากัน)
+- ราคาลูกแบดมินตันลูกละ 25 บาท
+- ข้อมูลการใช้ลูกแบด: A ใช้ไป 2 ลูก, B ใช้ 1 ลูก, C ใช้ 2 ลูก, D ใช้ 1 ลูก (ยอดรวม 6 ลูก = 150 บาท)
 
-| คน | ค่าคอร์ด | ค่าน้ำ | ค่าลูก | รวม |
-|---|---|---|---|---|
-| A | 100 | 25 | 50 | **175 ฿** |
-| B | 100 | 25 | 25 | **150 ฿** |
-| C | 100 | 25 | 50 | **175 ฿** |
-| D | 100 | 25 | 25 | **150 ฿** |
-| **รวม** | 400 | 100 | 150 | **650 ฿** ✓ |
+| สมาชิก | ค่าสนาม | ค่าน้ำ/อื่นๆ | ค่าลูกแบดมินตันที่ใช้ | ยอดเงินสุทธิที่ต้องชำระ |
+|:---:|:---:|:---:|:---:|:---:|
+| **A** | 100 ฿ | 25 ฿ | 50 ฿ (2 ลูก) | **175 ฿** |
+| **B** | 100 ฿ | 25 ฿ | 25 ฿ (1 ลูก) | **150 ฿** |
+| **C** | 100 ฿ | 25 ฿ | 50 ฿ (2 ลูก) | **175 ฿** |
+| **D** | 100 ฿ | 25 ฿ | 25 ฿ (1 ลูก) | **150 ฿** |
+| **ยอดรวมก๊วน** | **400 ฿** | **100 ฿** | **150 ฿ (6 ลูก)** | **650 ฿** ✓ |
 
 ---
 
-## 📲 PWA Install
+## 📲 PWA Install (การติดตั้งเป็นแอป)
 
-### 🤖 Android (Chrome)
-1. เปิด URL ใน Chrome
-2. กดเมนู ⋮ (มุมขวาบน) → **Install app** หรือ **Add to Home screen**
-3. หรือรอ Chrome แสดง banner
+แอปพลิเคชันได้รับการตั้งค่า PWA เต็มรูปแบบ สามารถติดตั้งบนอุปกรณ์ได้ทันที:
 
-### 🍎 iOS (Safari เท่านั้น)
-1. เปิด URL ใน **Safari** (Chrome iOS ไม่รองรับ)
-2. แตะปุ่ม **Share** (□↑) ด้านล่าง
-3. เลื่อนหา **"Add to Home Screen"** → กด Add
-4. (Optional) ใน Settings → Notifications → BadCount → เปิด
+### 🤖 สำหรับ Android (ผ่าน Google Chrome)
+1. เปิดหน้าเว็บ URL แอปพลิเคชันของคุณด้วย Google Chrome
+2. แตะปุ่มเมนูสามจุด (⋮) ด้านขวาบน → เลือก **"Install app"** หรือ **"Add to Home screen"**
+3. แตะยืนยันการติดตั้ง แอปจะปรากฏบนหน้าจอหลักพร้อมไอคอนสปอร์ตแบดมินตัน
 
-### 💻 Desktop (Chrome / Edge / Brave)
-1. มีไอคอน install ที่ address bar (จอ + ลูกศร) → คลิก
-2. หรือเมนู ⋮ → **Install BadCount...**
+### 🍎 สำหรับ iOS (ผ่าน Safari เท่านั้น)
+1. เปิดหน้าเว็บ URL แอปพลิเคชันด้วยเบราว์เซอร์ **Safari**
+2. แตะปุ่ม **Share** (ไอคอนกล่องและลูกศรชี้ขึ้น □↑) ด้านล่าง
+3. เลื่อนหาและเลือกตัวเลือก **"Add to Home Screen"** → แตะ Add
+4. เข้าไปที่ Settings → Notifications → BadCount เพื่อเปิดรับการแจ้งเตือน Real-time
+
+### 💻 สำหรับ Desktop (Chrome / Edge / Opera)
+1. สังเกตไอคอนรูปหน้าจอและเครื่องหมายบวกหรือลูกศรที่ปรากฏใน Address bar ด้านบนขวา → คลิกเพื่อดาวน์โหลด
+2. หรือคลิกปุ่มตั้งค่าสามจุดด้านขวาบน → เลือก **"Install BadCount..."**
 
 ---
 
-## 🛠️ ทดสอบในเครื่องก่อน Deploy
+## 🛠️ ทดสอบรันและพัฒนาในเครื่องคอมพิวเตอร์ก่อนใช้งานจริง
 
-**วิธี A: Python (ถ้าติดตั้งไว้)**
+เพื่อตรวจสอบและทดลองแก้ไขปรับปรุงโปรเจกต์ของคุณ:
+
+**วิธีที่ 1: การใช้งานผ่าน Python (สะดวกและไม่ต้องติดตั้งโปรแกรมเพิ่ม)**
 ```bash
 cd Badminton
 python -m http.server 8000
-# เปิด browser → http://localhost:8000
 ```
+เปิดเบราว์เซอร์ขึ้นมาแล้วเข้าไปที่ URL: `http://localhost:8000`
 
-**วิธี B: VS Code Live Server**
-1. ติดตั้ง extension **"Live Server"** (Ritwick Dey)
-2. คลิกขวาที่ `index.html` → **Open with Live Server**
+**วิธีที่ 2: การใช้ Extension VS Code Live Server**
+1. เปิดโฟลเดอร์ BadCount ใน VS Code
+2. ไปที่แท็บ Extensions → ค้นหาและติดตั้ง **"Live Server"** (โดย Ritwick Dey)
+3. คลิกขวาที่ไฟล์ `index.html` → เลือก **"Open with Live Server"**
 
 ---
 
-## 💰 ค่าใช้จ่าย
+## 💰 ข้อมูลโควตาค่าใช้จ่ายและเซิร์ฟเวอร์ฟรี
 
-ฟรี 100% ภายใต้ขีดจำกัด:
+โครงสร้างระบบถูกออกแบบให้สามารถทำงานได้อย่างประหยัดภายใต้เงื่อนไข Free-tier ของผู้ให้บริการชั้นนำ:
 
-| Service | Free Tier | เพียงพอสำหรับ |
+| บริการเซิร์ฟเวอร์ | โควตาของฟรี (Free Tier Limit) | ความสามารถในการรองรับก๊วนแบด |
 |---|---|---|
-| **Vercel Hosting** | 100 GB bandwidth/เดือน | ~10,000 sessions/เดือน |
-| **Firebase Firestore (Spark)** | 50K reads + 20K writes/วัน | กลุ่มแบดเป็นพันๆ ครั้ง |
-| **Firebase Storage** | 1 GB | QR code ของหลายร้อยกลุ่ม |
+| **Vercel Hosting** | 100 GB Bandwidth ต่อเดือน | รองรับการเข้าใช้งานมากกว่า ~10,000 ครั้ง/เดือน |
+| **Firestore (Spark)** | 50K Reads + 20K Writes ต่อวัน | รองรับการบันทึกจัดก๊วนแบดมินตันเป็นพันแมตช์/วัน |
+| **Firebase Storage** | 1 GB ขนาดพื้นที่จัดเก็บ | รองรับการเก็บบันทึกภาพสลิปโอนเงินจำนวนหลายพันรูป |
 
-ใช้กลุ่มเพื่อนปกติ — ฟรีตลอดไป
+*ใช้งานภายในกลุ่มเพื่อนและก๊วนตีแบดมินตันทั่วไปได้อย่างราบรื่นโดยไม่มีค่าใช้จ่ายตลอดไป*
 
 ---
 
-## 🏗️ Tech Stack
+## 🏗️ เทคโนโลยีที่เลือกใช้ (Tech Stack)
 
-| Layer | Technology |
+| เลเยอร์ระบบ | เครื่องมือและเทคโนโลยีที่ใช้ |
 |---|---|
-| Frontend | HTML + Tailwind CSS (CDN) + Vanilla JS (no build) |
-| Backend | Firebase Firestore (real-time) |
-| Hosting | Vercel (auto-deploy via GitHub) |
-| Auth | Passcode + Web Crypto API (SHA-256) |
-| PWA | Web App Manifest + Service Worker |
-| Notification | Web Notifications API + Web Audio API |
-| QR Code | qrcode.min.js (CDN) |
+| **Frontend** | HTML5 + Vanilla CSS (Custom premium.css) + Tailwind CSS (CDN) + Vanilla JS (No build process) |
+| **Database & Realtime** | Firebase Firestore Cloud Database ( real-time listener ) |
+| **Hosting** | Vercel ( ระบบ CI/CD อัตโนมัติด้วยการ push commit ขึ้น GitHub ) |
+| **Security & Auth** | Passcode Authentication + Web Crypto API (SHA-256 hashing) |
+| **PWA Features** | Web App Manifest + Service Worker + Native Web Notification API |
+| **QR Code Engine** | qrcode.min.js (สร้าง PromptPay Dynamic Payload และ QR) |
 
 ---
 
-## 🔒 หมายเหตุด้านความปลอดภัย
+## 🔒 ข้อควรระวังและหมายเหตุด้านความปลอดภัย
 
-- ✅ Login passcode + SHA-256 hash (ไม่เก็บรหัสตรงๆ ใน source)
-- ✅ HTTPS เท่านั้น (Vercel auto)
-- ✅ Firestore Rules จำกัดขนาด document และจำนวนสมาชิก
-- ⚠️ ใครที่มี link `/session/{id}` หรือ `/m/{id}` แก้ไขกลุ่มนั้นได้ — เหมาะกับเพื่อนที่ไว้ใจ
-- ⚠️ ถ้าอยากเข้มกว่านี้ → ใช้ Firebase Authentication + Custom Claims (ต้องเขียนเพิ่ม)
-
----
-
-## 📊 Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│  Frontend: badcount.vercel.app                  │
-│  ├─ index.html / app.js / sw.js (PWA)           │
-│  └─ Tailwind CSS (CDN)                          │
-└─────────────────────────────────────────────────┘
-                       ↕ Real-time (onSnapshot)
-┌─────────────────────────────────────────────────┐
-│  Firebase Firestore (Bangkok region)            │
-│  ├─ sessions/{id}     — กลุ่มแต่ละครั้ง         │
-│  └─ settings/defaults — Bank QR (global)        │
-└─────────────────────────────────────────────────┘
-                       ↕
-┌─────────────────────────────────────────────────┐
-│  Local Storage (per-device)                     │
-│  ├─ Auth token (30-day session)                 │
-│  ├─ Last-used defaults (location, fee, etc.)    │
-│  └─ Cached Bank QR                              │
-└─────────────────────────────────────────────────┘
-```
+- ✅ รหัสผ่านแอดมินถูกเข้ารหัสแบบทางเดียวด้วย **SHA-256** และไม่มีการบันทึกรหัสผ่านข้อความดิบไว้ในโค้ดต้นฉบับอย่างเด็ดขาด
+- ✅ การแลกเปลี่ยนข้อมูลจะถูกบังคับผ่านการเชื่อมต่อเข้ารหัส **HTTPS** ตลอดเวลาผ่าน Vercel SSL
+- ✅ กำหนด Firestore Security Rules ป้องกันขนาดอาร์เรย์ของสมาชิกไม่ให้เกิน 50 คน ป้องกันความเสียหายของเอกสารข้อมูล
+- ⚠️ ผู้ที่มีลิงก์ผู้จัดการ `/session/{id}` หรือ `/m/{id}` จะมีสิทธิ์ในการแก้ไขปรับปรุงข้อมูลกลุ่มนั้นๆ ดังนั้นแนะนำให้แชร์ลิงก์ให้เฉพาะกลุ่มเพื่อนหรือผู้จัดก๊วนที่ไว้วางใจเท่านั้น
+- ⚠️ หากต้องการเพิ่มระบบความปลอดภัยขั้นสูงสุด สามารถพัฒนาต่อยอดโดยเปิดใช้ Firebase Authentication แบบระบุอีเมลผู้จัดก๊วนเพิ่มเติมได้
 
 ---
 
-## 📝 License
+## 📝 สัญญาอนุญาต (License)
 
-MIT — Free to use, modify, share
+โปรเจกต์นี้อยู่ภายใต้สัญญาอนุญาตสิทธิ์ **MIT License**
 
-ใช้ฟรี แก้ไขได้ตามต้องการ ไม่ต้องขออนุญาต
+*คุณสามารถนำไปปรับแต่ง แก้ไข แจกจ่าย หรือพัฒนาต่อยอดเพื่อใช้งานในก๊วนของคุณได้อย่างอิสระโดยไม่ต้องเสียค่าใช้จ่ายและไม่ต้องส่งคำขออนุญาตใดๆ*
+🏸 **BadCount — Count Every Game. Enjoy Every Match.**
