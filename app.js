@@ -1504,7 +1504,9 @@ function updatePaymentReminder() {
   const card = $("paymentReminderCard");
   if (!card || !currentSession) return;
 
-  const members = currentSession.members || [];
+  const s = currentSession;
+  const isClosed = s.status === "closed";
+  const members = s.members || [];
   if (members.length === 0) {
     card.classList.add("hidden");
     updateSubRowPaymentButtons(0);
@@ -1521,12 +1523,13 @@ function updatePaymentReminder() {
     }
   });
 
-  if (unpaidCount === 0) {
-    card.classList.add("hidden");
-  } else {
+  // จุดที่สอง: ส่วนนี้จะแสดงก็ต่อเมื่อกดปิด court แล้วเท่านั้น และยังมีคนค้างชำระ
+  if (isClosed && unpaidCount > 0) {
     card.classList.remove("hidden");
     $("unpaidCount").textContent = unpaidCount;
     $("unpaidTotal").textContent = fmt(unpaidTotal);
+  } else {
+    card.classList.add("hidden");
   }
 
   updateSubRowPaymentButtons(unpaidCount);
@@ -1539,12 +1542,20 @@ function updateSubRowPaymentButtons(unpaidCount) {
   const remindLabel = $("btnRemindUnpaidLabel");
   if (!btnRemind || !btnMarkAll) return;
 
+  const s = currentSession;
+  const isClosed = s && s.status === "closed";
   const hasUnpaid = unpaidCount > 0;
 
   // ----- ปุ่ม "ทวง" -----
   const remindBase = "col-start-3 py-1.5 px-2 rounded-md text-[11px] font-semibold border flex items-center justify-center gap-1 transition-all";
   if (hasUnpaid) {
-    btnRemind.className = `${remindBase} bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50 cursor-pointer`;
+    if (isClosed) {
+      // สีแดงเมื่อปิดคอร์ดแล้วยังมีคนค้างชำระ
+      btnRemind.className = `${remindBase} bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white border-rose-600 cursor-pointer shadow-sm`;
+    } else {
+      // สีเหลืองเวลาปกติ
+      btnRemind.className = `${remindBase} bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50 cursor-pointer`;
+    }
     btnRemind.disabled = false;
     if (remindLabel) remindLabel.textContent = `ทวง (${unpaidCount})`;
   } else {
@@ -1586,8 +1597,8 @@ $("btnMarkAllPaid").addEventListener("click", () => {
   toast(`✓ ทำเครื่องหมายจ่ายแล้ว ${unpaidNames.length} คน`);
 });
 
-$("btnCopyDueList").addEventListener("click", () => {
-  if (!currentSession) return;
+$("btnCopyDueList").addEventListener("click", async () => {
+  if (!currentSession || !currentSessionId) return;
   const s = currentSession;
   const members = s.members || [];
   const totals = calcTotals();
@@ -1602,203 +1613,37 @@ $("btnCopyDueList").addEventListener("click", () => {
     return;
   }
 
-  const totalDue = unpaid.reduce((sum, x) => sum + x.amount, 0);
-  const hasQR = !!s.bankQR;
+  const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
+  const dateText = s.date ? formatDate(s.date) : "วันนี้";
+  const courtInfo = formatCourtsForShare(s.courts);
 
-  // Load QR image safely (same pattern as Export Bill — works on mobile)
-  const loadImageSafe = (src) => new Promise((resolve) => {
-    if (!src) return resolve(null);
-    const img = new Image();
-    let settled = false;
-    const finish = (val) => { if (!settled) { settled = true; resolve(val); } };
-    const timer = setTimeout(() => { console.warn("[Reminder] QR timeout"); finish(null); }, 10000);
-    img.onload = () => {
-      if (typeof img.decode === "function") {
-        img.decode().then(() => { clearTimeout(timer); finish(img); }).catch(() => { clearTimeout(timer); finish(img); });
-      } else {
-        clearTimeout(timer); finish(img);
-      }
-    };
-    img.onerror = () => { clearTimeout(timer); finish(null); };
-    img.src = src;
-    if (img.complete && img.naturalWidth > 0) img.onload();
+  let text = `🔴 ปิด Court — ต้องชำระเงิน\n━━━━━━━━━━━━━━━\n\n`;
+  text += `🏸 ตีแบดวันที่ ${dateText}\n`;
+  if (courtInfo) text += `${courtInfo}\n`;
+
+  text += `\nรายชื่อที่ยังค้างชำระ (${unpaid.length} คน):\n`;
+  unpaid.forEach((u, idx) => {
+    text += `${idx + 1}. ${u.name} : ${fmt(u.amount)} ฿\n`;
   });
+  text += `\n`;
+  text += `💰 คลิกลิงก์เพื่อชำระเงิน :\n${joinUrl}`;
 
-  const buildReminder = (qrImg) => {
-    // Layout constants
-    const W = 540;
-    const PAD = 32;
-    const innerW = W - PAD * 2;
-    const rowH = 40;
-    const FONT = "'Sarabun', -apple-system, 'Segoe UI', sans-serif";
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // QR sizing (preserve aspect ratio)
-    let qrW = 0, qrH = 0;
-    if (qrImg) {
-      const maxQrSize = 260;
-      const aspect = qrImg.width / qrImg.height;
-      if (aspect >= 1) { qrW = maxQrSize; qrH = Math.round(maxQrSize / aspect); }
-      else { qrH = maxQrSize; qrW = Math.round(maxQrSize * aspect); }
+  if (isMobile && navigator.share) {
+    try {
+      await navigator.share({ text });
+      toast("แชร์ข้อความทวงเงินสำเร็จ ✓");
+    } catch (err) {
+      if (err.name !== "AbortError") toast("แชร์ไม่สำเร็จ");
     }
-
-    // Calculate height
-    let H = 0;
-    H += 56;                                  // top accent + title margin
-    H += 28;                                  // title
-    H += 22;                                  // subtitle
-    H += 36;                                  // gap before list
-    H += 24;                                  // list header underline
-    H += unpaid.length * rowH + 8;            // rows
-    H += 20;                                  // gap before total
-    H += 56;                                  // total box
-    if (qrImg) H += 28 + 18 + qrH + 24;       // QR section
-    H += 40;                                  // footer
-
-    const canvas = document.createElement("canvas");
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext("2d");
-
-    // White background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, W, H);
-
-    // Top accent gradient (rose theme — "ค้างจ่าย")
-    const topGrad = ctx.createLinearGradient(0, 0, W, 0);
-    topGrad.addColorStop(0, "#f43f5e");
-    topGrad.addColorStop(1, "#e11d48");
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, W, 6);
-
-    // ===== Title =====
-    let y = 50;
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 22px " + FONT;
-    ctx.textAlign = "center";
-    ctx.fillText("⏳ ทวงค่าแบดมินตัน", W / 2, y);
-
-    y += 24;
-    ctx.fillStyle = "#64748b";
-    ctx.font = "13px " + FONT;
-    const subtitle = (s.location ? s.location + "  ·  " : "") + formatDate(s.date);
-    ctx.fillText(subtitle, W / 2, y);
-
-    y += 36;
-
-    // ===== List header =====
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "bold 11px " + FONT;
-    ctx.textAlign = "left";
-    ctx.fillText(`ยังไม่จ่าย ${unpaid.length} คน`, PAD, y);
-    ctx.textAlign = "right";
-    ctx.fillText("ยอดที่ค้าง", W - PAD, y);
-
-    y += 8;
-    ctx.beginPath();
-    ctx.strokeStyle = "#fecdd3";
-    ctx.lineWidth = 1;
-    ctx.moveTo(PAD, y);
-    ctx.lineTo(W - PAD, y);
-    ctx.stroke();
-
-    y += 22;
-
-    // ===== Unpaid rows =====
-    unpaid.forEach((u, idx) => {
-      // Status dot (rose, indicating unpaid)
-      ctx.fillStyle = "#f43f5e";
-      ctx.beginPath();
-      ctx.arc(PAD + 7, y - 6, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Name
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "17px " + FONT;
-      ctx.textAlign = "left";
-      ctx.fillText(u.name, PAD + 22, y);
-
-      // Amount
-      ctx.fillStyle = "#dc2626";
-      ctx.font = "bold 18px " + FONT;
-      ctx.textAlign = "right";
-      ctx.fillText(fmt(u.amount) + " ฿", W - PAD, y);
-
-      // Divider
-      if (idx < unpaid.length - 1) {
-        ctx.beginPath();
-        ctx.strokeStyle = "#fef2f2";
-        ctx.lineWidth = 1;
-        ctx.moveTo(PAD, y + 12);
-        ctx.lineTo(W - PAD, y + 12);
-        ctx.stroke();
-      }
-      y += rowH;
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      toast("📋 คัดลอกข้อความทวงเงินแล้ว (สามารถนำไปวางในไลน์ได้เลย)");
+    }).catch(() => {
+      toast("ไม่สามารถคัดลอกได้");
     });
-
-    y += 12;
-
-    // ===== Total box =====
-    const totalBoxY = y;
-    ctx.fillStyle = "#fff1f2";
-    roundRectPath(ctx, PAD, totalBoxY, innerW, 50, 12);
-    ctx.fill();
-
-    ctx.fillStyle = "#9f1239";
-    ctx.font = "bold 16px " + FONT;
-    ctx.textAlign = "left";
-    ctx.fillText("รวมค้างจ่าย", PAD + 18, totalBoxY + 32);
-    ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 22px " + FONT;
-    ctx.textAlign = "right";
-    ctx.fillText(fmt(totalDue) + " ฿", W - PAD - 18, totalBoxY + 32);
-
-    y = totalBoxY + 56;
-
-    // ===== QR section =====
-    if (qrImg) {
-      y += 28;
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "bold 14px " + FONT;
-      ctx.textAlign = "center";
-      ctx.fillText("📱 สแกน QR เพื่อโอน", W / 2, y);
-
-      y += 18;
-      const qrX = (W - qrW) / 2;
-      ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#e2e8f0";
-      ctx.lineWidth = 1;
-      roundRectPath(ctx, qrX - 8, y, qrW + 16, qrH + 16, 12);
-      ctx.fill();
-      ctx.stroke();
-      ctx.drawImage(qrImg, qrX, y + 8, qrW, qrH);
-    }
-
-    // ===== Footer =====
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "10px " + FONT;
-    ctx.textAlign = "center";
-    const ts = new Date().toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
-    ctx.fillText("BadCount  ·  " + ts, W / 2, H - 16);
-
-    // ===== Download =====
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    const safeLoc = (s.location || "due").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
-    a.download = `Due_${safeLoc}_${s.date || todayISO()}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    toast(`📥 บันทึกรูปทวง ${unpaid.length} คนแล้ว`, 3000);
-  };
-
-  loadImageSafe(hasQR ? s.bankQR : null).then((qrImg) => {
-    if (hasQR && !qrImg) {
-      toast("⚠️ โหลด QR ไม่ได้ — บันทึกรูปไม่มี QR");
-    }
-    buildReminder(qrImg);
-  });
+  }
 });
 
 function renderMembers() {
