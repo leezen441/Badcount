@@ -302,6 +302,7 @@ button:disabled,
 input[type="text"],
 input[type="number"],
 input[type="date"],
+input[type="time"],
 input[type="tel"],
 input[type="email"],
 select,
@@ -316,6 +317,7 @@ textarea {
 input[type="text"]:focus,
 input[type="number"]:focus,
 input[type="date"]:focus,
+input[type="time"]:focus,
 input[type="tel"]:focus,
 input[type="email"]:focus,
 select:focus,
@@ -459,3 +461,58 @@ main { padding-top: 1.5rem; padding-bottom: 6rem; }
 #view-join #joinBuddySection {
   display: none !important;
 }
+
+/* ============================================================
+   DARK MODE FIXES (Close Court button & native picker icons)
+   ============================================================ */
+/* Styling the Close Session button directly to be robust against dynamic JS className overwrites */
+#btnCloseSession {
+  transition: all 0.2s var(--bc-ease) !important;
+  font-weight: 700 !important;
+}
+
+/* Open Court state (default classes bg-slate-100 text-slate-700) */
+#btnCloseSession {
+  background-color: var(--bc-card-hover) !important;
+  color: var(--bc-ink) !important;
+  border: 1px solid var(--bc-line) !important;
+}
+.dark #btnCloseSession {
+  background-color: #20232b !important; /* Premium Dark Graphite Button */
+  color: #f8fafc !important;
+  border: 1px solid #2e323b !important;
+}
+
+/* Closed Court state (default classes bg-emerald-100 text-emerald-800) */
+#btnCloseSession.bg-emerald-100 {
+  background-color: var(--bc-primary) !important;
+  color: #121315 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: var(--bc-shadow-primary) !important;
+}
+.dark #btnCloseSession.bg-emerald-100 {
+  background-color: var(--bc-primary) !important;
+  color: #121315 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Color scheme adjustments for native input pickers to ensure high-contrast icons */
+.dark input[type="date"],
+.dark input[type="time"] {
+  color-scheme: dark !important;
+}
+
+/* Ensure calendar and clock icons in dark mode are white and highly visible */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) !important;
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+

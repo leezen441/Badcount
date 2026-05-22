@@ -1241,16 +1241,16 @@ function renderSession() {
 
   if (s.status === "closed") {
     badge.textContent = "ปิดแล้ว";
-    badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-slate-200 text-slate-700 whitespace-nowrap";
+    badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 whitespace-nowrap";
     btnClose.innerHTML = "🔓 เปิด Court อีกครั้ง";
     // เปลี่ยนเป็นปุ่มสีเขียวอ่อนเมื่อก๊วนปิดแล้ว
-    btnClose.className = "flex-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 py-3 rounded-lg font-medium transition-colors";
+    btnClose.className = "flex-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 py-3 rounded-lg font-medium transition-colors border border-emerald-200 dark:border-emerald-800/50";
   } else {
     badge.textContent = "เปิดอยู่";
-    badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap";
+    badge.className = "text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 whitespace-nowrap";
     btnClose.innerHTML = "✅ ปิด Court";
     // กลับเป็นปุ่มสีเทาปกติเมื่อก๊วนยังเปิดอยู่
-    btnClose.className = "flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg font-medium transition-colors";
+    btnClose.className = "flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 py-3 rounded-lg font-medium transition-colors border border-slate-200 dark:border-slate-700";
   }
 
   // ✨ NEW: Update Invite button + Toggle Registration button based on state
