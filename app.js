@@ -5582,6 +5582,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // เก็บลำดับ Modals ที่เปิดอยู่ (เพื่อใช้เวลา Hashเปลี่ยน หรือปิดตามลำดับ LIFO ในเคสอื่นๆ)
   let openModalsStack = [];
 
+  function updateBodyScrollLock() {
+    if (openModalsStack.length > 0) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+  }
+
   // มอนิเตอร์การเปิด-ปิด Modals ด้วย MutationObserver
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -5595,6 +5603,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!openModalsStack.includes(modalId)) {
             openModalsStack.push(modalId);
             console.log(`[ModalHistory] Opened: ${modalId}, stack:`, openModalsStack);
+            updateBodyScrollLock();
             
             // เช็คว่าประวัติศาสตร์ปัจจุบันไม่ได้มีสถานะของ Modal ตัวนี้อยู่ก่อนแล้ว เพื่อป้องกันการ push ซ้ำ
             if (!history.state || history.state.modalId !== modalId) {
@@ -5607,6 +5616,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (index !== -1) {
             openModalsStack.splice(index, 1);
             console.log(`[ModalHistory] Closed: ${modalId}, stack:`, openModalsStack);
+            updateBodyScrollLock();
             
             // หากประวัติศาสตร์ปัจจุบันยังชี้ไปที่ Modal นี้อยู่ (แปลว่าถูกปิดแบบแมนนวล เช่น กดปิดปุ่ม X)
             // เราต้องย้อนประวัติศาสตร์กลับ 1 ขั้นเพื่อให้ประวัติศาสตร์สอดคล้องกับ UI
@@ -5631,6 +5641,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
+    updateBodyScrollLock();
 
     // ฟังการเคลื่อนไหวย้อนกลับ (Back)
     window.addEventListener("popstate", (event) => {
@@ -5667,6 +5678,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
         openModalsStack = [];
+        updateBodyScrollLock();
       }
     });
   }

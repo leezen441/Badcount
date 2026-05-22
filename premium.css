@@ -74,6 +74,13 @@ body {
   transition: background-color 0.2s var(--bc-ease), color 0.2s var(--bc-ease);
 }
 
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+  height: 100vh !important;
+  overscroll-behavior: none !important;
+}
+
 .dark body {
   background-color: var(--bc-bg);
   background-image: 
