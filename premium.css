@@ -530,6 +530,10 @@ main, header { position: relative; z-index: 1; }
   display: none !important;
 }
 
+#matchModal.hidden {
+  display: none !important;
+}
+
 #matchModalTitle { font-size: 1.4rem !important; font-weight: 800; letter-spacing: -0.02em; }
 
 /* ============================================================
