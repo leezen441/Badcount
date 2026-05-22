@@ -5432,6 +5432,15 @@ if ("serviceWorker" in navigator) {
       .then(() => console.log("[PWA] Service worker registered"))
       .catch((err) => console.warn("[PWA] SW registration failed:", err));
   });
+
+  // Automatically reload when a new service worker takes over
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
 }
 
 
