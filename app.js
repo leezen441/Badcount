@@ -1981,7 +1981,7 @@ function renderMatches() {
       $("matchModalTitle").textContent = "✏️ แก้ไขเกม";
 
       renderMatchDraft();
-      $("matchModal").classList.remove("hidden");
+      openMatchModal();
     });
   });
 
@@ -2258,6 +2258,33 @@ $("btnDeleteSession").addEventListener("click", async () => {
 let matchDraftPlayers = [];
 let editingMatchId = null;
 
+// Helper: เปิดหน้าต่างจัดเกมโดยให้เลื่อนขึ้นบนสุดเสมอ
+function openMatchModal() {
+  const modal = $("matchModal");
+  if (!modal) return;
+  
+  // ป้องกันการเลื่อนของพื้นหลัง (background scrolling) บนมือถือ
+  document.body.classList.add("modal-open");
+  
+  modal.classList.remove("hidden");
+  
+  const resetScroll = () => {
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    modal.scrollTop = 0;
+    const inner = modal.querySelector("div");
+    if (inner) {
+      inner.scrollTop = 0;
+    }
+  };
+  
+  // ทำทันทีและตั้งดีเลย์เพื่อกันบั๊กเลื่อนของบราวเซอร์หลังจากเรนเดอร์เสร็จ
+  resetScroll();
+  setTimeout(resetScroll, 30);
+  setTimeout(resetScroll, 120);
+}
+
 $("btnAddMatch").addEventListener("click", () => {
   const members = currentSession.members || [];
   if (members.length < 4) return alert("ต้องมีสมาชิกอย่างน้อย 4 คน ถึงจะจัดเกมได้ครับ");
@@ -2267,7 +2294,7 @@ $("btnAddMatch").addEventListener("click", () => {
   $("fldMatchShuttles").value = "";
   $("matchModalTitle").textContent = "🏸 จัดเกมใหม่";
   renderMatchDraft();
-  $("matchModal").classList.remove("hidden");
+  openMatchModal();
 });
 
 // ============================================================
@@ -2901,8 +2928,16 @@ function renderMatchDraft() {
   });
 }
 
-$("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.add("hidden"));
-$("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal") $("matchModal").classList.add("hidden"); });
+$("btnCancelMatch").addEventListener("click", () => {
+  $("matchModal").classList.add("hidden");
+  document.body.classList.remove("modal-open");
+});
+$("matchModal").addEventListener("click", e => { 
+  if (e.target.id === "matchModal") {
+    $("matchModal").classList.add("hidden");
+    document.body.classList.remove("modal-open");
+  }
+});
 
 $("btnAutoSplit")?.addEventListener("click", () => {
   const original = [...matchDraftPlayers];
@@ -3040,6 +3075,7 @@ $("btnSaveMatch").addEventListener("click", () => {
 
   saveSession({ matches });
   $("matchModal").classList.add("hidden");
+  document.body.classList.remove("modal-open");
 });
 
 $("btnViewStats").addEventListener("click", () => {
