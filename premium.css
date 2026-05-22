@@ -527,30 +527,24 @@ main, header { position: relative; z-index: 1; }
 }
 
 /* ============================================================
-   MATCH MODAL — full screen (จัดเกม)
+   MATCH MODAL — NOT full screen (จัดเกม)
    ============================================================ */
 #matchModal {
-  padding: 0 !important;
-  align-items: stretch !important;
-  justify-content: stretch !important;
+  padding: 0.75rem !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 #matchModal > div {
   width: 100% !important;
   max-width: 100% !important;
-  height: 100dvh !important;
-  max-height: 100dvh !important;
-  border-radius: 0 !important;
+  height: auto !important;
+  max-height: 90dvh !important;
+  border-radius: var(--bc-radius-lg) !important;
   padding: 1.25rem 1rem !important;
-  padding-top: max(1.25rem, env(safe-area-inset-top)) !important;
-  padding-bottom: max(1.25rem, env(safe-area-inset-bottom)) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  animation: bc-slide-up .35s var(--bc-ease) both !important;
-}
-@keyframes bc-slide-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+  animation: bc-pop .35s var(--bc-ease) both !important;
 }
 
 #matchModal > div > div:first-child {
