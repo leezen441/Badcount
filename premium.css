@@ -1,92 +1,80 @@
 /* ============================================================
-   BADCOUNT — PREMIUM VISUAL SYSTEM v3 (CONTRAST & DENSITY FIX)
-   Theme: Sporty Neon-Lime & Sleek Graphite-Black (High Legibility)
-   Visual layer only. Functionality completely untouched.
+   BADCOUNT — PREMIUM VISUAL SYSTEM  v1
+   Visual layer only. Functionality untouched.
    ============================================================ */
 
 :root {
-  /* Sporty Lime Palette values */
-  --bc-lime-50:  #f7fee7;
-  --bc-lime-100: #ecfccb;
-  --bc-lime-300: #bef264;
-  --bc-lime-400: #a3e635;
-  --bc-lime-500: #84cc16;
-  --bc-lime-600: #65a30d;
-  --bc-lime-700: #3f6212;
-  --bc-lime-800: #1a2e05;
+  --bc-emerald-50:  #ecfdf5;
+  --bc-emerald-100: #d1fae5;
+  --bc-emerald-400: #34d399;
+  --bc-emerald-500: #10b981;
+  --bc-emerald-600: #059669;
+  --bc-emerald-700: #047857;
+  --bc-emerald-800: #065f46;
 
-  --bc-lime:         #a3e635;
-  --bc-lime-dark:    #84cc16;
-
-  /* Modern Dark Graphite Text & Accents */
-  --bc-ink:         #090d16;
+  --bc-ink:         #0f172a;
   --bc-ink-soft:    #334155;
   --bc-muted:       #64748b;
-  --bc-line:        rgba(9, 13, 22, 0.05);
-  --bc-line-strong: rgba(9, 13, 22, 0.09);
+  --bc-line:        rgba(15, 23, 42, 0.06);
+  --bc-line-strong: rgba(15, 23, 42, 0.10);
 
-  /* Premium White Cards with Rounded Borders */
-  --bc-surface:        #ffffff;
+  --bc-surface:        rgba(255, 255, 255, 0.78);
   --bc-surface-solid:  #ffffff;
-  --bc-surface-glass:  rgba(255, 255, 255, 0.88);
+  --bc-surface-glass:  rgba(255, 255, 255, 0.65);
 
-  /* Soft Ambient Modern Shadows */
-  --bc-shadow-xs: 0 1px 2px rgba(9, 13, 22, 0.02);
+  --bc-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
   --bc-shadow-sm:
-    0 1px 3px rgba(9, 13, 22, 0.02),
-    0 2px 8px rgba(9, 13, 22, 0.03);
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 2px 6px rgba(15, 23, 42, 0.04);
   --bc-shadow-md:
-    0 4px 24px -2px rgba(9, 13, 22, 0.03),
-    0 10px 30px -6px rgba(9, 13, 22, 0.04);
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 6px 16px -4px rgba(15, 23, 42, 0.08),
+    0 12px 28px -8px rgba(15, 23, 42, 0.06);
   --bc-shadow-lg:
-    0 8px 30px -4px rgba(9, 13, 22, 0.06),
-    0 20px 50px -10px rgba(9, 13, 22, 0.08);
-
-  --bc-shadow-lime:
-    0 4px 14px -2px rgba(163, 230, 53, 0.35),
-    0 10px 30px -10px rgba(132, 204, 22, 0.45);
+    0 2px 4px rgba(15, 23, 42, 0.06),
+    0 12px 28px -6px rgba(15, 23, 42, 0.10),
+    0 24px 56px -12px rgba(15, 23, 42, 0.12);
+  --bc-shadow-emerald:
+    0 4px 14px -2px rgba(16, 185, 129, 0.35),
+    0 10px 30px -10px rgba(5, 150, 105, 0.45);
   --bc-shadow-rose:
-    0 4px 14px -2px rgba(244, 63, 94, 0.22),
-    0 10px 30px -10px rgba(225, 29, 72, 0.3);
+    0 4px 14px -2px rgba(244, 63, 94, 0.35),
+    0 10px 30px -10px rgba(225, 29, 72, 0.4);
 
-  /* Curved corners matching mockup dashboard */
-  --bc-radius-sm: 12px;
-  --bc-radius:    18px;
-  --bc-radius-lg: 24px;
-  --bc-radius-xl: 32px;
+  --bc-radius-sm: 10px;
+  --bc-radius:    14px;
+  --bc-radius-lg: 20px;
+  --bc-radius-xl: 26px;
 
   --bc-ease:    cubic-bezier(0.22, 1, 0.36, 1);
   --bc-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark {
-  --bc-ink:         #f8fafc;
+  --bc-ink:         #e2e8f0;
   --bc-ink-soft:    #cbd5e1;
   --bc-muted:       #94a3b8;
   --bc-line:        rgba(255, 255, 255, 0.06);
   --bc-line-strong: rgba(255, 255, 255, 0.10);
 
-  --bc-surface:        rgba(15, 23, 42, 0.8);
+  --bc-surface:        rgba(15, 23, 42, 0.7);
   --bc-surface-solid:  #0f172a;
-  --bc-surface-glass:  rgba(15, 23, 42, 0.65);
+  --bc-surface-glass:  rgba(15, 23, 42, 0.55);
 
   --bc-shadow-sm:
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    0 2px 6px rgba(0, 0, 0, 0.2);
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.3);
   --bc-shadow-md:
-    0 4px 20px -2px rgba(0, 0, 0, 0.4),
-    0 10px 30px -6px rgba(0, 0, 0, 0.35);
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 6px 16px -4px rgba(0, 0, 0, 0.4),
+    0 12px 28px -8px rgba(0, 0, 0, 0.35);
   --bc-shadow-lg:
-    0 8px 30px -4px rgba(0, 0, 0, 0.45),
-    0 20px 50px -10px rgba(0, 0, 0, 0.4);
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 12px 28px -6px rgba(0, 0, 0, 0.45),
+    0 24px 56px -12px rgba(0, 0, 0, 0.5);
 }
 
-html {
-  scroll-behavior: smooth;
-  touch-action: manipulation;
-}
-
-/* FRESH LIME GRADIENT BACKGROUND */
+html { scroll-behavior: smooth; }
 body {
   font-family: 'Inter', 'Plus Jakarta Sans', 'Noto Sans Thai', -apple-system,
     BlinkMacSystemFont, "Segoe UI", "Sarabun", sans-serif;
@@ -96,26 +84,25 @@ body {
   letter-spacing: -0.005em;
   color: var(--bc-ink);
   background:
-    radial-gradient(1200px 700px at -10% -10%, rgba(163, 230, 53, 0.14), transparent 60%),
-    radial-gradient(900px 600px at 110% 10%, rgba(163, 230, 53, 0.08), transparent 55%),
-    radial-gradient(800px 500px at 50% 110%, rgba(163, 230, 53, 0.05), transparent 55%),
-    linear-gradient(180deg, #f4f6f0 0%, #e8ebe0 100%);
+    radial-gradient(1200px 700px at -10% -10%, rgba(16, 185, 129, 0.10), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(99, 102, 241, 0.07), transparent 55%),
+    radial-gradient(800px 500px at 50% 110%, rgba(20, 184, 166, 0.08), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   background-attachment: fixed;
   min-height: 100vh;
-  touch-action: manipulation;
 }
 html.dark body, .dark body {
   color: var(--bc-ink);
   background:
-    radial-gradient(1200px 700px at -10% -10%, rgba(163, 230, 53, 0.15), transparent 60%),
-    radial-gradient(900px 600px at 110% 10%, rgba(15, 23, 42, 0.2), transparent 55%),
-    radial-gradient(800px 500px at 50% 110%, rgba(163, 230, 53, 0.08), transparent 55%),
-    linear-gradient(180deg, #090d16 0%, #0c1220 100%);
+    radial-gradient(1200px 700px at -10% -10%, rgba(16, 185, 129, 0.14), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(800px 500px at 50% 110%, rgba(20, 184, 166, 0.10), transparent 55%),
+    linear-gradient(180deg, #060b18 0%, #0a1224 60%, #0b1428 100%);
 }
 
 h1, h2, h3, h4 {
   font-family: 'Plus Jakarta Sans', 'Inter', 'Noto Sans Thai', sans-serif;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
 }
 
 .view.active { animation: bc-view-in .35s var(--bc-ease) both; }
@@ -124,16 +111,16 @@ h1, h2, h3, h4 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ============================================================
-   PWA APP HEADER — SLEEK PITCH-BLACK (Mockup Sidebar Frame)
-   ============================================================ */
+/* HEADER */
 header.bg-emerald-600 {
-  background: #090f1d !important;
+  background:
+    linear-gradient(135deg, #047857 0%, #059669 45%, #10b981 100%) !important;
   box-shadow:
-    0 4px 20px -5px rgba(0, 0, 0, 0.3),
-    0 10px 40px -15px rgba(0, 0, 0, 0.4);
-  backdrop-filter: saturate(140%) blur(12px);
-  -webkit-backdrop-filter: saturate(140%) blur(12px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 24px -10px rgba(5, 150, 105, 0.5),
+    0 14px 40px -16px rgba(2, 44, 34, 0.35);
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   overflow: hidden;
@@ -142,47 +129,32 @@ header.bg-emerald-600::before {
   content: "";
   position: absolute; inset: 0;
   background:
-    radial-gradient(500px 200px at 10% -40%, rgba(163, 230, 53, 0.12), transparent 60%);
+    radial-gradient(600px 200px at 10% -40%, rgba(255, 255, 255, 0.22), transparent 60%),
+    radial-gradient(500px 200px at 90% 140%, rgba(0, 0, 0, 0.15), transparent 60%);
   pointer-events: none;
 }
 header.bg-emerald-600 > div { position: relative; z-index: 1; }
-
 header.bg-emerald-600 #logoLink span:last-child {
-  background: linear-gradient(180deg, #ffffff 40%, #bef264 100%);
+  background: linear-gradient(180deg, #ffffff 30%, #d1fae5 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
-header.bg-emerald-600 #logoLink span:first-child {
-  display: inline-block;
-  transition: transform .3s var(--bc-ease);
-}
-header.bg-emerald-600 #logoLink:hover span:first-child {
-  transform: rotate(15deg) scale(1.15);
-}
-
-/* Navigation Links — High contrast lime highlights on black */
 header.bg-emerald-600 nav a,
 header.bg-emerald-600 button {
-  transition: all .2s var(--bc-ease), transform .15s var(--bc-ease);
-  color: rgba(255, 255, 255, 0.8) !important;
-  font-weight: 600;
+  transition: background-color .2s var(--bc-ease), transform .15s var(--bc-ease);
 }
 header.bg-emerald-600 nav a:hover,
-header.bg-emerald-600 button:hover {
-  background: #a3e635 !important;
-  color: #000000 !important;
-  box-shadow: 0 4px 12px rgba(163, 230, 53, 0.4);
-}
+header.bg-emerald-600 button:hover { background: rgba(255, 255, 255, 0.14) !important; }
 header.bg-emerald-600 button:active { transform: scale(.95); }
 
-/* ============================================================
-   CARDS — 24PX CURVED BORDERS WITH MICRO-SHADOWS
-   ============================================================ */
+/* CARDS — frosted glass */
 .bg-white {
   background: var(--bc-surface) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid var(--bc-line);
 }
 .dark .dark\:bg-slate-800 {
@@ -194,11 +166,7 @@ main .bg-white.rounded-2xl,
 main .dark .dark\:bg-slate-800.rounded-2xl,
 main section > div.bg-white {
   box-shadow: var(--bc-shadow-md);
-  transition: transform .25s var(--bc-ease), box-shadow .3s var(--bc-ease), border-color .3s var(--bc-ease);
-}
-main .bg-white.rounded-2xl:hover,
-main .dark .dark\:bg-slate-800.rounded-2xl:hover {
-  border-color: rgba(163, 230, 53, 0.2);
+  transition: transform .25s var(--bc-ease), box-shadow .3s var(--bc-ease);
 }
 
 .rounded-2xl { border-radius: var(--bc-radius-lg) !important; }
@@ -206,7 +174,7 @@ main .dark .dark\:bg-slate-800.rounded-2xl:hover {
 .rounded-lg  { border-radius: var(--bc-radius-sm) !important; }
 
 /* HEADINGS */
-h1.text-2xl, h2.text-2xl { font-weight: 800; letter-spacing: -0.03em; }
+h1.text-2xl, h2.text-2xl { font-weight: 800; letter-spacing: -0.025em; }
 h2.text-xl { font-weight: 800; letter-spacing: -0.02em; }
 h3.uppercase {
   letter-spacing: 0.08em !important;
@@ -214,16 +182,12 @@ h3.uppercase {
   font-size: 0.7rem !important;
 }
 
-/* ============================================================
-   PRIMARY ACTION BUTTONS — Vibrant Lime with Bold Black Text
-   ============================================================ */
+/* PRIMARY BUTTONS (emerald) */
 button.bg-emerald-600,
 .bg-emerald-600 {
-  background: #a3e635 !important;
-  color: #000000 !important;
-  font-weight: 800 !important;
-  box-shadow: var(--bc-shadow-lime) !important;
-  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: var(--bc-shadow-emerald);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   transition: transform .15s var(--bc-ease), box-shadow .25s var(--bc-ease), filter .2s var(--bc-ease);
   position: relative;
   overflow: hidden;
@@ -232,90 +196,97 @@ button.bg-emerald-600::after,
 .bg-emerald-600::after {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0) 50%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 50%);
   pointer-events: none;
 }
 button.bg-emerald-600:hover,
 .bg-emerald-600:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1.5px);
+  filter: brightness(1.04) saturate(1.05);
+  transform: translateY(-1px);
   box-shadow:
-    0 6px 18px -2px rgba(163, 230, 53, 0.5),
-    0 14px 36px -10px rgba(132, 204, 22, 0.6) !important;
-  color: #000000 !important;
+    0 6px 18px -2px rgba(16, 185, 129, 0.5),
+    0 14px 36px -10px rgba(5, 150, 105, 0.55);
 }
 button.bg-emerald-600:active,
 .bg-emerald-600:active { transform: translateY(0) scale(.98); }
 
-/* ============================================================
-   SECONDARY ACTIONS & DENSITY POLISH
-   ============================================================ */
-/* Soft secondary buttons maintain organic tailwind color mapping (No harsh black overrides) */
-.bg-emerald-50,
-.bg-indigo-50,
-.bg-sky-50,
-.bg-amber-50,
-.bg-slate-50,
-.bg-slate-100 {
+/* SOFT TINTED BUTTONS */
+.bg-emerald-50 {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.04)) !important;
+  backdrop-filter: blur(8px);
   transition: transform .15s var(--bc-ease), background .2s var(--bc-ease), box-shadow .2s var(--bc-ease);
-  box-shadow: var(--bc-shadow-xs);
 }
-.bg-emerald-50:hover,
-.bg-indigo-50:hover,
-.bg-sky-50:hover,
-.bg-amber-50:hover,
-.bg-slate-50:hover,
-.bg-slate-100:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--bc-shadow-sm);
-  filter: brightness(0.97);
+.dark .dark\:bg-emerald-900\/30,
+.dark .dark\:bg-emerald-900\/20 {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.18), rgba(16, 185, 129, 0.08)) !important;
+}
+.bg-emerald-50:hover { transform: translateY(-1px); }
+
+.bg-indigo-50 {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.10), rgba(99, 102, 241, 0.04)) !important;
+  backdrop-filter: blur(8px);
+}
+.dark .dark\:bg-indigo-900\/30 {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.22), rgba(99, 102, 241, 0.08)) !important;
 }
 
-/* Polished delete action button (Red accent instead of black) */
-#btnDeleteSession {
-  background: #ffe4e6 !important; /* Soft rose background */
-  color: #e11d48 !important; /* Rose text */
-  border-color: #fecdd3 !important;
+.bg-sky-50 {
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.10), rgba(14, 165, 233, 0.04)) !important;
+  backdrop-filter: blur(8px);
 }
-.dark #btnDeleteSession {
-  background: rgba(244, 63, 94, 0.15) !important;
-  color: #fb7185 !important;
-  border-color: rgba(244, 63, 94, 0.3) !important;
-}
-#btnDeleteSession:hover {
-  background: #fecdd3 !important;
-  transform: translateY(-1.5px);
+.dark .dark\:bg-sky-900\/30 {
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.22), rgba(14, 165, 233, 0.08)) !important;
 }
 
-/* General button transition polish */
+.bg-amber-50 {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.10), rgba(245, 158, 11, 0.04)) !important;
+  backdrop-filter: blur(8px);
+}
+.dark .dark\:bg-amber-900\/20,
+.dark .dark\:bg-amber-900\/30 {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.20), rgba(245, 158, 11, 0.08)) !important;
+}
+
+.bg-rose-50 {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.10), rgba(244, 63, 94, 0.04)) !important;
+  backdrop-filter: blur(8px);
+}
+.dark .dark\:bg-rose-900\/30,
+.dark .dark\:bg-rose-900\/40 {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.22), rgba(244, 63, 94, 0.08)) !important;
+}
+
+/* General button polish */
 button {
   transition: transform .15s var(--bc-ease), background-color .2s var(--bc-ease),
               box-shadow .2s var(--bc-ease), filter .2s var(--bc-ease);
 }
 button:active { transform: scale(.97); }
 
-/* Warning Pill Overrides */
+.bg-rose-500 {
+  background: linear-gradient(180deg, #f43f5e 0%, #e11d48 100%) !important;
+  box-shadow: var(--bc-shadow-rose);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.bg-rose-500:hover { filter: brightness(1.05); transform: translateY(-1px); }
+
 .bg-amber-500 {
   background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
   box-shadow:
-    0 4px 14px -2px rgba(245, 158, 11, 0.3),
-    0 10px 30px -10px rgba(217, 119, 6, 0.3);
+    0 4px 14px -2px rgba(245, 158, 11, 0.45),
+    0 10px 30px -10px rgba(217, 119, 6, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff !important;
 }
 
-/* ============================================================
-   INSTALL BANNER — Vibrant Lime Green Gradient
-   ============================================================ */
+/* INSTALL BANNER */
 #installBanner .bg-gradient-to-r {
   background:
-    linear-gradient(135deg, #4d7c0f 0%, #84cc16 50%, #bef264 100%) !important;
+    linear-gradient(135deg, #0d9488 0%, #10b981 50%, #14b8a6 100%) !important;
   box-shadow:
-    0 14px 40px -10px rgba(132, 204, 22, 0.35),
-    0 24px 60px -20px rgba(77, 124, 15, 0.3);
+    0 14px 40px -10px rgba(16, 185, 129, 0.5),
+    0 24px 60px -20px rgba(13, 148, 136, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.18);
   position: relative; overflow: hidden;
-  color: #000000 !important;
 }
 #installBanner .bg-gradient-to-r::before {
   content: "";
@@ -326,22 +297,8 @@ button:active { transform: scale(.97); }
   pointer-events: none;
 }
 #installBanner .bg-gradient-to-r > * { position: relative; z-index: 1; }
-#installBanner .bg-gradient-to-r .text-emerald-100 {
-  color: rgba(0, 0, 0, 0.75) !important;
-  font-weight: 700;
-}
-#installBanner #btnInstallApp {
-  background: #000000 !important;
-  color: #ffffff !important;
-  font-weight: 700;
-}
-#installBanner #btnInstallApp:hover {
-  background: #1e293b !important;
-}
 
-/* ============================================================
-   INPUT CONTROLS
-   ============================================================ */
+/* INPUTS */
 input[type="text"],
 input[type="number"],
 input[type="date"],
@@ -351,9 +308,6 @@ select,
 textarea {
   transition: border-color .2s var(--bc-ease), box-shadow .2s var(--bc-ease),
               background .2s var(--bc-ease);
-  border-radius: var(--bc-radius-sm) !important;
-  padding: 0.75rem 1rem !important;
-  border: 1px solid var(--bc-line-strong) !important;
 }
 input[type="text"]:focus,
 input[type="number"]:focus,
@@ -363,14 +317,24 @@ input[type="email"]:focus,
 select:focus,
 textarea:focus {
   outline: none !important;
-  border-color: var(--bc-lime-500) !important;
+  border-color: var(--bc-emerald-500) !important;
   box-shadow:
-    0 0 0 4px rgba(163, 230, 53, 0.15),
-    0 1px 2px rgba(9, 13, 22, 0.04) !important;
-  background: var(--bc-surface-solid) !important;
+    0 0 0 4px rgba(16, 185, 129, 0.14),
+    0 1px 2px rgba(15, 23, 42, 0.04) !important;
 }
 
-/* LIST ITEM TRANSITIONS */
+/* BADGES */
+.rounded-full.bg-emerald-100 {
+  background: linear-gradient(180deg, #d1fae5, #a7f3d0) !important;
+  color: #065f46 !important;
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.25);
+}
+
+/* LINKS */
+a.text-emerald-600 { transition: opacity .2s var(--bc-ease); }
+a.text-emerald-600:hover { opacity: .82; text-decoration: none; }
+
+/* LIST ITEMS */
 #recentSessions > *,
 #historyList > *,
 #managerSessionsList > *,
@@ -383,9 +347,9 @@ textarea:focus {
 
 /* MODALS */
 .fixed.inset-0.bg-black\/50 {
-  background: rgba(2, 6, 23, 0.6) !important;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  background: rgba(2, 6, 23, 0.55) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
   animation: bc-fade-in .25s var(--bc-ease) both;
 }
 .fixed.inset-0.bg-black\/50 > div {
@@ -399,21 +363,21 @@ textarea:focus {
 }
 
 /* SCROLLBAR */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(9, 13, 22, 0.12);
+  background: rgba(15, 23, 42, 0.15);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(9, 13, 22, 0.24); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.28); background-clip: padding-box; }
 .dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); background-clip: padding-box; }
 .dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); background-clip: padding-box; }
 
-/* DYNAMIC COLOR METERS */
+/* ACCENT TEXT */
 #sumTotal {
-  background: linear-gradient(135deg, #4d7c0f 0%, #84cc16 60%, #a3e635 100%);
+  background: linear-gradient(135deg, #059669 0%, #10b981 60%, #14b8a6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -428,14 +392,15 @@ main { padding-top: 1.5rem; padding-bottom: 6rem; }
 .divide-y > * + * { border-top-color: var(--bc-line) !important; }
 .border-t        { border-top-color: var(--bc-line-strong) !important; }
 
-/* DARK MODE TEXT COLOR OVERRIDES */
-.dark .text-slate-800 { color: #f8fafc !important; }
+/* DARK MODE TEXT */
+.dark .text-slate-800 { color: #e2e8f0 !important; }
 .dark .text-slate-600 { color: #cbd5e1 !important; }
 .dark .text-slate-500 { color: #94a3b8 !important; }
 .dark .text-slate-400 { color: #94a3b8 !important; }
 
+/* FOCUS */
 :focus-visible {
-  outline: 2px solid var(--bc-lime-500);
+  outline: 2px solid var(--bc-emerald-500);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -448,79 +413,67 @@ main { padding-top: 1.5rem; padding-bottom: 6rem; }
   }
 }
 
-/* ============================================================
-   DECORATIVE ORBS (LIME AMBIENT GLOW BACKDROPS)
-   ============================================================ */
+/* DECORATIVE ORBS */
 body::before, body::after {
   content: "";
   position: fixed;
   pointer-events: none;
   z-index: 0;
-  filter: blur(70px);
-  opacity: .25;
+  filter: blur(60px);
+  opacity: .35;
 }
 body::before {
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(163, 230, 53, 0.35), transparent 70%);
-  top: -120px; left: -60px;
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, #34d399, transparent 70%);
+  top: -120px; left: -120px;
   animation: bc-float 18s ease-in-out infinite alternate;
 }
 body::after {
-  width: 350px; height: 350px;
-  background: radial-gradient(circle, rgba(132, 204, 22, 0.2), transparent 70%);
-  bottom: -100px; right: -40px;
-  opacity: .15;
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, #818cf8, transparent 70%);
+  bottom: -160px; right: -140px;
+  opacity: .25;
   animation: bc-float 22s ease-in-out infinite alternate-reverse;
 }
-.dark body::before {
-  background: radial-gradient(circle, rgba(163, 230, 53, 0.22), transparent 70%);
-}
-.dark body::after  {
-  background: radial-gradient(circle, rgba(163, 230, 53, 0.12), transparent 70%);
-}
-
+.dark body::before { opacity: .25; }
+.dark body::after  { opacity: .2; }
 @keyframes bc-float {
   from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(24px, 36px, 0) scale(1.1); }
+  to   { transform: translate3d(20px, 30px, 0) scale(1.08); }
 }
-
 main, header { position: relative; z-index: 1; }
 
-/* CHIPS (SUGGESTIONS) */
+/* CHIPS */
 #memberSuggestions button,
 #courtSuggestions button {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85)) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7)) !important;
   border: 1px solid var(--bc-line-strong) !important;
   box-shadow: var(--bc-shadow-xs);
   transition: transform .15s var(--bc-ease), box-shadow .2s var(--bc-ease);
-  color: var(--bc-ink) !important;
 }
 .dark #memberSuggestions button,
 .dark #courtSuggestions button {
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.85)) !important;
-  color: #ffffff !important;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.7)) !important;
 }
 #memberSuggestions button:hover,
 #courtSuggestions button:hover {
   transform: translateY(-1px);
   box-shadow: var(--bc-shadow-sm);
-  border-color: rgba(163, 230, 53, 0.3) !important;
 }
 
 /* TOAST */
 #toast {
-  background: rgba(9, 13, 22, 0.95) !important;
-  color: #ffffff !important;
-  backdrop-filter: blur(12px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: var(--bc-shadow-lg);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  border-radius: var(--bc-radius-sm) !important;
 }
 
-/* TEXT SELECTION GRAPHICS */
-::selection { background: rgba(163, 230, 53, 0.35); color: #000000; }
+/* SELECTION */
+::selection { background: rgba(16, 185, 129, 0.28); color: inherit; }
+
 
 /* ============================================================
    JOIN/INVITE VIEW — hide Buddy & Skill sections per user request
@@ -530,381 +483,73 @@ main, header { position: relative; z-index: 1; }
   display: none !important;
 }
 
-#matchModal.hidden {
-  display: none !important;
-}
-
-#matchModalTitle { font-size: 1.4rem !important; font-weight: 800; letter-spacing: -0.02em; }
 
 /* ============================================================
-   BADCOUNT — VISUAL CONTRAST & LEGIBILITY REFINEMENTS
+   MATCH MODAL — full screen (jัดเกม)
    ============================================================ */
-
-/* 1. Finished Match Cards Legibility Overrides */
-main #matchesList > div.opacity-70 {
-  opacity: 0.96 !important; /* Bring parent opacity up to highly legible level */
-  background: #f8fafc !important; /* Soft slate-grey card background in light mode */
-  border-color: #e2e8f0 !important; /* Subtle grey border */
-}
-.dark main #matchesList > div.opacity-70 {
-  background: rgba(15, 23, 42, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-/* Finished match game number title (e.g. เกมที่ 7) */
-main #matchesList > div.opacity-70 .line-through {
-  color: #64748b !important; /* Legible slate grey */
-  text-decoration-color: #cbd5e1 !important;
-}
-.dark main #matchesList > div.opacity-70 .line-through {
-  color: #cbd5e1 !important;
-  text-decoration-color: #475569 !important;
-}
-
-/* Finished match shuttle badge (e.g. ลูกที่ 7) */
-main #matchesList > div.opacity-70 .bg-emerald-100 {
-  background: #e2e8f0 !important;
-  color: #475569 !important;
-}
-.dark main #matchesList > div.opacity-70 .dark\:bg-emerald-900\/40 {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #cbd5e1 !important;
-}
-
-/* Finished match player names (Non-teams mode) */
-main #matchesList > div.opacity-70 .text-emerald-700\/60 {
-  color: #334155 !important; /* High contrast dark grey in light mode */
-  font-weight: 600 !important;
-}
-.dark main #matchesList > div.opacity-70 .dark\:text-emerald-400\/60 {
-  color: #cbd5e1 !important; /* High contrast light grey in dark mode */
-  font-weight: 600 !important;
-}
-
-/* Finished match team mode player names (VS mode) */
-main #matchesList > div.opacity-70 .text-rose-600 {
-  color: #b91c1c !important; /* Dark rose-red for maximum contrast in light mode */
-  font-weight: 700 !important;
-}
-main #matchesList > div.opacity-70 .text-sky-600 {
-  color: #0369a1 !important; /* Dark sky-blue for maximum contrast in light mode */
-  font-weight: 700 !important;
-}
-.dark main #matchesList > div.opacity-70 .dark\:text-rose-400 {
-  color: #fb7185 !important;
-  font-weight: 700 !important;
-}
-.dark main #matchesList > div.opacity-70 .dark\:text-sky-400 {
-  color: #38bdf8 !important;
-  font-weight: 700 !important;
-}
-
-
-/* 2. Closed Session Button ("🔓 เปิด Court อีกครั้ง") Contrast Override */
-#btnCloseSession {
-  font-weight: 700 !important;
-  transition: all .2s var(--bc-ease) !important;
-  box-shadow: var(--bc-shadow-xs) !important;
-}
-#btnCloseSession:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: var(--bc-shadow-sm) !important;
-}
-#btnCloseSession:active {
-  transform: scale(0.98) !important;
-}
-
-/* When status is Closed (button says Open Court Again, dynamically has bg-emerald-100 / text-emerald-800) */
-#btnCloseSession.bg-emerald-100 {
-  background: #ecfccb !important;
-  color: #1a2e05 !important;
-  border: 1px solid #d9f99d !important;
-}
-#btnCloseSession.bg-emerald-100:hover {
-  background: #d9f99d !important;
-}
-
-/* When status is Open (button says Close Court, dynamically has bg-slate-100 / text-slate-700) */
-#btnCloseSession.bg-slate-100 {
-  background: #f1f5f9 !important;
-  color: #334155 !important;
-  border: 1px solid #e2e8f0 !important;
-}
-#btnCloseSession.bg-slate-100:hover {
-  background: #e2e8f0 !important;
-}
-
-/* Dark Mode status overrides */
-.dark #btnCloseSession.bg-emerald-100 {
-  background: rgba(163, 230, 53, 0.15) !important;
-  color: #a3e635 !important;
-  border-color: rgba(163, 230, 53, 0.3) !important;
-}
-.dark #btnCloseSession.bg-emerald-100:hover {
-  background: rgba(163, 230, 53, 0.25) !important;
-}
-.dark #btnCloseSession.bg-slate-100 {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #cbd5e1 !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-.dark #btnCloseSession.bg-slate-100:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-}
-
-
-/* 3. Session View Grid Action Buttons Consistency (Remove Jarring Black Buttons) */
-#btnShareJoin,
-#btnShare,
-#btnExport,
-#btnQR {
-  font-weight: 700 !important;
-  border-radius: var(--bc-radius) !important;
-  transition: all .2s var(--bc-ease) !important;
-  box-shadow: var(--bc-shadow-xs) !important;
-}
-#btnShareJoin:hover,
-#btnShare:hover,
-#btnExport:hover,
-#btnQR:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: var(--bc-shadow-sm) !important;
-}
-#btnShareJoin:active,
-#btnShare:active,
-#btnExport:active,
-#btnQR:active {
-  transform: scale(0.97) !important;
-}
-
-/* Light Mode Action Grid Overrides */
-/* Invite Button (Default / Open state) */
-#btnShareJoin.bg-emerald-50 {
-  background: #ecfccb !important;
-  color: #1a2e05 !important;
-  border: 1px solid #d9f99d !important;
-}
-#btnShareJoin.bg-emerald-50:hover {
-  background: #d9f99d !important;
-}
-
-/* Invite Button (Closed / Closed state) */
-#btnShareJoin.bg-rose-50 {
-  background: #ffe4e6 !important;
-  color: #991b1b !important;
-  border: 1px solid #fecdd3 !important;
-}
-#btnShareJoin.bg-rose-50:hover {
-  background: #fecdd3 !important;
-}
-
-/* Invite Button (Registration Closed / Yellow state) */
-#btnShareJoin.bg-amber-50 {
-  background: #fef9c3 !important;
-  color: #854d0e !important;
-  border: 1px solid #fef08a !important;
-}
-#btnShareJoin.bg-amber-50:hover {
-  background: #fef08a !important;
-}
-
-/* Temp Manager, Export & QR Payment Buttons (Vibrant sporty green) */
-#btnShare,
-#btnExport,
-#btnQR {
-  background: #ecfccb !important;
-  color: #1a2e05 !important;
-  border: 1px solid #d9f99d !important;
-}
-#btnShare:hover,
-#btnExport:hover,
-#btnQR:hover {
-  background: #d9f99d !important;
-}
-
-/* Sub-row actions (เปิดรับ / ทวง / Mark all) */
-#btnToggleRegistration,
-#btnRemindUnpaid,
-#btnMarkAll {
-  font-weight: 700 !important;
-  transition: all .2s var(--bc-ease) !important;
-}
-#btnToggleRegistration:hover,
-#btnRemindUnpaid:hover,
-#btnMarkAll:hover {
-  transform: translateY(-0.5px) !important;
-}
-
-/* "ทวง" button (warning/alert state) */
-#btnRemindUnpaid.bg-rose-50 {
-  background: #ffe4e6 !important;
-  color: #b91c1c !important;
-  border: 1px solid #fecdd3 !important;
-}
-#btnRemindUnpaid.bg-rose-50:hover {
-  background: #fecdd3 !important;
-}
-#btnRemindUnpaid.bg-slate-50 {
-  background: #f8fafc !important;
-  color: #94a3b8 !important;
-  border: 1px solid #cbd5e1 !important;
-}
-
-/* "เปิดรับ" button */
-#btnToggleRegistration.bg-white {
-  background: #ffffff !important;
-  color: #475569 !important;
-  border: 1px solid #cbd5e1 !important;
-}
-#btnToggleRegistration.bg-white:hover {
-  background: #f8fafc !important;
-}
-#btnToggleRegistration.bg-amber-100 {
-  background: #fef9c3 !important;
-  color: #854d0e !important;
-  border: 1px solid #fef08a !important;
-}
-#btnToggleRegistration.bg-amber-100:hover {
-  background: #fef08a !important;
-}
-
-/* "Mark all" button */
-#btnMarkAll.bg-emerald-50 {
-  background: #ecfccb !important;
-  color: #1a2e05 !important;
-  border: 1px solid #d9f99d !important;
-}
-#btnMarkAll.bg-emerald-50:hover {
-  background: #d9f99d !important;
-}
-#btnMarkAll.bg-slate-50 {
-  background: #f8fafc !important;
-  color: #94a3b8 !important;
-  border: 1px solid #cbd5e1 !important;
-}
-
-/* Dark Mode Overrides for Action Grid Buttons */
-.dark #btnShareJoin.bg-emerald-50 {
-  background: rgba(163, 230, 53, 0.1) !important;
-  color: #a3e635 !important;
-  border-color: rgba(163, 230, 53, 0.25) !important;
-}
-.dark #btnShareJoin.bg-emerald-50:hover {
-  background: rgba(163, 230, 53, 0.2) !important;
-}
-.dark #btnShareJoin.bg-rose-50 {
-  background: rgba(244, 63, 94, 0.15) !important;
-  color: #fb7185 !important;
-  border-color: rgba(244, 63, 94, 0.3) !important;
-}
-.dark #btnShareJoin.bg-rose-50:hover {
-  background: rgba(244, 63, 94, 0.25) !important;
-}
-.dark #btnShareJoin.bg-amber-50 {
-  background: rgba(245, 158, 11, 0.15) !important;
-  color: #fbbf24 !important;
-  border-color: rgba(245, 158, 11, 0.3) !important;
-}
-.dark #btnShareJoin.bg-amber-50:hover {
-  background: rgba(245, 158, 11, 0.25) !important;
-}
-
-.dark #btnShare,
-.dark #btnExport,
-.dark #btnQR {
-  background: rgba(163, 230, 53, 0.1) !important;
-  color: #a3e635 !important;
-  border-color: rgba(163, 230, 53, 0.25) !important;
-}
-.dark #btnShare:hover,
-.dark #btnExport:hover,
-.dark #btnQR:hover {
-  background: rgba(163, 230, 53, 0.2) !important;
-}
-
-.dark #btnToggleRegistration.bg-white {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #cbd5e1 !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-.dark #btnToggleRegistration.bg-white:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-}
-.dark #btnToggleRegistration.bg-amber-100 {
-  background: rgba(245, 158, 11, 0.15) !important;
-  color: #fbbf24 !important;
-  border-color: rgba(245, 158, 11, 0.3) !important;
-}
-.dark #btnToggleRegistration.bg-amber-100:hover {
-  background: rgba(245, 158, 11, 0.25) !important;
-}
-
-.dark #btnRemindUnpaid.bg-rose-50 {
-  background: rgba(244, 63, 94, 0.15) !important;
-  color: #fb7185 !important;
-  border-color: rgba(244, 63, 94, 0.3) !important;
-}
-.dark #btnRemindUnpaid.bg-rose-50:hover {
-  background: rgba(244, 63, 94, 0.25) !important;
-}
-.dark #btnRemindUnpaid.bg-slate-50 {
-  background: rgba(255, 255, 255, 0.03) !important;
-  color: #475569 !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-.dark #btnMarkAll.bg-emerald-50 {
-  background: rgba(163, 230, 53, 0.1) !important;
-  color: #a3e635 !important;
-  border-color: rgba(163, 230, 53, 0.25) !important;
-}
-.dark #btnMarkAll.bg-emerald-50:hover {
-  background: rgba(163, 230, 53, 0.2) !important;
-}
-.dark #btnMarkAll.bg-slate-50 {
-  background: rgba(255, 255, 255, 0.03) !important;
-  color: #475569 !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* ============================================================
-   MODAL TOPICS EXTRA BOLD
-   ============================================================ */
-.fixed.inset-0 h3,
-#matchModal h3,
-#cameraScanModal h3,
-#playerSettingsModal h3,
-#pauseMembersModal h3,
-#statsModal h3,
-#qrModal h3,
-#paymentModal h3,
-#slipViewerModal h3,
-#testPromptPayModal h3 {
-  font-family: 'Plus Jakarta Sans', 'Inter', 'Noto Sans Thai', sans-serif !important;
-  font-weight: 800 !important; /* Extra bold (800 load support) */
-  font-size: 1.35rem !important; /* Stand out beautifully */
-  color: var(--bc-ink) !important;
-  letter-spacing: -0.02em !important;
-}
-
-/* ============================================================
-   MODAL OVERFLOW & BACKDROP SCROLL LOCK
-   ============================================================ */
-html.modal-open,
-body.modal-open {
-  overflow: hidden !important;
-  scroll-behavior: auto !important;
-}
-
-/* Force instant display on matchmaking modal to satisfy prompt requirements */
 #matchModal {
-  animation: none !important;
-  transition: none !important;
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
 }
 #matchModal > div {
-  animation: none !important;
-  transform: none !important;
-  transition: none !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  padding: 1.25rem 1rem !important;
+  padding-top: max(1.25rem, env(safe-area-inset-top)) !important;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  animation: bc-slide-up .35s var(--bc-ease) both !important;
+}
+@keyframes bc-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Header row stays at top, action buttons stay at bottom, content scrolls between */
+#matchModal > div > div:first-child {        /* header (title + Auto Draft) */
+  flex-shrink: 0;
+}
+#matchModal > div > .flex.gap-2:last-child { /* footer with Cancel / Save */
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--bc-line-strong);
+}
+/* Everything else (selected box, team boxes, shuttlecock, available players) scrolls */
+#matchModal > div > *:not(:first-child):not(.flex.gap-2:last-child) {
+  /* nothing — flex container handles flow */
+}
 
+/* Make a scrollable middle region by wrapping middle content visually */
+#matchModal > div > #selectedPlayersBox,
+#matchModal > div > #teamBoxes,
+#matchModal > div > .bg-slate-50,
+#matchModal > div > #availablePlayers {
+  flex-shrink: 0;
+}
+
+/* Make the inner scroll area work: turn off the outer scroll, let content flow */
+#matchModal > div { overflow-y: auto !important; }
+
+/* Available players list should expand to use remaining space */
+#availablePlayers { flex: 1 1 auto; min-height: 120px; }
+
+/* Wider canvas for selected players / teams on big screens */
+@media (min-width: 768px) {
+  #matchModal > div {
+    max-width: 720px !important;
+    margin: 0 auto;
+  }
+}
+@media (min-width: 1024px) {
+  #matchModal > div { max-width: 880px !important; }
+}
+
+/* Bigger heading inside match modal — fits the full-screen feel */
+#matchModalTitle { font-size: 1.4rem !important; font-weight: 800; letter-spacing: -0.02em; }

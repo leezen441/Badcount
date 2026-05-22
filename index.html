@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BadCount 🏸 — Count Every Game.</title>
 
   <!-- Open Graph / Chat preview — บังคับให้ไม่ดึงข้อความหน้าเว็บมาทำ description -->
@@ -18,7 +18,7 @@
 
   <!-- PWA: Manifest + Theme + Apple Touch Icon -->
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#090f1d" />
+  <meta name="theme-color" content="#10b981" />
   <link rel="apple-touch-icon" href="/icon.svg" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -28,30 +28,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=17">
+  <link rel="stylesheet" href="./premium.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            emerald: {
-              50: '#f7fee7',
-              100: '#ecfccb',
-              200: '#d9f99d',
-              300: '#bef264',
-              400: '#a3e635',
-              500: '#84cc16',
-              600: '#65a30d',
-              700: '#3f6212',
-              800: '#1a2e05',
-              900: '#0f172a',
-              950: '#020617'
-            }
-          }
-        }
-      }
     }
   </script>
   <style>
@@ -845,9 +826,9 @@
   </div>
 
   <!-- ===== MATCH MODAL ===== -->
-  <div id="matchModal" class="hidden fixed inset-0 bg-black/50 z-50 sm:flex sm:items-center sm:justify-center p-0 sm:p-4">
-    <div class="absolute inset-0 sm:relative sm:inset-auto bg-white dark:bg-slate-800 sm:rounded-2xl p-5 w-full sm:max-w-lg sm:max-h-[90vh] overflow-y-auto shadow-xl flex flex-col">
-      <div class="flex justify-between items-start mb-3 gap-2 shrink-0">
+  <div id="matchModal" class="hidden fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+      <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
           <h3 class="text-lg font-bold" id="matchModalTitle">🏸 จัดเกมใหม่</h3>
           <div class="flex items-center flex-wrap gap-1.5 mt-1.5">
@@ -865,13 +846,13 @@
       </div>
       
       <!-- Selected Box — โหมดปกติ (No teams) -->
-      <div class="shrink-0 bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 mb-4 min-h-[100px]" id="selectedPlayersBox">
+      <div class="bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 mb-4 min-h-[100px]" id="selectedPlayersBox">
         <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">ผู้เล่นในสนาม (<span id="selPlayerCount">0</span>/4)</div>
         <div id="selectedPlayers" class="flex flex-wrap gap-2"></div>
       </div>
 
       <!-- Team Boxes — เมื่อ useTeams=on -->
-      <div id="teamBoxes" class="hidden mb-4 space-y-2 shrink-0">
+      <div id="teamBoxes" class="hidden mb-4 space-y-2">
         <div class="bg-rose-50 dark:bg-rose-900/20 border-2 border-dashed border-rose-300 dark:border-rose-700 rounded-xl p-3 min-h-[70px]">
           <div class="flex items-center justify-between mb-1.5">
             <div class="text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wide">🅰️ Team A (<span id="teamACount">0</span>/2)</div>
@@ -895,22 +876,22 @@
       </div>
 
       <!-- Shuttlecock Input -->
-      <div class="mb-4 shrink-0">
+      <div class="mb-4">
         <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">เบอร์ลูกแบดที่ใช้ในเกมนี้ (เช่น 1, 2 หรือ 1-3)</label>
         <input type="text" id="fldMatchShuttles" placeholder="เว้นว่างได้ถ้าไม่ระบุ" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-emerald-500 text-sm bg-white dark:bg-slate-900" />
       </div>
 
       <!-- Available List -->
-      <div class="mb-5 flex-1 shrink-0">
+      <div class="mb-5">
         <div class="flex items-center justify-between mb-2">
           <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">แตะชื่อเพื่อเลือก · ⭐ Top 4 แนะนำ</div>
         </div>
-        <div id="availablePlayers" class="max-h-[360px] sm:max-h-[250px] overflow-y-auto"></div>
+        <div id="availablePlayers" class="max-h-[360px] overflow-y-auto"></div>
       </div>
 
-      <div class="mt-auto flex gap-2 pt-2 shrink-0">
-        <button id="btnCancelMatch" class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-medium text-sm shadow-sm transition-transform active:scale-95 border border-slate-200 dark:border-slate-700">ยกเลิก</button>
-        <button id="btnSaveMatch" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm disabled:opacity-50 shadow-md transition-transform active:scale-95">บันทึกเกม</button>
+      <div class="flex gap-2">
+        <button id="btnCancelMatch" class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-medium text-sm">ยกเลิก</button>
+        <button id="btnSaveMatch" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm disabled:opacity-50">บันทึกเกม</button>
       </div>
     </div>
   </div>
@@ -1100,6 +1081,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=17"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

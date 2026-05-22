@@ -1981,7 +1981,7 @@ function renderMatches() {
       $("matchModalTitle").textContent = "✏️ แก้ไขเกม";
 
       renderMatchDraft();
-      openMatchModal();
+      $("matchModal").classList.remove("hidden");
     });
   });
 
@@ -2258,31 +2258,6 @@ $("btnDeleteSession").addEventListener("click", async () => {
 let matchDraftPlayers = [];
 let editingMatchId = null;
 
-// Helper: เปิดหน้าต่างจัดเกมโดยให้เลื่อนขึ้นบนสุดเสมอ
-function openMatchModal() {
-  const modal = $("matchModal");
-  if (!modal) return;
-  
-  // ป้องกันการเลื่อนของพื้นหลัง (background scrolling) บนมือถือ
-  document.body.classList.add("modal-open");
-  document.documentElement.classList.add("modal-open");
-  
-  modal.classList.remove("hidden");
-  
-  const resetScroll = () => {
-    modal.scrollTop = 0;
-    const inner = modal.querySelector("div");
-    if (inner) {
-      inner.scrollTop = 0;
-    }
-  };
-  
-  // ทำทันทีและตั้งดีเลย์เพื่อกันบั๊กเลื่อนของบราวเซอร์หลังจากเรนเดอร์เสร็จ
-  resetScroll();
-  setTimeout(resetScroll, 30);
-  setTimeout(resetScroll, 120);
-}
-
 $("btnAddMatch").addEventListener("click", () => {
   const members = currentSession.members || [];
   if (members.length < 4) return alert("ต้องมีสมาชิกอย่างน้อย 4 คน ถึงจะจัดเกมได้ครับ");
@@ -2292,7 +2267,7 @@ $("btnAddMatch").addEventListener("click", () => {
   $("fldMatchShuttles").value = "";
   $("matchModalTitle").textContent = "🏸 จัดเกมใหม่";
   renderMatchDraft();
-  openMatchModal();
+  $("matchModal").classList.remove("hidden");
 });
 
 // ============================================================
@@ -2926,18 +2901,8 @@ function renderMatchDraft() {
   });
 }
 
-$("btnCancelMatch").addEventListener("click", () => {
-  $("matchModal").classList.add("hidden");
-  document.body.classList.remove("modal-open");
-  document.documentElement.classList.remove("modal-open");
-});
-$("matchModal").addEventListener("click", e => { 
-  if (e.target.id === "matchModal") {
-    $("matchModal").classList.add("hidden");
-    document.body.classList.remove("modal-open");
-    document.documentElement.classList.remove("modal-open");
-  }
-});
+$("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.add("hidden"));
+$("matchModal").addEventListener("click", e => { if (e.target.id === "matchModal") $("matchModal").classList.add("hidden"); });
 
 $("btnAutoSplit")?.addEventListener("click", () => {
   const original = [...matchDraftPlayers];
@@ -3075,8 +3040,6 @@ $("btnSaveMatch").addEventListener("click", () => {
 
   saveSession({ matches });
   $("matchModal").classList.add("hidden");
-  document.body.classList.remove("modal-open");
-  document.documentElement.classList.remove("modal-open");
 });
 
 $("btnViewStats").addEventListener("click", () => {
@@ -5469,15 +5432,6 @@ if ("serviceWorker" in navigator) {
       .then(() => console.log("[PWA] Service worker registered"))
       .catch((err) => console.warn("[PWA] SW registration failed:", err));
   });
-
-  // Automatically reload when a new service worker takes over
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
-  });
 }
 
 
@@ -5596,11 +5550,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
-// ป้องกันการ Zoom (Pinch-to-zoom) บนหน้าจอสัมผัส (เช่น Safari iOS)
-document.addEventListener("touchstart", (e) => {
-  if (e.touches.length > 1) {
-    e.preventDefault();
-  }
-}, { passive: false });
-
