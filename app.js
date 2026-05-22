@@ -5018,7 +5018,7 @@ async function loadAdminSummaryData(filterType) {
   try {
     const snap = await getDocs(SESSIONS);
     let totalCourt = 0, totalShuttle = 0, totalOther = 0;
-    let actualCost = 0, expectedCollection = 0, unpaid = 0;
+    let closedRevenue = 0, expectedCollection = 0, unpaid = 0;
     const now = new Date();
     const currYear = String(now.getFullYear());
     const currMonth = String(now.getMonth() + 1).padStart(2, '0');
@@ -5048,15 +5048,18 @@ async function loadAdminSummaryData(filterType) {
           if (!m.isPaid) sessionUnpaid += (totals.perMember[idx] || 0);
         });
         unpaid += sessionUnpaid;
+
+        // รายรับปิดคอร์ด (Revenue) — คำนวณเฉพาะ session ที่ปิดคอร์ดแล้วเท่านั้น
+        if (s.status === "closed") {
+          closedRevenue += sessionExpected;
+        }
       }
     });
-
-    actualCost = totalCourt + totalShuttle + totalOther;
 
     $("asTotalCourt").textContent = fmt(totalCourt) + " ฿";
     $("asTotalShuttle").textContent = fmt(totalShuttle) + " ฿";
     $("asTotalOther").textContent = fmt(totalOther) + " ฿";
-    $("asActualCost").textContent = fmt(actualCost) + " ฿";
+    $("asActualCost").textContent = fmt(closedRevenue) + " ฿";
     $("asExpectedCollection").textContent = fmt(expectedCollection) + " ฿";
     $("asUnpaid").textContent = fmt(unpaid) + " ฿";
 
@@ -5546,9 +5549,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "statsModal"
   ];
 
+  // เก็บลำดับ Modals ที่เปิดอยู่ (เพื่อใช้เวลา Hashเปลี่ยน หรือปิดตามลำดับ LIFO ในเคสอื่นๆ)
   let openModalsStack = [];
-  let popActiveCount = 0;
-  let ignorePopCount = 0;
 
   // มอนิเตอร์การเปิด-ปิด Modals ด้วย MutationObserver
   const observer = new MutationObserver((mutations) => {
@@ -5563,8 +5565,11 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!openModalsStack.includes(modalId)) {
             openModalsStack.push(modalId);
             console.log(`[ModalHistory] Opened: ${modalId}, stack:`, openModalsStack);
-            // ดึงระดับประวัติศาสตร์: pushState
-            history.pushState({ isModal: true, modalId: modalId }, "");
+            
+            // เช็คว่าประวัติศาสตร์ปัจจุบันไม่ได้มีสถานะของ Modal ตัวนี้อยู่ก่อนแล้ว เพื่อป้องกันการ push ซ้ำ
+            if (!history.state || history.state.modalId !== modalId) {
+              history.pushState({ isModal: true, modalId: modalId }, "");
+            }
           }
         } else {
           // Modal ถูกปิด!
@@ -5573,12 +5578,9 @@ document.addEventListener("DOMContentLoaded", () => {
             openModalsStack.splice(index, 1);
             console.log(`[ModalHistory] Closed: ${modalId}, stack:`, openModalsStack);
             
-            if (popActiveCount > 0) {
-              // เป็นการปิดที่เกิดจากปุ่ม Back/Popstate
-              popActiveCount--;
-            } else {
-              // เป็นการปิดแบบแมนนวล (กดปุ่มปิดหน้าจอ) -> ต้อง pop ประวัติศาสตร์ dummy ออก
-              ignorePopCount++;
+            // หากประวัติศาสตร์ปัจจุบันยังชี้ไปที่ Modal นี้อยู่ (แปลว่าถูกปิดแบบแมนนวล เช่น กดปิดปุ่ม X)
+            // เราต้องย้อนประวัติศาสตร์กลับ 1 ขั้นเพื่อให้ประวัติศาสตร์สอดคล้องกับ UI
+            if (history.state && history.state.isModal && history.state.modalId === modalId) {
               history.back();
             }
           }
@@ -5602,19 +5604,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ฟังการเคลื่อนไหวย้อนกลับ (Back)
     window.addEventListener("popstate", (event) => {
-      if (ignorePopCount > 0) {
-        ignorePopCount--;
-        return;
-      }
+      // ดึง modalId จาก state ปัจจุบันที่ย้อนกลับมาถึง (ถ้ามี)
+      const stateModalId = (event.state && event.state.isModal) ? event.state.modalId : null;
 
-      if (openModalsStack.length > 0) {
-        // มี Modal เปิดอยู่ และผู้ใช้กด Back
-        const topModalId = openModalsStack[openModalsStack.length - 1]; // อ่านเฉยๆ อย่าเพิ่ง pop
-        const el = document.getElementById(topModalId);
-        if (el) {
-          console.log(`[ModalHistory] Intercepted back button! Closing modal: ${topModalId}`);
-          popActiveCount++;
-          el.classList.add("hidden");
+      console.log(`[ModalHistory] Popstate fired. Current state modalId: ${stateModalId}, stack:`, openModalsStack);
+
+      // วนลูปปิด Modal ที่ยังเปิดอยู่ใน stack แต่สถานะประวัติศาสตร์บอกว่าควรจะปิดไปแล้ว
+      // โดยการลูปจากท้ายสุด (LIFO)
+      for (let i = openModalsStack.length - 1; i >= 0; i--) {
+        const modalId = openModalsStack[i];
+        if (modalId !== stateModalId) {
+          const el = document.getElementById(modalId);
+          if (el && !el.classList.contains("hidden")) {
+            console.log(`[ModalHistory] Intercepted back action! Closing: ${modalId}`);
+            el.classList.add("hidden");
+          }
         }
       }
     });
@@ -5624,15 +5628,15 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("hashchange", () => {
       if (openModalsStack.length > 0) {
         console.log("[ModalHistory] Hash changed, closing all modals:", openModalsStack);
-        while (openModalsStack.length > 0) {
-          const modalId = openModalsStack.pop();
+        // ทำสำเนาเพื่อความปลอดภัยขณะวนลูปปิด
+        const toClose = [...openModalsStack];
+        toClose.reverse().forEach((modalId) => {
           const el = document.getElementById(modalId);
           if (el) {
             el.classList.add("hidden");
           }
-        }
-        popActiveCount = 0;
-        ignorePopCount = 0;
+        });
+        openModalsStack = [];
       }
     });
   }

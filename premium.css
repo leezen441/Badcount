@@ -564,3 +564,94 @@ main { padding-top: 1.5rem; padding-bottom: 2rem; }
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
+/* ============================================================
+   ADMIN SUMMARY HIGH-CONTRAST CARDS
+   ============================================================ */
+.as-card-revenue {
+  background: rgba(99, 102, 241, 0.08) !important;
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+.as-card-revenue .as-label {
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+}
+.as-card-revenue .as-value {
+  color: #4f46e5 !important;
+  font-weight: 800 !important;
+  font-size: 1.25rem !important;
+}
+.dark .as-card-revenue {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border: 1px solid rgba(99, 102, 241, 0.4) !important;
+}
+.dark .as-card-revenue .as-label {
+  color: #c7d2fe !important; /* brighter lavender-indigo */
+}
+.dark .as-card-revenue .as-value {
+  color: #e0e7ff !important; /* extremely bright indigo */
+}
+
+.as-card-unpaid {
+  background: rgba(244, 63, 94, 0.08) !important;
+  border: 1px solid rgba(244, 63, 94, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+.as-card-unpaid .as-label {
+  color: #e11d48 !important;
+  font-weight: 700 !important;
+}
+.as-card-unpaid .as-value {
+  color: #e11d48 !important;
+  font-weight: 800 !important;
+  font-size: 1.25rem !important;
+}
+.dark .as-card-unpaid {
+  background: rgba(244, 63, 94, 0.15) !important;
+  border: 1px solid rgba(244, 63, 94, 0.4) !important;
+}
+.dark .as-card-unpaid .as-label {
+  color: #fecaca !important; /* bright light red */
+}
+.dark .as-card-unpaid .as-value {
+  color: #ffe4e6 !important; /* extremely bright red */
+}
+
+.as-card-expected {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+.as-card-expected .as-label {
+  color: #059669 !important;
+  font-weight: 700 !important;
+}
+.as-card-expected .as-value {
+  color: #059669 !important;
+  font-weight: 800 !important;
+  font-size: 1.25rem !important;
+}
+.dark .as-card-expected {
+  background: rgba(181, 247, 20, 0.08) !important;
+  border: 1px solid rgba(181, 247, 20, 0.35) !important;
+}
+.dark .as-card-expected .as-label {
+  color: #a3e635 !important; /* neon lime secondary */
+}
+.dark .as-card-expected .as-value {
+  color: #d8f99f !important; /* very bright lime green */
+}
+
+
