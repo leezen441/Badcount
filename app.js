@@ -2265,13 +2265,11 @@ function openMatchModal() {
   
   // ป้องกันการเลื่อนของพื้นหลัง (background scrolling) บนมือถือ
   document.body.classList.add("modal-open");
+  document.documentElement.classList.add("modal-open");
   
   modal.classList.remove("hidden");
   
   const resetScroll = () => {
-    window.scrollTo(0, 0);
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
     modal.scrollTop = 0;
     const inner = modal.querySelector("div");
     if (inner) {
@@ -2931,11 +2929,13 @@ function renderMatchDraft() {
 $("btnCancelMatch").addEventListener("click", () => {
   $("matchModal").classList.add("hidden");
   document.body.classList.remove("modal-open");
+  document.documentElement.classList.remove("modal-open");
 });
 $("matchModal").addEventListener("click", e => { 
   if (e.target.id === "matchModal") {
     $("matchModal").classList.add("hidden");
     document.body.classList.remove("modal-open");
+    document.documentElement.classList.remove("modal-open");
   }
 });
 
@@ -3076,6 +3076,7 @@ $("btnSaveMatch").addEventListener("click", () => {
   saveSession({ matches });
   $("matchModal").classList.add("hidden");
   document.body.classList.remove("modal-open");
+  document.documentElement.classList.remove("modal-open");
 });
 
 $("btnViewStats").addEventListener("click", () => {
@@ -5595,3 +5596,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// ป้องกันการ Zoom (Pinch-to-zoom) บนหน้าจอสัมผัส (เช่น Safari iOS)
+document.addEventListener("touchstart", (e) => {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
