@@ -1724,7 +1724,7 @@ function renderMembers() {
             })()}
             ${m.excludeAllShuttles ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 font-extrabold rounded shrink-0">🏸 ฟรีค่าลูก</span>` : ''}
             ${(!m.excludeAllShuttles && m.shuttlesExcluded > 0) ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 font-extrabold rounded shrink-0">🏸 ยกเว้น ${m.shuttlesExcluded} ลูก</span>` : ''}
-            ${(m.manualFee !== undefined && m.manualFee !== null && m.manualFee !== "" && !isNaN(m.manualFee)) ? `<span class="text-[9px] px-1.5 py-0.25 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-extrabold rounded shrink-0" title="กำหนดราคาคงที่เองโดยผู้ดูแล">✍️ กำหนดเอง</span>` : ''}
+            ${(m.manualFee !== undefined && m.manualFee !== null && m.manualFee !== "" && !isNaN(m.manualFee)) ? `<span class="text-[10px] px-1.5 py-0.25 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-extrabold rounded shrink-0" title="กำหนดราคาคงที่เองโดยผู้ดูแล: ${m.manualFee} ฿">✍️</span>` : ''}
             ${pStats[m.id].games > 0
               ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
               : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
