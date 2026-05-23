@@ -1724,6 +1724,7 @@ function renderMembers() {
             })()}
             ${m.excludeAllShuttles ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 font-extrabold rounded shrink-0">🏸 ฟรีค่าลูก</span>` : ''}
             ${(!m.excludeAllShuttles && m.shuttlesExcluded > 0) ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 font-extrabold rounded shrink-0">🏸 ยกเว้น ${m.shuttlesExcluded} ลูก</span>` : ''}
+            ${(m.manualFee !== undefined && m.manualFee !== null && m.manualFee !== "" && !isNaN(m.manualFee)) ? `<span class="text-[9px] px-1.5 py-0.25 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-extrabold rounded shrink-0" title="กำหนดราคาคงที่เองโดยผู้ดูแล">✍️ กำหนดเอง</span>` : ''}
             ${pStats[m.id].games > 0
               ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
               : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
@@ -1822,7 +1823,7 @@ function __makeTotalsKey(s) {
   if (!s) return "";
   // สร้าง fingerprint แบบเร็ว (ไม่ใช้ JSON.stringify เพราะช้า)
   const mems = s.members || [];
-  const mKey = mems.map(m => `${m.id}|${m.shuttlesUsed || 0}|${m.isPaid ? 1 : 0}|${m.excludeAllShuttles ? 1 : 0}|${m.shuttlesExcluded || 0}`).join(";");
+  const mKey = mems.map(m => `${m.id}|${m.shuttlesUsed || 0}|${m.isPaid ? 1 : 0}|${m.excludeAllShuttles ? 1 : 0}|${m.shuttlesExcluded || 0}|${m.manualFee || ""}`).join(";");
   const matchKey = (s.matches || []).map(m => `${m.id}:${m.shuttleNumbers || ""}:${(m.exemptPlayers || []).join("-")}`).join(",");
   return `${s.courtFee}|${s.courtFeeType}|${s.shuttlePrice}|${s.otherCost}|${s.otherCostType}|${mKey}|${matchKey}`;
 }
@@ -1890,6 +1891,11 @@ function calcTotals(sessionObj) {
 
   let totalShuttleCost = 0;
   const perMember = members.map(m => {
+    // ✍️ Manual Override: ถ้ากำหนดราคาเองโดยผู้ดูแลระบบ ให้ใช้ราคานั้นโดยไม่สนการคำนวณใดๆ
+    if (m.manualFee !== undefined && m.manualFee !== null && m.manualFee !== "" && !isNaN(m.manualFee)) {
+      return +m.manualFee;
+    }
+
     const individualShuttles = (m.shuttlesUsed || 0) + (matchShuttlesMap[m.id] || 0);
     
     // คำนวณจำนวนลูกที่จะคิดเงิน โดยลบส่วนที่ยกเว้นออก
@@ -1904,7 +1910,8 @@ function calcTotals(sessionObj) {
     return courtPer + otherPer + (payableShuttles * shuttlePrice);
   });
   
-  const totalAll = totalCourtCost + totalShuttleCost + totalOtherCost;
+  // ยอดรวมทั้งหมดของเซสชัน = ผลรวมยอดของสมาชิกทุกคน
+  const totalAll = perMember.reduce((sum, cost) => sum + cost, 0);
 
   const result = { totalShuttles, totalShuttleCost, totalCourtCost, totalOtherCost, totalAll, perMember, matchShuttlesMap };
   __calcTotalsCache = { key, result };
@@ -5047,6 +5054,16 @@ function calcSessionTotals(s) {
 
   // คำนวณยอดเงินรายบุคคล
   const perMember = members.map((m) => {
+    // ✍️ Manual Override: ถ้ากำหนดราคาเองโดยผู้ดูแลระบบ ให้ใช้ราคานั้นโดยไม่สนการคำนวณใดๆ
+    if (m.manualFee !== undefined && m.manualFee !== null && m.manualFee !== "" && !isNaN(m.manualFee)) {
+      const cost = +m.manualFee;
+      totalAll += cost;
+      if (!m.isPaid) {
+        unpaidTotal += cost;
+      }
+      return cost;
+    }
+
     const individualShuttles = (m.shuttlesUsed || 0) + (matchShuttlesMap[m.id] || 0);
     
     // คำนวณจำนวนลูกที่จะคิดเงิน โดยลบส่วนที่ยกเว้นออก
@@ -5549,6 +5566,12 @@ function openPlayerSettingsModal(idx, isAdminView) {
     }
   }
 
+  // Populate Manual Fee field
+  const fldManualFee = $("fldPlayerManualFee");
+  if (fldManualFee) {
+    fldManualFee.value = (m.manualFee !== undefined && m.manualFee !== null) ? m.manualFee : "";
+  }
+
   // Render current values
   updateModalSkillUI();
   
@@ -5567,6 +5590,7 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
     const chosenBuddyId = $("fldPlayerBuddy")?.value || null;
     const exType = $("fldPlayerExclusionType")?.value || "none";
     const exCountVal = $("fldPlayerExclusionCount")?.value.trim() || "";
+    const manualFeeVal = $("fldPlayerManualFee")?.value.trim() || "";
     
     let finalExcludeAllShuttles = false;
     let finalShuttlesExcluded = 0;
@@ -5579,6 +5603,11 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
       } else {
         finalShuttlesExcluded = Math.max(1, parseInt(exCountVal, 10));
       }
+    }
+
+    let finalManualFee = null;
+    if (manualFeeVal !== "" && !isNaN(parseFloat(manualFeeVal))) {
+      finalManualFee = parseFloat(manualFeeVal);
     }
     
     if (editingPlayerIsAdmin) {
@@ -5596,7 +5625,8 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
           skill: editingPlayerSkill || null,
           buddyId: chosenBuddyId,
           excludeAllShuttles: finalExcludeAllShuttles,
-          shuttlesExcluded: finalShuttlesExcluded
+          shuttlesExcluded: finalShuttlesExcluded,
+          manualFee: finalManualFee
         };
       }
       await saveSession({ members });
@@ -5620,7 +5650,8 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
           skill: editingPlayerSkill || null,
           buddyId: chosenBuddyId,
           excludeAllShuttles: finalExcludeAllShuttles,
-          shuttlesExcluded: finalShuttlesExcluded
+          shuttlesExcluded: finalShuttlesExcluded,
+          manualFee: finalManualFee
         };
       }
       await updateDoc(ref, { members });
