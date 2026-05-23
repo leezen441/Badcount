@@ -8,7 +8,7 @@ import {
 import {
   getFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc,
   deleteDoc, onSnapshot, query, orderBy, limit, getDocs, serverTimestamp,
-  arrayUnion
+  arrayUnion, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -3850,45 +3850,53 @@ $("btnSubmitJoin").addEventListener("click", async () => {
 
   try {
     const ref = doc(db, "sessions", currentSessionId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) throw new Error("ไม่พบก๊วนนี้");
-
-    const s = snap.data();
-
-    // Guard: ถ้าปิดรับ/ปิด Court แล้ว ห้ามลงทะเบียนเพิ่ม (race condition safety)
-    if (s.status === "closed") {
-      toast("🔒 ก๊วนนี้ปิดแล้ว — ไม่รับสมาชิกเพิ่ม");
-      return;
-    }
-    if (s.registrationClosed) {
-      toast("🔒 ปิดรับสมาชิกแล้ว — ไม่สามารถลงชื่อได้");
-      return;
-    }
-
-    const members = s.members || [];
-
-    // Prevent duplicate names
-    const exists = members.some(m => (m.name || "").trim().toLowerCase() === name.toLowerCase());
-    if (exists) {
-      toast(`มีชื่อ "${name}" ในก๊วนแล้ว`);
-      return;
-    }
-
+    let errorMsg = "";
     const newId = uid();
-    trackOwnSubmit(newId);
-    
-    const skill = (s.mode === "advance") ? currentJoinSkill : null;
-    const buddyId = (s.mode === "advance") ? ($("fldJoinBuddy")?.value || null) : null;
-    
-    members.push({
-      id: newId,
-      name,
-      shuttlesUsed: 0,
-      skill: skill || null,
-      buddyId: buddyId || null
+    const skill = (currentSession && currentSession.mode === "advance") ? currentJoinSkill : null;
+    const buddyId = (currentSession && currentSession.mode === "advance") ? ($("fldJoinBuddy")?.value || null) : null;
+
+    await runTransaction(db, async (transaction) => {
+      const sfDoc = await transaction.get(ref);
+      if (!sfDoc.exists()) throw new Error("ไม่พบก๊วนนี้");
+
+      const s = sfDoc.data();
+
+      // Guard: ถ้าปิดรับ/ปิด Court แล้ว ห้ามลงทะเบียนเพิ่ม (race condition safety)
+      if (s.status === "closed") {
+        errorMsg = "🔒 ก๊วนนี้ปิดแล้ว — ไม่รับสมาชิกเพิ่ม";
+        return;
+      }
+      if (s.registrationClosed) {
+        errorMsg = "🔒 ปิดรับสมาชิกแล้ว — ไม่สามารถลงชื่อได้";
+        return;
+      }
+
+      const members = s.members || [];
+
+      // Prevent duplicate names
+      const exists = members.some(m => (m.name || "").trim().toLowerCase() === name.toLowerCase());
+      if (exists) {
+        errorMsg = `มีชื่อ "${name}" ในก๊วนแล้ว`;
+        return;
+      }
+
+      members.push({
+        id: newId,
+        name,
+        shuttlesUsed: 0,
+        skill: skill || null,
+        buddyId: buddyId || null
+      });
+
+      transaction.update(ref, { members });
     });
-    
-    await updateDoc(ref, { members });
+
+    if (errorMsg) {
+      toast(errorMsg);
+      return;
+    }
+
+    trackOwnSubmit(newId);
     addKnownMember(name); // จดจำชื่อในเครื่องของผู้เล่นไว้
 
     // รีเซ็ตการเลือกฟอร์มลงชื่อหลังกดเข้าร่วมสำเร็จ
@@ -5532,6 +5540,23 @@ async function clearAllPlayerSkills() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // LINE App In-App Browser Warning Banner
+  const isLine = /Line/i.test(navigator.userAgent);
+  const lineAlert = document.getElementById("lineBrowserAlert");
+  const closeAlertBtn = document.getElementById("btnCloseLineAlert");
+  if (isLine && lineAlert) {
+    const isDismissed = sessionStorage.getItem("lineAlertDismissed") === "true";
+    if (!isDismissed) {
+      lineAlert.classList.remove("hidden");
+    }
+  }
+  if (closeAlertBtn && lineAlert) {
+    closeAlertBtn.addEventListener("click", () => {
+      lineAlert.classList.add("hidden");
+      sessionStorage.setItem("lineAlertDismissed", "true");
+    });
+  }
+
   const clearBtn = document.getElementById("btnClearAllSkills");
   if (clearBtn) {
     clearBtn.addEventListener("click", clearAllPlayerSkills);
