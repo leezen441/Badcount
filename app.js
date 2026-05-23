@@ -1247,16 +1247,6 @@ function renderSession() {
   updatePaymentReminder();
   updateCleanupButton();
   
-  // Hide or show the delete session button based on whether we are in manager mode
-  const btnDelete = $("btnDeleteSession");
-  if (btnDelete) {
-    if (isInManagerLinkView() || isManagerAuthed()) {
-      btnDelete.classList.add("hidden");
-    } else {
-      btnDelete.classList.remove("hidden");
-    }
-  }
-  
   // If matchmaking modal is open, re-render it in real-time to reflect any updates
   if ($("matchModal") && !$("matchModal").classList.contains("hidden")) {
     renderMatchDraft();
@@ -1864,13 +1854,14 @@ function calcTotals(sessionObj) {
     const exemptCount = activeExempts.length;
 
     if (exemptCount > 0 && exemptCount < pIds.length) {
-      // มีบางคนได้สิทธิ์ยกเว้น: ตัวหารน้อยลง คนที่เหลือแบกรับภาระค่าลูกของคนที่ถูกยกเว้นเพิ่มขึ้น
-      const payingCount = pIds.length - exemptCount;
-      const multiplier = pIds.length / payingCount; // เช่น ยกเว้น 2 คน จาก 4 คน -> multiplier = 4/2 = 2 เท่า!
+      // มีบางคนได้สิทธิ์ยกเว้น: คนที่ถูกยกเว้นได้ลูกฟรี (จ่าย 0)
+      // คนที่ไม่ถูกยกเว้นจ่ายเฉพาะส่วนของตัวเอง (ไม่ต้องแบกของคนที่ยกเว้น)
+      // → ค่าใช้จ่ายรวมของเกมนั้นลดลง ไม่ใช่ redistribute
       pIds.forEach(id => {
         if (!exemptPlayers.includes(id)) {
-          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + (count * multiplier);
+          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
         }
+        // exempt players ไม่ได้รับลูกเพิ่ม (ค่าเริ่มต้น 0)
       });
     } else {
       // ไม่มีคนยกเว้น หรือยกเว้นทุกคน: จ่ายเฉลี่ยเท่ากันปกติ
@@ -2260,10 +2251,6 @@ $("btnCloseSession").addEventListener("click", () => {
 
 // Delete
 $("btnDeleteSession").addEventListener("click", async () => {
-  if (isInManagerLinkView() || isManagerAuthed()) {
-    toast("เฉพาะ Admin เท่านั้นที่สามารถลบก๊วนได้");
-    return;
-  }
   if (!confirm("ลบก๊วนนี้ทิ้ง? (ไม่สามารถกู้คืนได้)")) return;
   const deletingId = currentSessionId;
   try {
@@ -5012,27 +4999,9 @@ function calcSessionTotals(s) {
 
     const count = parseShuttleCount(match.shuttleNumbers);
     matchShuttlesTotal += count;
-    
-    // ตรวจสอบรายชื่อสมาชิกที่ถูกยกเว้นค่าลูกในเกมนี้
-    const exemptPlayers = match.exemptPlayers || [];
-    const activeExempts = pIds.filter(id => exemptPlayers.includes(id));
-    const exemptCount = activeExempts.length;
-
-    if (exemptCount > 0 && exemptCount < pIds.length) {
-      // มีบางคนได้สิทธิ์ยกเว้น: ตัวหารน้อยลง คนที่เหลือแบกรับภาระค่าลูกของคนที่ถูกยกเว้นเพิ่มขึ้น
-      const payingCount = pIds.length - exemptCount;
-      const multiplier = pIds.length / payingCount; // เช่น ยกเว้น 2 คน จาก 4 คน -> multiplier = 4/2 = 2 เท่า!
-      pIds.forEach(id => {
-        if (!exemptPlayers.includes(id)) {
-          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + (count * multiplier);
-        }
-      });
-    } else {
-      // ไม่มีคนยกเว้น หรือยกเว้นทุกคน: จ่ายเฉลี่ยเท่ากันปกติ
-      pIds.forEach(id => {
-        matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
-      });
-    }
+    pIds.forEach(id => {
+      matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+    });
   });
 
   const totalShuttles = manualShuttles + matchShuttlesTotal;
@@ -5047,16 +5016,7 @@ function calcSessionTotals(s) {
   // คำนวณยอดเงินรายบุคคล
   const perMember = members.map((m) => {
     const individualShuttles = (m.shuttlesUsed || 0) + (matchShuttlesMap[m.id] || 0);
-    
-    // คำนวณจำนวนลูกที่จะคิดเงิน โดยลบส่วนที่ยกเว้นออก
-    let payableShuttles = individualShuttles;
-    if (m.excludeAllShuttles) {
-      payableShuttles = 0;
-    } else if (m.shuttlesExcluded && m.shuttlesExcluded > 0) {
-      payableShuttles = Math.max(0, individualShuttles - m.shuttlesExcluded);
-    }
-
-    const cost = courtPer + otherPer + (payableShuttles * shuttlePrice);
+    const cost = courtPer + otherPer + (individualShuttles * shuttlePrice);
     
     totalAll += cost;
 
