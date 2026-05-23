@@ -1247,6 +1247,16 @@ function renderSession() {
   updatePaymentReminder();
   updateCleanupButton();
   
+  // Hide or show the delete session button based on whether we are in manager mode
+  const btnDelete = $("btnDeleteSession");
+  if (btnDelete) {
+    if (isInManagerLinkView() || isManagerAuthed()) {
+      btnDelete.classList.add("hidden");
+    } else {
+      btnDelete.classList.remove("hidden");
+    }
+  }
+  
   // If matchmaking modal is open, re-render it in real-time to reflect any updates
   if ($("matchModal") && !$("matchModal").classList.contains("hidden")) {
     renderMatchDraft();
@@ -1854,14 +1864,13 @@ function calcTotals(sessionObj) {
     const exemptCount = activeExempts.length;
 
     if (exemptCount > 0 && exemptCount < pIds.length) {
-      // มีบางคนได้สิทธิ์ยกเว้น: คนที่ถูกยกเว้นได้ลูกฟรี (จ่าย 0)
-      // คนที่ไม่ถูกยกเว้นจ่ายเฉพาะส่วนของตัวเอง (ไม่ต้องแบกของคนที่ยกเว้น)
-      // → ค่าใช้จ่ายรวมของเกมนั้นลดลง ไม่ใช่ redistribute
+      // มีบางคนได้สิทธิ์ยกเว้น: ตัวหารน้อยลง คนที่เหลือแบกรับภาระค่าลูกของคนที่ถูกยกเว้นเพิ่มขึ้น
+      const payingCount = pIds.length - exemptCount;
+      const multiplier = pIds.length / payingCount; // เช่น ยกเว้น 2 คน จาก 4 คน -> multiplier = 4/2 = 2 เท่า!
       pIds.forEach(id => {
         if (!exemptPlayers.includes(id)) {
-          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + (count * multiplier);
         }
-        // exempt players ไม่ได้รับลูกเพิ่ม (ค่าเริ่มต้น 0)
       });
     } else {
       // ไม่มีคนยกเว้น หรือยกเว้นทุกคน: จ่ายเฉลี่ยเท่ากันปกติ
@@ -2251,6 +2260,10 @@ $("btnCloseSession").addEventListener("click", () => {
 
 // Delete
 $("btnDeleteSession").addEventListener("click", async () => {
+  if (isInManagerLinkView() || isManagerAuthed()) {
+    toast("เฉพาะ Admin เท่านั้นที่สามารถลบก๊วนได้");
+    return;
+  }
   if (!confirm("ลบก๊วนนี้ทิ้ง? (ไม่สามารถกู้คืนได้)")) return;
   const deletingId = currentSessionId;
   try {
@@ -2662,28 +2675,29 @@ function renderMatchDraft() {
     $("teamAStrength").textContent = `Strength: ${strA.toFixed(1)}`;
     $("teamBStrength").textContent = `Strength: ${strB.toFixed(1)}`;
 
-    // Update team-level exempt buttons UI
+    // Update team-level exempt buttons UI (บวกลูก: team who carries the fee)
     const isExemptA = teamAPlayers.length > 0 && teamAPlayers.every(id => matchDraftExempts.includes(id));
+    const isExemptB = teamBPlayers.length > 0 && teamBPlayers.every(id => matchDraftExempts.includes(id));
+
     const btnExemptA = $("btnExemptTeamA");
     if (btnExemptA) {
-      if (isExemptA) {
-        btnExemptA.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-amber-400 dark:bg-amber-500 text-slate-900 font-extrabold shadow-sm ring-2 ring-amber-400 dark:ring-amber-500 ring-offset-1";
-        btnExemptA.title = "ยกเลิกการยกเว้นค่าลูกทีม A 🏸";
+      if (isExemptB) {
+        btnExemptA.className = "px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition-all active:scale-95 bg-amber-400 dark:bg-amber-500 text-slate-900 shadow-sm ring-2 ring-amber-400 dark:ring-amber-500 ring-offset-1 dark:ring-offset-slate-950 flex items-center gap-0.5";
+        btnExemptA.title = "ยกเลิก บวกลูกทีม A (ทีม A รับผิดชอบ) 🏸";
       } else {
-        btnExemptA.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm";
-        btnExemptA.title = "ยกเว้นค่าลูกทีม A (ทีม B ช่วยจ่ายเพิ่ม) 🏸";
+        btnExemptA.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all active:scale-95 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm flex items-center gap-0.5";
+        btnExemptA.title = "บวกลูกทีม A (ทีม A รับผิดชอบค่าลูกทั้งหมด) 🏸";
       }
     }
 
-    const isExemptB = teamBPlayers.length > 0 && teamBPlayers.every(id => matchDraftExempts.includes(id));
     const btnExemptB = $("btnExemptTeamB");
     if (btnExemptB) {
-      if (isExemptB) {
-        btnExemptB.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-amber-400 dark:bg-amber-500 text-slate-900 font-extrabold shadow-sm ring-2 ring-amber-400 dark:ring-amber-500 ring-offset-1";
-        btnExemptB.title = "ยกเลิกการยกเว้นค่าลูกทีม B 🏸";
+      if (isExemptA) {
+        btnExemptB.className = "px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition-all active:scale-95 bg-amber-400 dark:bg-amber-500 text-slate-900 shadow-sm ring-2 ring-amber-400 dark:ring-amber-500 ring-offset-1 dark:ring-offset-slate-950 flex items-center gap-0.5";
+        btnExemptB.title = "ยกเลิก บวกลูกทีม B (ทีม B รับผิดชอบ) 🏸";
       } else {
-        btnExemptB.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm";
-        btnExemptB.title = "ยกเว้นค่าลูกทีม B (ทีม A ช่วยจ่ายเพิ่ม) 🏸";
+        btnExemptB.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all active:scale-95 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm flex items-center gap-0.5";
+        btnExemptB.title = "บวกลูกทีม B (ทีม B รับผิดชอบค่าลูกทั้งหมด) 🏸";
       }
     }
   } else {
@@ -4999,9 +5013,27 @@ function calcSessionTotals(s) {
 
     const count = parseShuttleCount(match.shuttleNumbers);
     matchShuttlesTotal += count;
-    pIds.forEach(id => {
-      matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
-    });
+    
+    // ตรวจสอบรายชื่อสมาชิกที่ถูกยกเว้นค่าลูกในเกมนี้
+    const exemptPlayers = match.exemptPlayers || [];
+    const activeExempts = pIds.filter(id => exemptPlayers.includes(id));
+    const exemptCount = activeExempts.length;
+
+    if (exemptCount > 0 && exemptCount < pIds.length) {
+      // มีบางคนได้สิทธิ์ยกเว้น: ตัวหารน้อยลง คนที่เหลือแบกรับภาระค่าลูกของคนที่ถูกยกเว้นเพิ่มขึ้น
+      const payingCount = pIds.length - exemptCount;
+      const multiplier = pIds.length / payingCount; // เช่น ยกเว้น 2 คน จาก 4 คน -> multiplier = 4/2 = 2 เท่า!
+      pIds.forEach(id => {
+        if (!exemptPlayers.includes(id)) {
+          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + (count * multiplier);
+        }
+      });
+    } else {
+      // ไม่มีคนยกเว้น หรือยกเว้นทุกคน: จ่ายเฉลี่ยเท่ากันปกติ
+      pIds.forEach(id => {
+        matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+      });
+    }
   });
 
   const totalShuttles = manualShuttles + matchShuttlesTotal;
@@ -5016,7 +5048,16 @@ function calcSessionTotals(s) {
   // คำนวณยอดเงินรายบุคคล
   const perMember = members.map((m) => {
     const individualShuttles = (m.shuttlesUsed || 0) + (matchShuttlesMap[m.id] || 0);
-    const cost = courtPer + otherPer + (individualShuttles * shuttlePrice);
+    
+    // คำนวณจำนวนลูกที่จะคิดเงิน โดยลบส่วนที่ยกเว้นออก
+    let payableShuttles = individualShuttles;
+    if (m.excludeAllShuttles) {
+      payableShuttles = 0;
+    } else if (m.shuttlesExcluded && m.shuttlesExcluded > 0) {
+      payableShuttles = Math.max(0, individualShuttles - m.shuttlesExcluded);
+    }
+
+    const cost = courtPer + otherPer + (payableShuttles * shuttlePrice);
     
     totalAll += cost;
 
@@ -5768,22 +5809,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const pIdsA = [pA1, pA2].filter(Boolean);
       if (pIdsA.length === 0) return toast("เลือกผู้เล่นทีม A ก่อนครับ");
 
-      const allAExempt = pIdsA.every(id => matchDraftExempts.includes(id));
-      if (allAExempt) {
-        // Clear Team A exemptions
-        matchDraftExempts = matchDraftExempts.filter(id => !pIdsA.includes(id));
-        toast("ยกเลิกการยกเว้นค่าลูกทีม A 🏸");
+      const pB1 = matchDraftPlayers[2];
+      const pB2 = matchDraftPlayers[3];
+      const pIdsB = [pB1, pB2].filter(Boolean);
+      if (pIdsB.length === 0) return toast("เลือกผู้เล่นทีม B ก่อนครับ");
+
+      const allBExempt = pIdsB.every(id => matchDraftExempts.includes(id));
+      if (allBExempt) {
+        // Clear all team exemptions (making neither team responsible)
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsB.includes(id) && !pIdsA.includes(id));
+        toast("ยกเลิก บวกลูกทีม A 🏸");
       } else {
-        // Exempt Team A, clear Team B
-        const pB1 = matchDraftPlayers[2];
-        const pB2 = matchDraftPlayers[3];
-        const pIdsB = [pB1, pB2].filter(Boolean);
-        
-        matchDraftExempts = matchDraftExempts.filter(id => !pIdsB.includes(id));
-        pIdsA.forEach(id => {
+        // Exempt Team B (making Team A responsible), and clear Team A exemption
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsA.includes(id));
+        pIdsB.forEach(id => {
           if (!matchDraftExempts.includes(id)) matchDraftExempts.push(id);
         });
-        toast("ยกเว้นค่าลูก Team A (Team B ช่วยจ่ายเพิ่ม) 🏸");
+        toast("บวกลูก Team A (ทีม A รับผิดชอบค่าลูกทั้งหมด) 🏸");
       }
       renderMatchDraft();
     });
@@ -5798,22 +5840,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const pIdsB = [pB1, pB2].filter(Boolean);
       if (pIdsB.length === 0) return toast("เลือกผู้เล่นทีม B ก่อนครับ");
 
-      const allBExempt = pIdsB.every(id => matchDraftExempts.includes(id));
-      if (allBExempt) {
-        // Clear Team B exemptions
-        matchDraftExempts = matchDraftExempts.filter(id => !pIdsB.includes(id));
-        toast("ยกเลิกการยกเว้นค่าลูกทีม B 🏸");
+      const pA1 = matchDraftPlayers[0];
+      const pA2 = matchDraftPlayers[1];
+      const pIdsA = [pA1, pA2].filter(Boolean);
+      if (pIdsA.length === 0) return toast("เลือกผู้เล่นทีม A ก่อนครับ");
+
+      const allAExempt = pIdsA.every(id => matchDraftExempts.includes(id));
+      if (allAExempt) {
+        // Clear all team exemptions
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsA.includes(id) && !pIdsB.includes(id));
+        toast("ยกเลิก บวกลูกทีม B 🏸");
       } else {
-        // Exempt Team B, clear Team A
-        const pA1 = matchDraftPlayers[0];
-        const pA2 = matchDraftPlayers[1];
-        const pIdsA = [pA1, pA2].filter(Boolean);
-        
-        matchDraftExempts = matchDraftExempts.filter(id => !pIdsA.includes(id));
-        pIdsB.forEach(id => {
+        // Exempt Team A (making Team B responsible), and clear Team B exemption
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsB.includes(id));
+        pIdsA.forEach(id => {
           if (!matchDraftExempts.includes(id)) matchDraftExempts.push(id);
         });
-        toast("ยกเว้นค่าลูก Team B (Team A ช่วยจ่ายเพิ่ม) 🏸");
+        toast("บวกลูก Team B (ทีม B รับผิดชอบค่าลูกทั้งหมด) 🏸");
       }
       renderMatchDraft();
     });
