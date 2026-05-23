@@ -395,28 +395,28 @@ if (document.readyState === "loading") {
 }
 
 // ---------- Authentication ----------
-// SHA-256 ของรหัส "SundayHH@" — ไม่เก็บรหัสตรงๆ ในซอร์ส
-const PASSCODE_HASH = "1f82ca11405f1594f1b6fde356b019b74e3bbd210576162f84b46223522daf7d";
+// SHA-256 ของรหัส "KDY@A" — ไม่เก็บรหัสตรงๆ ในซอร์ส
+const PASSCODE_HASH = "36fd629ba9f7c104345ba12e934d0f1ff530d377e4c62d63662c5f2889715fff";
 const AUTH_KEY = "bcAuthExp";
 const AUTH_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 วัน
-
+ 
 async function hashString(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
-
+ 
 function isAuthed() {
   const exp = parseInt(localStorage.getItem(AUTH_KEY) || "0", 10);
   return exp > Date.now();
 }
-
+ 
 function setAuthed() {
   localStorage.setItem(AUTH_KEY, String(Date.now() + AUTH_DURATION_MS));
 }
-
+ 
 // ---------- Manager Link Authentication ----------
 // รหัสคงที่สำหรับ manager (ผู้ช่วยจัดการกลุ่มรายวัน)
-const MANAGER_PASSCODE = "SHH123";
+const MANAGER_PASSCODE = "KDY@M";
 const MANAGER_AUTH_KEY = "bcManagerAuth";
 
 function isManagerAuthed() {
@@ -1712,6 +1712,8 @@ function renderMembers() {
               }
               return "";
             })()}
+            ${m.excludeAllShuttles ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 font-extrabold rounded shrink-0">🏸 ฟรีค่าลูก</span>` : ''}
+            ${(!m.excludeAllShuttles && m.shuttlesExcluded > 0) ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 font-extrabold rounded shrink-0">🏸 ยกเว้น ${m.shuttlesExcluded} ลูก</span>` : ''}
             ${pStats[m.id].games > 0
               ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
               : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
@@ -1810,8 +1812,8 @@ function __makeTotalsKey(s) {
   if (!s) return "";
   // สร้าง fingerprint แบบเร็ว (ไม่ใช้ JSON.stringify เพราะช้า)
   const mems = s.members || [];
-  const mKey = mems.map(m => `${m.id}|${m.shuttlesUsed || 0}|${m.isPaid ? 1 : 0}`).join(";");
-  const matchKey = (s.matches || []).map(m => `${m.id}:${m.shuttleNumbers || ""}`).join(",");
+  const mKey = mems.map(m => `${m.id}|${m.shuttlesUsed || 0}|${m.isPaid ? 1 : 0}|${m.excludeAllShuttles ? 1 : 0}|${m.shuttlesExcluded || 0}`).join(";");
+  const matchKey = (s.matches || []).map(m => `${m.id}:${m.shuttleNumbers || ""}:${(m.exemptPlayers || []).join("-")}`).join(",");
   return `${s.courtFee}|${s.courtFeeType}|${s.shuttlePrice}|${s.otherCost}|${s.otherCostType}|${mKey}|${matchKey}`;
 }
 
@@ -1845,9 +1847,28 @@ function calcTotals(sessionObj) {
     
     const count = parseShuttleCount(match.shuttleNumbers);
     matchShuttlesTotal += count;
-    pIds.forEach(id => {
-      matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
-    });
+
+    // ตรวจสอบรายชื่อสมาชิกที่ถูกยกเว้นค่าลูกในเกมนี้
+    const exemptPlayers = match.exemptPlayers || [];
+    const activeExempts = pIds.filter(id => exemptPlayers.includes(id));
+    const exemptCount = activeExempts.length;
+
+    if (exemptCount > 0 && exemptCount < pIds.length) {
+      // มีบางคนได้สิทธิ์ยกเว้น: คนที่ถูกยกเว้นได้ลูกฟรี (จ่าย 0)
+      // คนที่ไม่ถูกยกเว้นจ่ายเฉพาะส่วนของตัวเอง (ไม่ต้องแบกของคนที่ยกเว้น)
+      // → ค่าใช้จ่ายรวมของเกมนั้นลดลง ไม่ใช่ redistribute
+      pIds.forEach(id => {
+        if (!exemptPlayers.includes(id)) {
+          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+        }
+        // exempt players ไม่ได้รับลูกเพิ่ม (ค่าเริ่มต้น 0)
+      });
+    } else {
+      // ไม่มีคนยกเว้น หรือยกเว้นทุกคน: จ่ายเฉลี่ยเท่ากันปกติ
+      pIds.forEach(id => {
+        matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+      });
+    }
   });
 
   const totalShuttles = manualShuttles + matchShuttlesTotal;
@@ -1861,8 +1882,17 @@ function calcTotals(sessionObj) {
   let totalShuttleCost = 0;
   const perMember = members.map(m => {
     const individualShuttles = (m.shuttlesUsed || 0) + (matchShuttlesMap[m.id] || 0);
-    totalShuttleCost += individualShuttles * shuttlePrice;
-    return courtPer + otherPer + (individualShuttles * shuttlePrice);
+    
+    // คำนวณจำนวนลูกที่จะคิดเงิน โดยลบส่วนที่ยกเว้นออก
+    let payableShuttles = individualShuttles;
+    if (m.excludeAllShuttles) {
+      payableShuttles = 0;
+    } else if (m.shuttlesExcluded && m.shuttlesExcluded > 0) {
+      payableShuttles = Math.max(0, individualShuttles - m.shuttlesExcluded);
+    }
+    
+    totalShuttleCost += payableShuttles * shuttlePrice;
+    return courtPer + otherPer + (payableShuttles * shuttlePrice);
   });
   
   const totalAll = totalCourtCost + totalShuttleCost + totalOtherCost;
@@ -1931,14 +1961,24 @@ function renderMatches() {
         <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
           ${(() => {
             const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
+            const exempts = m.exemptPlayers || [];
+            
+            const formatName = (pid) => {
+              const name = escapeHtml(membersMap[pid] || '?');
+              if (exempts.includes(pid)) {
+                return `<span class="line-through text-slate-400 dark:text-slate-500 font-normal" title="ฟรีค่าลูกในเกมนี้">${name} 🏸</span>`;
+              }
+              return name;
+            };
+
             if (pIds.length === 4 && useTeams()) {
-              const name1 = escapeHtml(membersMap[pIds[0]] || '?');
-              const name2 = escapeHtml(membersMap[pIds[1]] || '?');
-              const name3 = escapeHtml(membersMap[pIds[2]] || '?');
-              const name4 = escapeHtml(membersMap[pIds[3]] || '?');
-              return `<span class="text-rose-600 dark:text-rose-400 font-bold">${name1}, ${name2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span class="text-sky-600 dark:text-sky-400 font-bold">${name3}, ${name4}</span>`;
+              const n1 = formatName(pIds[0]);
+              const n2 = formatName(pIds[1]);
+              const n3 = formatName(pIds[2]);
+              const n4 = formatName(pIds[3]);
+              return `<span class="text-rose-600 dark:text-rose-400 font-bold">${n1}, ${n2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span class="text-sky-600 dark:text-sky-400 font-bold">${n3}, ${n4}</span>`;
             }
-            return pIds.map(pid => escapeHtml(membersMap[pid] || '?')).join(", ");
+            return pIds.map(formatName).join(", ");
           })()}
         </div>
       </div>
@@ -1957,6 +1997,7 @@ function renderMatches() {
 
       editingMatchId = matchId;
       matchDraftPlayers = [...(match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean))];
+      matchDraftExempts = [...(match.exemptPlayers || [])];
       $("fldMatchShuttles").value = match.shuttleNumbers || "";
       $("matchModalTitle").textContent = "✏️ แก้ไขเกม";
 
@@ -2236,6 +2277,7 @@ $("btnDeleteSession").addEventListener("click", async () => {
 // MATCH & STATS
 // ============================================================
 let matchDraftPlayers = [];
+let matchDraftExempts = [];
 let editingMatchId = null;
 
 $("btnAddMatch").addEventListener("click", () => {
@@ -2244,6 +2286,7 @@ $("btnAddMatch").addEventListener("click", () => {
   
   editingMatchId = null;
   matchDraftPlayers = [];
+  matchDraftExempts = [];
   $("fldMatchShuttles").value = "";
   $("matchModalTitle").textContent = "🏸 จัดเกมใหม่";
   renderMatchDraft();
@@ -2561,9 +2604,10 @@ function renderMatchDraft() {
           const editSkillBadge = isAdvanceMode()
             ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-rose-700 hover:bg-rose-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
             : '';
+          const isExempt = matchDraftExempts.includes(id);
           teamAHtml += `
-            <div class="inline-flex items-center bg-rose-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ring-rose-300 dark:ring-rose-900/50 ring-offset-1 pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
-              <span class="truncate max-w-[65px]">${escapeHtml(m.name)}</span>
+            <div class="inline-flex items-center bg-rose-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-rose-300 dark:ring-rose-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
+              <span class="truncate max-w-[65px] ${isExempt ? 'text-amber-200 line-through font-normal' : ''}">${escapeHtml(m.name)}</span>
               ${editSkillBadge}
               <button data-draft-id="${id}" class="hover:bg-rose-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออกจากทีม A">✕</button>
             </div>
@@ -2591,9 +2635,10 @@ function renderMatchDraft() {
           const editSkillBadge = isAdvanceMode()
             ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-sky-700 hover:bg-sky-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
             : '';
+          const isExempt = matchDraftExempts.includes(id);
           teamBHtml += `
-            <div class="inline-flex items-center bg-sky-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ring-sky-300 dark:ring-sky-900/50 ring-offset-1 pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
-              <span class="truncate max-w-[65px]">${escapeHtml(m.name)}</span>
+            <div class="inline-flex items-center bg-sky-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-sky-300 dark:ring-sky-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
+              <span class="truncate max-w-[65px] ${isExempt ? 'text-amber-200 line-through font-normal' : ''}">${escapeHtml(m.name)}</span>
               ${editSkillBadge}
               <button data-draft-id="${id}" class="hover:bg-sky-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออกจากทีม B">✕</button>
             </div>
@@ -2616,6 +2661,31 @@ function renderMatchDraft() {
     
     $("teamAStrength").textContent = `Strength: ${strA.toFixed(1)}`;
     $("teamBStrength").textContent = `Strength: ${strB.toFixed(1)}`;
+
+    // Update team-level exempt buttons UI
+    const isExemptA = teamAPlayers.length > 0 && teamAPlayers.every(id => matchDraftExempts.includes(id));
+    const btnExemptA = $("btnExemptTeamA");
+    if (btnExemptA) {
+      if (isExemptA) {
+        btnExemptA.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-amber-400 dark:bg-amber-500 text-slate-900 font-extrabold shadow-sm ring-2 ring-amber-400 dark:ring-amber-500 ring-offset-1";
+        btnExemptA.title = "ยกเลิกการยกเว้นค่าลูกทีม A 🏸";
+      } else {
+        btnExemptA.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm";
+        btnExemptA.title = "ยกเว้นค่าลูกทีม A (ทีม B ช่วยจ่ายเพิ่ม) 🏸";
+      }
+    }
+
+    const isExemptB = teamBPlayers.length > 0 && teamBPlayers.every(id => matchDraftExempts.includes(id));
+    const btnExemptB = $("btnExemptTeamB");
+    if (btnExemptB) {
+      if (isExemptB) {
+        btnExemptB.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-amber-400 dark:bg-amber-500 text-slate-900 font-extrabold shadow-sm ring-2 ring-amber-400 dark:ring-amber-500 ring-offset-1";
+        btnExemptB.title = "ยกเลิกการยกเว้นค่าลูกทีม B 🏸";
+      } else {
+        btnExemptB.className = "w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all active:scale-95 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm";
+        btnExemptB.title = "ยกเว้นค่าลูกทีม B (ทีม A ช่วยจ่ายเพิ่ม) 🏸";
+      }
+    }
   } else {
     selectedBox?.classList.remove("hidden");
     teamBoxes?.classList.add("hidden");
@@ -2628,10 +2698,17 @@ function renderMatchDraft() {
       const editSkillBadge = isAdvanceMode()
         ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
         : '';
+      const isExempt = matchDraftExempts.includes(id);
+      const exemptBtn = `
+        <button data-act="toggle-exempt" data-player-id="${id}" class="w-4 h-4 flex items-center justify-center rounded-full text-[10px] transition-transform active:scale-95 shrink-0 ${isExempt ? 'bg-amber-400 text-slate-900 font-extrabold' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}" title="${isExempt ? 'จ่ายปกติ' : 'ยกเว้นค่าลูกเกมนี้'}">
+          🏸
+        </button>
+      `;
       selHtml += `
-        <div class="inline-flex items-center bg-emerald-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-900/50 ring-offset-1 pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
-          <span class="truncate max-w-[65px]">${escapeHtml(m.name)}</span>
+        <div class="inline-flex items-center bg-emerald-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-emerald-300 dark:ring-emerald-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
+          <span class="truncate max-w-[65px] ${isExempt ? 'text-amber-200 line-through font-normal' : ''}">${escapeHtml(m.name)}</span>
           ${editSkillBadge}
+          ${exemptBtn}
           <button data-draft-id="${id}" class="hover:bg-emerald-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออก">✕</button>
         </div>
       `;
@@ -2790,6 +2867,8 @@ function renderMatchDraft() {
                 }
                 return "";
               })()}
+              ${m.excludeAllShuttles ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 font-extrabold rounded shrink-0">🏸 ฟรีค่าลูก</span>` : ''}
+              ${(!m.excludeAllShuttles && m.shuttlesExcluded > 0) ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 font-extrabold rounded shrink-0">🏸 ยกเว้น ${m.shuttlesExcluded} ลูก</span>` : ''}
             </button>
             
             <div class="flex items-center gap-1.5 shrink-0">
@@ -2838,6 +2917,7 @@ function renderMatchDraft() {
         const idx = matchDraftPlayers.indexOf(pid);
         if (idx !== -1) {
           matchDraftPlayers[idx] = null;
+          matchDraftExempts = matchDraftExempts.filter(id => id !== pid);
         }
       } else {
         const m = allMembers.find(x => x.id === pid);
@@ -2867,6 +2947,20 @@ function renderMatchDraft() {
         } else {
           return toast("เลือกได้สูงสุด 4 คนครับ");
         }
+      }
+      renderMatchDraft();
+    });
+  });
+
+  // Wire up "toggle-exempt" buttons inside Match Modal
+  $("matchModal").querySelectorAll("button[data-act='toggle-exempt']").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // ป้องกันการไปโดนคลิกถอดถอนผู้เล่นหลัก
+      const pid = btn.dataset.playerId;
+      if (matchDraftExempts.includes(pid)) {
+        matchDraftExempts = matchDraftExempts.filter(id => id !== pid);
+      } else {
+        matchDraftExempts.push(pid);
       }
       renderMatchDraft();
     });
@@ -2975,8 +3069,8 @@ if (autoDraftBtn) {
 
       if (picked && picked.length === 4) {
         if (useTeams()) {
-          // ส่ง teammateCount (ไม่ใช่ partnerCount!) เพื่อให้รู้ "ใครเคยเป็นเพื่อนร่วมทีม"
-          // → จะได้ split ใหม่ที่ไม่ซ้ำคู่ทีมเดิม
+          // ส่ง teammateCount (ไม่ใช่ partnerCount!) เข้าไป
+          // เพราะ findBestTeamSplit ต้องการรู้ "ใครเคยเป็นเพื่อนร่วมทีม" ไม่ใช่ "ใครเคยอยู่เกมเดียวกัน"
           const split = findBestTeamSplit(picked, allMembers, teammateCount);
           matchDraftPlayers = [split.teamA[0] || null, split.teamA[1] || null, split.teamB[0] || null, split.teamB[1] || null];
         } else {
@@ -3029,15 +3123,16 @@ $("btnSaveMatch").addEventListener("click", () => {
   }
 
   const finalDraftPlayers = [...matchDraftPlayers];
+  const finalDraftExempts = [...matchDraftExempts];
 
   if (editingMatchId) {
     const idx = matches.findIndex(x => x.id === editingMatchId);
     if (idx !== -1) {
-      matches[idx] = { ...matches[idx], players: finalDraftPlayers, shuttleNumbers: shuttles };
+      matches[idx] = { ...matches[idx], players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts };
       delete matches[idx].a1; delete matches[idx].a2; delete matches[idx].b1; delete matches[idx].b2;
     }
   } else {
-    matches.push({ id: uid(), players: finalDraftPlayers, shuttleNumbers: shuttles });
+    matches.push({ id: uid(), players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts });
   }
 
   saveSession({ matches });
@@ -5393,6 +5488,26 @@ function openPlayerSettingsModal(idx, isAdminView) {
     populateBuddyDropdown($("fldPlayerBuddy"), editingPlayerBuddyId, m.id);
   }
   
+  // Populate Shuttle Exclusion fields
+  const fldExType = $("fldPlayerExclusionType");
+  const fldExCount = $("fldPlayerExclusionCount");
+  const countSec = $("playerExclusionCountSection");
+  if (fldExType && fldExCount && countSec) {
+    if (m.excludeAllShuttles) {
+      fldExType.value = "all";
+      fldExCount.value = "";
+      countSec.classList.add("hidden");
+    } else if (m.shuttlesExcluded && m.shuttlesExcluded > 0) {
+      fldExType.value = "partial";
+      fldExCount.value = m.shuttlesExcluded;
+      countSec.classList.remove("hidden");
+    } else {
+      fldExType.value = "none";
+      fldExCount.value = "";
+      countSec.classList.add("hidden");
+    }
+  }
+
   // Render current values
   updateModalSkillUI();
   
@@ -5409,6 +5524,21 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
   try {
     const ref = doc(db, "sessions", currentSessionId);
     const chosenBuddyId = $("fldPlayerBuddy")?.value || null;
+    const exType = $("fldPlayerExclusionType")?.value || "none";
+    const exCountVal = $("fldPlayerExclusionCount")?.value.trim() || "";
+    
+    let finalExcludeAllShuttles = false;
+    let finalShuttlesExcluded = 0;
+    
+    if (exType === "all") {
+      finalExcludeAllShuttles = true;
+    } else if (exType === "partial") {
+      if (exCountVal === "" || isNaN(parseInt(exCountVal, 10))) {
+        finalExcludeAllShuttles = true;
+      } else {
+        finalShuttlesExcluded = Math.max(1, parseInt(exCountVal, 10));
+      }
+    }
     
     if (editingPlayerIsAdmin) {
       // Admin View - modify in currentSession.members directly
@@ -5423,7 +5553,9 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
         members[editingPlayerIdx] = {
           ...currentPlayer,
           skill: editingPlayerSkill || null,
-          buddyId: chosenBuddyId
+          buddyId: chosenBuddyId,
+          excludeAllShuttles: finalExcludeAllShuttles,
+          shuttlesExcluded: finalShuttlesExcluded
         };
       }
       await saveSession({ members });
@@ -5445,11 +5577,13 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
         members[editingPlayerIdx] = {
           ...currentPlayer,
           skill: editingPlayerSkill || null,
-          buddyId: chosenBuddyId
+          buddyId: chosenBuddyId,
+          excludeAllShuttles: finalExcludeAllShuttles,
+          shuttlesExcluded: finalShuttlesExcluded
         };
       }
       await updateDoc(ref, { members });
-      toast("ตั้งค่าระดับมือ/Buddy เรียบร้อยครับ ✨");
+      toast("ตั้งค่าผู้เล่นเรียบร้อยครับ ✨");
     }
     
     $("playerSettingsModal").classList.add("hidden");
@@ -5607,6 +5741,81 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.target === pauseModal) {
         pauseModal.classList.add("hidden");
       }
+    });
+  }
+
+  // Bind Shuttle Exclusion event listeners inside player settings modal
+  const playerExclusionTypeSelect = document.getElementById("fldPlayerExclusionType");
+  if (playerExclusionTypeSelect) {
+    playerExclusionTypeSelect.addEventListener("change", () => {
+      const type = playerExclusionTypeSelect.value;
+      const countSection = $("playerExclusionCountSection");
+      if (type === "partial") {
+        countSection.classList.remove("hidden");
+      } else {
+        countSection.classList.add("hidden");
+      }
+    });
+  }
+
+  // Bind team-level shuttle exemption button clicks
+  const btnExemptA = document.getElementById("btnExemptTeamA");
+  if (btnExemptA) {
+    btnExemptA.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const pA1 = matchDraftPlayers[0];
+      const pA2 = matchDraftPlayers[1];
+      const pIdsA = [pA1, pA2].filter(Boolean);
+      if (pIdsA.length === 0) return toast("เลือกผู้เล่นทีม A ก่อนครับ");
+
+      const allAExempt = pIdsA.every(id => matchDraftExempts.includes(id));
+      if (allAExempt) {
+        // Clear Team A exemptions
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsA.includes(id));
+        toast("ยกเลิกการยกเว้นค่าลูกทีม A 🏸");
+      } else {
+        // Exempt Team A, clear Team B
+        const pB1 = matchDraftPlayers[2];
+        const pB2 = matchDraftPlayers[3];
+        const pIdsB = [pB1, pB2].filter(Boolean);
+        
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsB.includes(id));
+        pIdsA.forEach(id => {
+          if (!matchDraftExempts.includes(id)) matchDraftExempts.push(id);
+        });
+        toast("ยกเว้นค่าลูก Team A (Team B ช่วยจ่ายเพิ่ม) 🏸");
+      }
+      renderMatchDraft();
+    });
+  }
+
+  const btnExemptB = document.getElementById("btnExemptTeamB");
+  if (btnExemptB) {
+    btnExemptB.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const pB1 = matchDraftPlayers[2];
+      const pB2 = matchDraftPlayers[3];
+      const pIdsB = [pB1, pB2].filter(Boolean);
+      if (pIdsB.length === 0) return toast("เลือกผู้เล่นทีม B ก่อนครับ");
+
+      const allBExempt = pIdsB.every(id => matchDraftExempts.includes(id));
+      if (allBExempt) {
+        // Clear Team B exemptions
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsB.includes(id));
+        toast("ยกเลิกการยกเว้นค่าลูกทีม B 🏸");
+      } else {
+        // Exempt Team B, clear Team A
+        const pA1 = matchDraftPlayers[0];
+        const pA2 = matchDraftPlayers[1];
+        const pIdsA = [pA1, pA2].filter(Boolean);
+        
+        matchDraftExempts = matchDraftExempts.filter(id => !pIdsA.includes(id));
+        pIdsB.forEach(id => {
+          if (!matchDraftExempts.includes(id)) matchDraftExempts.push(id);
+        });
+        toast("ยกเว้นค่าลูก Team B (Team A ช่วยจ่ายเพิ่ม) 🏸");
+      }
+      renderMatchDraft();
     });
   }
 });
