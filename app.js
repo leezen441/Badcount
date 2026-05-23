@@ -1864,14 +1864,13 @@ function calcTotals(sessionObj) {
     const exemptCount = activeExempts.length;
 
     if (exemptCount > 0 && exemptCount < pIds.length) {
-      // มีบางคนได้สิทธิ์ยกเว้น: คนที่ถูกยกเว้นได้ลูกฟรี (จ่าย 0)
-      // คนที่ไม่ถูกยกเว้นจ่ายเฉพาะส่วนของตัวเอง (ไม่ต้องแบกของคนที่ยกเว้น)
-      // → ค่าใช้จ่ายรวมของเกมนั้นลดลง ไม่ใช่ redistribute
+      // มีบางคนได้สิทธิ์ยกเว้น: ตัวหารน้อยลง คนที่เหลือแบกรับภาระค่าลูกของคนที่ถูกยกเว้นเพิ่มขึ้น
+      const payingCount = pIds.length - exemptCount;
+      const multiplier = pIds.length / payingCount; // เช่น ยกเว้น 2 คน จาก 4 คน -> multiplier = 4/2 = 2 เท่า!
       pIds.forEach(id => {
         if (!exemptPlayers.includes(id)) {
-          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + (count * multiplier);
         }
-        // exempt players ไม่ได้รับลูกเพิ่ม (ค่าเริ่มต้น 0)
       });
     } else {
       // ไม่มีคนยกเว้น หรือยกเว้นทุกคน: จ่ายเฉลี่ยเท่ากันปกติ
@@ -5013,9 +5012,27 @@ function calcSessionTotals(s) {
 
     const count = parseShuttleCount(match.shuttleNumbers);
     matchShuttlesTotal += count;
-    pIds.forEach(id => {
-      matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
-    });
+    
+    // ตรวจสอบรายชื่อสมาชิกที่ถูกยกเว้นค่าลูกในเกมนี้
+    const exemptPlayers = match.exemptPlayers || [];
+    const activeExempts = pIds.filter(id => exemptPlayers.includes(id));
+    const exemptCount = activeExempts.length;
+
+    if (exemptCount > 0 && exemptCount < pIds.length) {
+      // มีบางคนได้สิทธิ์ยกเว้น: ตัวหารน้อยลง คนที่เหลือแบกรับภาระค่าลูกของคนที่ถูกยกเว้นเพิ่มขึ้น
+      const payingCount = pIds.length - exemptCount;
+      const multiplier = pIds.length / payingCount; // เช่น ยกเว้น 2 คน จาก 4 คน -> multiplier = 4/2 = 2 เท่า!
+      pIds.forEach(id => {
+        if (!exemptPlayers.includes(id)) {
+          matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + (count * multiplier);
+        }
+      });
+    } else {
+      // ไม่มีคนยกเว้น หรือยกเว้นทุกคน: จ่ายเฉลี่ยเท่ากันปกติ
+      pIds.forEach(id => {
+        matchShuttlesMap[id] = (matchShuttlesMap[id] || 0) + count;
+      });
+    }
   });
 
   const totalShuttles = manualShuttles + matchShuttlesTotal;
@@ -5030,7 +5047,16 @@ function calcSessionTotals(s) {
   // คำนวณยอดเงินรายบุคคล
   const perMember = members.map((m) => {
     const individualShuttles = (m.shuttlesUsed || 0) + (matchShuttlesMap[m.id] || 0);
-    const cost = courtPer + otherPer + (individualShuttles * shuttlePrice);
+    
+    // คำนวณจำนวนลูกที่จะคิดเงิน โดยลบส่วนที่ยกเว้นออก
+    let payableShuttles = individualShuttles;
+    if (m.excludeAllShuttles) {
+      payableShuttles = 0;
+    } else if (m.shuttlesExcluded && m.shuttlesExcluded > 0) {
+      payableShuttles = Math.max(0, individualShuttles - m.shuttlesExcluded);
+    }
+
+    const cost = courtPer + otherPer + (payableShuttles * shuttlePrice);
     
     totalAll += cost;
 
