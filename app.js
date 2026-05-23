@@ -1247,6 +1247,16 @@ function renderSession() {
   updatePaymentReminder();
   updateCleanupButton();
   
+  // Hide or show the delete session button based on whether we are in manager mode
+  const btnDelete = $("btnDeleteSession");
+  if (btnDelete) {
+    if (isInManagerLinkView() || isManagerAuthed()) {
+      btnDelete.classList.add("hidden");
+    } else {
+      btnDelete.classList.remove("hidden");
+    }
+  }
+  
   // If matchmaking modal is open, re-render it in real-time to reflect any updates
   if ($("matchModal") && !$("matchModal").classList.contains("hidden")) {
     renderMatchDraft();
@@ -2251,6 +2261,10 @@ $("btnCloseSession").addEventListener("click", () => {
 
 // Delete
 $("btnDeleteSession").addEventListener("click", async () => {
+  if (isInManagerLinkView() || isManagerAuthed()) {
+    toast("เฉพาะ Admin เท่านั้นที่สามารถลบก๊วนได้");
+    return;
+  }
   if (!confirm("ลบก๊วนนี้ทิ้ง? (ไม่สามารถกู้คืนได้)")) return;
   const deletingId = currentSessionId;
   try {
