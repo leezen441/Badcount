@@ -395,8 +395,8 @@ if (document.readyState === "loading") {
 }
 
 // ---------- Authentication ----------
-// SHA-256 ของรหัส "KDY@A" — ไม่เก็บรหัสตรงๆ ในซอร์ส
-const PASSCODE_HASH = "36fd629ba9f7c104345ba12e934d0f1ff530d377e4c62d63662c5f2889715fff";
+// SHA-256 ของรหัส "XXXX" — ไม่เก็บรหัสตรงๆ ในซอร์ส
+const PASSCODE_HASH = "1f82ca11405f1594f1b6fde356b019b74e3bbd210576162f84b46223522daf7d";
 const AUTH_KEY = "bcAuthExp";
 const AUTH_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 วัน
  
@@ -416,7 +416,7 @@ function setAuthed() {
  
 // ---------- Manager Link Authentication ----------
 // รหัสคงที่สำหรับ manager (ผู้ช่วยจัดการกลุ่มรายวัน)
-const MANAGER_PASSCODE = "KDY@M";
+const MANAGER_PASSCODE = "SHH123";
 const MANAGER_AUTH_KEY = "bcManagerAuth";
 
 function isManagerAuthed() {
