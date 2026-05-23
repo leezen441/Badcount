@@ -2325,8 +2325,12 @@ function findBestTeamSplit(ids, members, teammateCount) {
     
     return { teamA: s.a, teamB: s.b, gap: gap + buddyPenalty, teammateOverlap, strA: va, strB: vb };
   });
-  // ลำดับความสำคัญ: teammateOverlap ↑ → gap ↑
-  scored.sort((x, y) => x.teammateOverlap - y.teammateOverlap || x.gap - y.gap);
+  // ลำดับความสำคัญ: teammateOverlap ↑ → gap ↑ → สุ่ม (กันได้ split เดิมซ้ำๆ)
+  scored.sort((x, y) => {
+    if (x.teammateOverlap !== y.teammateOverlap) return x.teammateOverlap - y.teammateOverlap;
+    if (x.gap !== y.gap) return x.gap - y.gap;
+    return Math.random() - 0.5;
+  });
   return scored[0];
 }
 
@@ -2923,17 +2927,21 @@ if (autoDraftBtn) {
     try {
       const allMatches = (currentSession.matches || []).filter(m => m.id !== editingMatchId);
       const gamesPlayed = {};
-      const partnerCount = {};
+      const partnerCount = {};      // นับ "เคยอยู่ในเกมเดียวกัน" (รวม opponents)
+      const teammateCount = {};     // นับ "เคยเป็นเพื่อนร่วมทีม" (ไม่รวม opponents)
       // ใช้ allMembers สำหรับ initialization (เพื่อให้ score คำนวณถูกต้องถ้ามี edge case
       // ที่คนเคยจ่ายแล้วถูก unmark หลังจัดเกม) — แต่ pool ที่เลือกจะใช้ eligibleMembers
       allMembers.forEach(m => {
         gamesPlayed[m.id] = 0;
         partnerCount[m.id] = {};
+        teammateCount[m.id] = {};
       });
 
       allMatches.forEach(match => {
         const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
         pIds.forEach(id => { if (gamesPlayed[id] !== undefined) gamesPlayed[id]++; });
+
+        // partnerCount = นับทุกคู่ในเกมเดียวกัน (ใช้สำหรับ findOptimalAddition)
         for (let i = 0; i < pIds.length; i++) {
           for (let j = i + 1; j < pIds.length; j++) {
             const a = pIds[i], b = pIds[j];
@@ -2942,6 +2950,18 @@ if (autoDraftBtn) {
               partnerCount[b][a] = (partnerCount[b][a] || 0) + 1;
             }
           }
+        }
+
+        // teammateCount = นับเฉพาะคู่ที่อยู่ทีมเดียวกัน (positions 0-1 = ทีม A, 2-3 = ทีม B)
+        // ใช้สำหรับ findBestTeamSplit เพื่อให้รู้ว่าใครเคยเป็นคู่ทีมกันบ้าง
+        if (pIds.length === 4) {
+          [[0, 1], [2, 3]].forEach(([i, j]) => {
+            const a = pIds[i], b = pIds[j];
+            if (teammateCount[a] && teammateCount[b]) {
+              teammateCount[a][b] = (teammateCount[a][b] || 0) + 1;
+              teammateCount[b][a] = (teammateCount[b][a] || 0) + 1;
+            }
+          });
         }
       });
 
@@ -2955,7 +2975,9 @@ if (autoDraftBtn) {
 
       if (picked && picked.length === 4) {
         if (useTeams()) {
-          const split = findBestTeamSplit(picked, allMembers, null);
+          // ส่ง teammateCount (ไม่ใช่ partnerCount!) เพื่อให้รู้ "ใครเคยเป็นเพื่อนร่วมทีม"
+          // → จะได้ split ใหม่ที่ไม่ซ้ำคู่ทีมเดิม
+          const split = findBestTeamSplit(picked, allMembers, teammateCount);
           matchDraftPlayers = [split.teamA[0] || null, split.teamA[1] || null, split.teamB[0] || null, split.teamB[1] || null];
         } else {
           matchDraftPlayers = [...picked];
