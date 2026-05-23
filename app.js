@@ -6,7 +6,7 @@ import {
   initializeApp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc,
+  initializeFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc,
   deleteDoc, onSnapshot, query, orderBy, limit, getDocs, serverTimestamp,
   arrayUnion, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -15,7 +15,9 @@ import { firebaseConfig } from "./firebase-config.js";
 
 // ---------- Init Firebase ----------
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true
+});
 const SESSIONS = collection(db, "sessions");
 
 // ============================================================
