@@ -870,9 +870,14 @@
             </span>
           </div>
         </div>
-        <button id="btnAutoDraft" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800/50 shadow-sm flex items-center gap-1 transition-transform active:scale-95 shrink-0">
-          ✨ สุ่มจัดคิว
-        </button>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="btnAutoDraft" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800/50 shadow-sm flex items-center gap-1 transition-transform active:scale-95 shrink-0" title="สุ่มผู้เล่นลงสนาม">
+            ✨ สุ่มจัดคิว
+          </button>
+          <button id="btnSaveMatch" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 transition-transform active:scale-95 shrink-0 disabled:opacity-50" title="บันทึกเกมปัจจุบัน">
+            💾 บันทึกเกม
+          </button>
+        </div>
       </div>
       
       <!-- Selected Box — โหมดปกติ (No teams) -->
@@ -929,9 +934,8 @@
         <div id="availablePlayers" class="max-h-[360px] overflow-y-auto"></div>
       </div>
 
-      <div class="flex gap-2">
-        <button id="btnCancelMatch" class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-medium text-sm">ยกเลิก</button>
-        <button id="btnSaveMatch" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm disabled:opacity-50">บันทึกเกม</button>
+      <div class="flex justify-center pt-2">
+        <button id="btnCancelMatch" class="w-1/2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-transform active:scale-95">ยกเลิก</button>
       </div>
     </div>
   </div>

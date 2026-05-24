@@ -2977,7 +2977,9 @@ function renderMatchDraft() {
   }
   
   $("btnSaveMatch").disabled = activeCount !== 4;
-  $("btnSaveMatch").className = activeCount === 4 ? "flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow-md transition-transform active:scale-95" : "flex-1 bg-slate-200 text-slate-400 py-3 rounded-xl font-medium cursor-not-allowed";
+  $("btnSaveMatch").className = activeCount === 4
+    ? "text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 transition-all active:scale-95 shrink-0"
+    : "text-xs bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 px-2.5 py-1.5 rounded-lg font-bold shrink-0 cursor-not-allowed";
 
   $("matchModal").querySelectorAll("button[data-draft-id]").forEach(btn => {
     btn.addEventListener("click", () => {
