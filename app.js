@@ -3450,18 +3450,24 @@ async function openPaymentModal(memberIdx) {
   // === 1) Dynamic QR (PromptPay) — preferred ===
   if (cfg.id && cost > 0) {
     try {
-      if (imgEl) {
-        imgEl.classList.add("hidden");
-      }
-      const dataUrl = await renderPromptPayQR(canvas, cfg.id, cost, cfg.type);
-      if (!dataUrl) throw new Error("payload invalid");
-      paymentQRDataUrl = dataUrl;
+      // 1. Build a secure remote HTTPS PromptPay URL to bypass iOS WKWebView/LINE base64 long-press restrictions
+      const httpsUrl = `https://promptpay.io/${cfg.id}/${cost.toFixed(2)}.png`;
+      paymentQRDataUrl = httpsUrl;
 
-      // Populate <img> with generated base64 DataURL and show it
+      // 2. Load HTTPS image directly to enable native iOS/Android "Save Image" context menus
       if (imgEl) {
-        imgEl.src = dataUrl;
+        imgEl.src = httpsUrl;
         imgEl.classList.remove("hidden");
       }
+
+      // 3. Render locally in canvas off-screen as dynamic fallback
+      try {
+        const localDataUrl = await renderPromptPayQR(canvas, cfg.id, cost, cfg.type);
+        if (localDataUrl && (!imgEl.src || imgEl.src.includes("error"))) {
+          imgEl.src = localDataUrl;
+          paymentQRDataUrl = localDataUrl;
+        }
+      } catch (_) {}
 
       if (modeEl) modeEl.textContent = "📱 สแกน QR — ยอดเงินถูกล็อกอัตโนมัติ ✓";
       if (btnDownload) btnDownload.classList.remove("hidden");
