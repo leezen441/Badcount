@@ -395,8 +395,8 @@ if (document.readyState === "loading") {
 }
 
 // ---------- Authentication ----------
-// SHA-256 ของรหัส "KDY@A" — ไม่เก็บรหัสตรงๆ ในซอร์ส
-const PASSCODE_HASH = "36fd629ba9f7c104345ba12e934d0f1ff530d377e4c62d63662c5f2889715fff";
+// SHA-256 ของรหัส "XXXX" — ไม่เก็บรหัสตรงๆ ในซอร์ส
+const PASSCODE_HASH = "1f82ca11405f1594f1b6fde356b019b74e3bbd210576162f84b46223522daf7d";
 const AUTH_KEY = "bcAuthExp";
 const AUTH_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 วัน
  
@@ -416,7 +416,7 @@ function setAuthed() {
  
 // ---------- Manager Link Authentication ----------
 // รหัสคงที่สำหรับ manager (ผู้ช่วยจัดการกลุ่มรายวัน)
-const MANAGER_PASSCODE = "KDY@M";
+const MANAGER_PASSCODE = "SHH123";
 const MANAGER_AUTH_KEY = "bcManagerAuth";
 
 function isManagerAuthed() {
@@ -3306,11 +3306,25 @@ async function decodeQRFromFile(file) {
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
+        // Downscale image if too large (max 1000px on either side) to prevent out-of-memory crashes on iOS WebViews/LINE
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1000;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
         const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, width, height);
         try {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const code = window.jsQR(imageData.data, imageData.width, imageData.height);
