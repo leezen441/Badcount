@@ -395,8 +395,8 @@ if (document.readyState === "loading") {
 }
 
 // ---------- Authentication ----------
-// SHA-256 ของรหัส "XXXX" — ไม่เก็บรหัสตรงๆ ในซอร์ส
-const PASSCODE_HASH = "1f82ca11405f1594f1b6fde356b019b74e3bbd210576162f84b46223522daf7d";
+// SHA-256 ของรหัส "KDY@A" — ไม่เก็บรหัสตรงๆ ในซอร์ส
+const PASSCODE_HASH = "36fd629ba9f7c104345ba12e934d0f1ff530d377e4c62d63662c5f2889715fff";
 const AUTH_KEY = "bcAuthExp";
 const AUTH_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 วัน
  
@@ -416,7 +416,7 @@ function setAuthed() {
  
 // ---------- Manager Link Authentication ----------
 // รหัสคงที่สำหรับ manager (ผู้ช่วยจัดการกลุ่มรายวัน)
-const MANAGER_PASSCODE = "SHH123";
+const MANAGER_PASSCODE = "KDY@M";
 const MANAGER_AUTH_KEY = "bcManagerAuth";
 
 function isManagerAuthed() {
@@ -3450,24 +3450,26 @@ async function openPaymentModal(memberIdx) {
   // === 1) Dynamic QR (PromptPay) — preferred ===
   if (cfg.id && cost > 0) {
     try {
-      // 1. Build a secure remote HTTPS PromptPay URL to bypass iOS WKWebView/LINE base64 long-press restrictions
-      const httpsUrl = `https://promptpay.io/${cfg.id}/${cost.toFixed(2)}.png`;
-      paymentQRDataUrl = httpsUrl;
-
-      // 2. Load HTTPS image directly to enable native iOS/Android "Save Image" context menus
-      if (imgEl) {
-        imgEl.src = httpsUrl;
-        imgEl.classList.remove("hidden");
+      // Show canvas, hide img during generation so the browserWebView/LINE WebView paints it 100% successfully
+      if (canvas) {
+        canvas.classList.remove("hidden");
+        imgEl?.classList.add("hidden");
       }
 
-      // 3. Render locally in canvas off-screen as dynamic fallback
-      try {
-        const localDataUrl = await renderPromptPayQR(canvas, cfg.id, cost, cfg.type);
-        if (localDataUrl && (!imgEl.src || imgEl.src.includes("error"))) {
-          imgEl.src = localDataUrl;
-          paymentQRDataUrl = localDataUrl;
-        }
-      } catch (_) {}
+      const dataUrl = await renderPromptPayQR(canvas, cfg.id, cost, cfg.type);
+      if (!dataUrl) throw new Error("payload invalid");
+
+      // ALWAYS set the download URL to the local base64 Data URL so programmatic downloads work 100% natively without opening new tabs!
+      paymentQRDataUrl = dataUrl;
+
+      // Set image source to base64 Data URL, show image, and hide raw canvas
+      if (imgEl) {
+        imgEl.src = dataUrl;
+        imgEl.classList.remove("hidden");
+      }
+      if (canvas) {
+        canvas.classList.add("hidden");
+      }
 
       if (modeEl) modeEl.textContent = "📱 สแกน QR — ยอดเงินถูกล็อกอัตโนมัติ ✓";
       if (btnDownload) btnDownload.classList.remove("hidden");
@@ -3506,10 +3508,15 @@ $("btnDownloadPaymentQR")?.addEventListener("click", () => {
     return;
   }
 
-  // Intercept if running inside LINE in-app browser to avoid scary download-blocked native toast warnings
+  // Intercept if running inside LINE in-app browser to guide user to open in Chrome/Safari
   const isLine = /Line/i.test(navigator.userAgent);
   if (isLine) {
-    toast("💡 สำหรับแอป LINE กรุณากดค้างที่รูปภาพ QR แล้วเลือก 'บันทึกรูป' ครับ");
+    alert(
+      "⚠️ แอป LINE ไม่รองรับการดาวน์โหลดรูปภาพโดยตรง!\n\n" +
+      "กรุณาเปิดลิงก์นี้ในเบราว์เซอร์ปกติเพื่อบันทึกรูปภาพ:\n" +
+      "• สำหรับ iPhone (iOS): แตะไอคอนรูปเข็มทิศ 🧭 ที่มุมขวาล่างสุด เพื่อเปิดใน Safari\n" +
+      "• สำหรับ Android: แตะปุ่มจุด 3 จุด ┇ ที่มุมขวาบนสุด แล้วเลือก 'เปิดด้วยเบราว์เซอร์อื่น' หรือ 'เปิดใน Chrome'"
+    );
     return;
   }
 
