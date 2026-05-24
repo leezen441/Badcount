@@ -3451,12 +3451,19 @@ async function openPaymentModal(memberIdx) {
   if (cfg.id && cost > 0) {
     try {
       if (canvas) {
-        canvas.classList.remove("hidden");
+        canvas.classList.add("hidden"); // Keep canvas hidden in DOM
         imgEl?.classList.add("hidden");
       }
       const dataUrl = await renderPromptPayQR(canvas, cfg.id, cost, cfg.type);
       if (!dataUrl) throw new Error("payload invalid");
       paymentQRDataUrl = dataUrl;
+
+      // Populate <img> with generated base64 DataURL and show it
+      if (imgEl) {
+        imgEl.src = dataUrl;
+        imgEl.classList.remove("hidden");
+      }
+
       if (modeEl) modeEl.textContent = "📱 สแกน QR — ยอดเงินถูกล็อกอัตโนมัติ ✓";
       if (btnDownload) btnDownload.classList.remove("hidden");
       wrap?.classList.remove("hidden");
@@ -3493,6 +3500,14 @@ $("btnDownloadPaymentQR")?.addEventListener("click", () => {
     toast("⚠️ ยังไม่มี QR ให้บันทึก");
     return;
   }
+
+  // Intercept if running inside LINE in-app browser to avoid scary download-blocked native toast warnings
+  const isLine = /Line/i.test(navigator.userAgent);
+  if (isLine) {
+    toast("💡 สำหรับแอป LINE กรุณากดค้างที่รูปภาพ QR แล้วเลือก 'บันทึกรูป' ครับ");
+    return;
+  }
+
   const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
   const a = document.createElement("a");
   a.href = paymentQRDataUrl;
