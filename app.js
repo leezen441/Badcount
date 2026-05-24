@@ -1928,6 +1928,54 @@ function renderSummary() {
   $("sumTotal").textContent = fmt(t.totalAll) + " ฿";
 }
 
+function renderAuditLog() {
+  const s = currentSession;
+  const tbody = $("auditLogTableBody");
+  if (!s || !tbody) return;
+
+  const matches = s.matches || [];
+  if (matches.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-slate-400 text-center py-6 text-xs">ยังไม่มีประวัติการใช้ลูกในเกม</td></tr>`;
+    return;
+  }
+
+  const membersMap = {};
+  (s.members || []).forEach(m => membersMap[m.id] = m.name);
+
+  tbody.innerHTML = matches.map((m, idx) => {
+    // 1. Shuttles Used (🏷️ ลูกเบอร์ที่ใช้)
+    const shuttlesVal = m.shuttleNumbers ? escapeHtml(m.shuttleNumbers).trim() : "—";
+    
+    // 2. Players (👥 ผู้เล่นในสนาม)
+    const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
+    const playerNames = pIds.map(pid => escapeHtml(membersMap[pid] || "?")).join(", ");
+    
+    // 3. Responsible Players (💰 ผู้รับผิดชอบ/บวกลูก)
+    const exempts = m.exemptPlayers || [];
+    let responsibleStr = "";
+    
+    if (exempts.length === 0 || exempts.length === pIds.length) {
+      responsibleStr = `<span class="text-slate-400 font-semibold">ปกติ</span>`;
+    } else {
+      const nonExempts = pIds.filter(pid => !exempts.includes(pid));
+      if (nonExempts.length > 0) {
+        responsibleStr = `<span class="text-rose-500 font-extrabold">${nonExempts.map(pid => escapeHtml(membersMap[pid] || "?")).join(", ")}</span>`;
+      } else {
+        responsibleStr = `<span class="text-slate-400 font-semibold">ปกติ</span>`;
+      }
+    }
+
+    return `
+      <tr class="border-b border-slate-100 dark:border-slate-800/40 text-xs text-slate-700 dark:text-slate-300">
+        <td class="py-2.5 pr-2 font-bold text-center text-slate-500">${idx + 1}</td>
+        <td class="py-2.5 px-2 text-center font-black text-slate-900 dark:text-slate-100">${shuttlesVal}</td>
+        <td class="py-2.5 px-2 font-medium leading-relaxed">${playerNames}</td>
+        <td class="py-2.5 pl-2 font-semibold leading-relaxed">${responsibleStr}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
 function renderMatches() {
   const list = $("matchesList");
   const matches = currentSession.matches || [];
@@ -3233,6 +3281,15 @@ $("btnViewStats").addEventListener("click", () => {
 
 $("btnCloseStats").addEventListener("click", () => $("statsModal").classList.add("hidden"));
 $("statsModal").addEventListener("click", e => { if (e.target.id === "statsModal") $("statsModal").classList.add("hidden"); });
+
+// Bind Audit Log Modal Events
+$("btnViewAuditLog")?.addEventListener("click", () => {
+  renderAuditLog();
+  $("auditLogModal").classList.remove("hidden");
+});
+$("btnCloseAuditLog")?.addEventListener("click", () => $("auditLogModal").classList.add("hidden"));
+$("btnCloseAuditLogFooter")?.addEventListener("click", () => $("auditLogModal").classList.add("hidden"));
+$("auditLogModal")?.addEventListener("click", e => { if (e.target.id === "auditLogModal") $("auditLogModal").classList.add("hidden"); });
 
 // ============================================================
 // PAYMENT QR + SLIP UPLOAD
@@ -5908,7 +5965,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "cameraScanModal",
     "playerSettingsModal",
     "pauseMembersModal",
-    "statsModal"
+    "statsModal",
+    "auditLogModal"
   ];
 
   // เก็บลำดับ Modals ที่เปิดอยู่ (เพื่อใช้เวลา Hashเปลี่ยน หรือปิดตามลำดับ LIFO ในเคสอื่นๆ)

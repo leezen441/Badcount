@@ -422,10 +422,12 @@
       </div>
 
       <!-- Matches card -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">ตารางจัดเกม (<span id="matchCount">0</span>)</h3>
-          <button id="btnViewStats" class="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-1"><span>📊</span> สถิติ</button>
+          <div class="flex items-center gap-3 shrink-0">
+            <button id="btnViewAuditLog" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1"><span>🔍</span> Audit Log</button>
+            <button id="btnViewStats" class="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-1"><span>📊</span> สถิติ</button>
+          </div>
         </div>
 
         <!-- โหมดจัดเกม + ทีม A/B (per-session settings) -->
@@ -1106,7 +1108,46 @@
       </div>
     </div>
   </div>
-  
+
+  <!-- ===== AUDIT LOG MODAL ===== -->
+  <div id="auditLogModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg p-6 relative max-h-[85vh] flex flex-col border border-slate-100 dark:border-slate-700/50">
+      <div class="flex justify-between items-center mb-3 shrink-0">
+        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          🔍 Audit Log ตรวจประวัติใช้ลูก
+        </h3>
+        <button id="btnCloseAuditLog" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 shrink-0">
+        รายการตรวจสอบการใช้ลูกแบดในแต่ละเกม เรียงตามลำดับเวลาการเล่นจริง
+      </p>
+
+      <!-- Audit Table Container -->
+      <div class="overflow-y-auto flex-1 pr-1">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-700/50 text-slate-400 uppercase font-semibold">
+              <th class="py-2 pr-2 text-center w-12">เกมที่</th>
+              <th class="py-2 px-2 text-center w-24">🏷️ เบอร์ลูก</th>
+              <th class="py-2 px-2">👥 ผู้เล่นในสนาม</th>
+              <th class="py-2 pl-2">💰 ผู้รับผิดชอบ (บวกลูก)</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/40 text-slate-700 dark:text-slate-300">
+            <!-- Rendered dynamically in JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+        <button id="btnCloseAuditLogFooter" class="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-100 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== PAUSE MEMBERS MODAL ===== -->
   <div id="pauseMembersModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative border border-slate-100 dark:border-slate-700/50">
