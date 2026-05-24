@@ -3450,9 +3450,8 @@ async function openPaymentModal(memberIdx) {
   // === 1) Dynamic QR (PromptPay) — preferred ===
   if (cfg.id && cost > 0) {
     try {
-      if (canvas) {
-        canvas.classList.add("hidden"); // Keep canvas hidden in DOM
-        imgEl?.classList.add("hidden");
+      if (imgEl) {
+        imgEl.classList.add("hidden");
       }
       const dataUrl = await renderPromptPayQR(canvas, cfg.id, cost, cfg.type);
       if (!dataUrl) throw new Error("payload invalid");
