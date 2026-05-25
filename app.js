@@ -2420,6 +2420,18 @@ let matchDraftPlayers = [];
 let matchDraftExempts = [];
 let editingMatchId = null;
 
+function getNextShuttleNumber() {
+  const matches = currentSession?.matches || [];
+  let maxShuttle = 0;
+  matches.forEach(m => {
+    const nums = listShuttleNumbers(m.shuttleNumbers || "");
+    nums.forEach(n => {
+      if (n > maxShuttle) maxShuttle = n;
+    });
+  });
+  return maxShuttle + 1;
+}
+
 $("btnAddMatch").addEventListener("click", () => {
   const members = currentSession.members || [];
   if (members.length < 4) return alert("ต้องมีสมาชิกอย่างน้อย 4 คน ถึงจะจัดเกมได้ครับ");
@@ -2427,7 +2439,10 @@ $("btnAddMatch").addEventListener("click", () => {
   editingMatchId = null;
   matchDraftPlayers = [];
   matchDraftExempts = [];
-  $("fldMatchShuttles").value = "";
+  
+  const isSimple = !!currentSession?.simpleShuttleCount;
+  $("fldMatchShuttles").value = isSimple ? "" : String(getNextShuttleNumber());
+  
   $("matchModalTitle").textContent = "🏸 จัดเกมใหม่";
   renderMatchDraft();
   $("matchModal").classList.remove("hidden");
