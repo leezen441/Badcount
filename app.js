@@ -2053,8 +2053,14 @@ function renderMatches() {
                 </div>
               `;
             }
-            if (!m.shuttleNumbers) return "";
-            return `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>`;
+            const displayVal = m.shuttleNumbers || "—";
+            return `
+              <div class="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 rounded-lg p-0.5 shrink-0 select-none">
+                <button data-match-shuttle-dec="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-emerald-800 hover:bg-slate-100 dark:hover:bg-emerald-700 flex items-center justify-center font-black text-emerald-800 dark:text-emerald-300 text-[10px] transition-transform active:scale-90" title="ลดจำนวนลูก">−</button>
+                <div class="px-1.5 text-center font-bold text-[10px] tabular-nums">ลูกที่ ${escapeHtml(displayVal)}</div>
+                <button data-match-shuttle-inc="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-emerald-800 hover:bg-slate-100 dark:hover:bg-emerald-700 flex items-center justify-center font-black text-emerald-800 dark:text-emerald-300 text-[10px] transition-transform active:scale-90" title="เพิ่มจำนวนลูก">+</button>
+              </div>
+            `;
           })()}
         </div>
         <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
@@ -2124,19 +2130,34 @@ function renderMatches() {
     });
   });
 
-  // บวกลดจำนวนลูกแบดในเกมจากหน้า card โดยตรง (โหมดนับลูก)
+  // บวกลดจำนวนลูกแบดในเกมจากหน้า card โดยตรง (รองรับทั้งสองโหมด)
   list.querySelectorAll("button[data-match-shuttle-dec]").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const matchId = btn.dataset.matchShuttleDec;
-      const newMatches = (currentSession.matches || []).map(m => {
-        if (m.id === matchId) {
-          const currentCount = parseInt(m.shuttleNumbers, 10) || 0;
-          const newCount = Math.max(0, currentCount - 1);
-          return { ...m, shuttleNumbers: String(newCount) };
-        }
-        return m;
-      });
+      const isSimple = !!currentSession?.simpleShuttleCount;
+      const match = (currentSession.matches || []).find(x => x.id === matchId);
+      if (!match) return;
+
+      let newShuttles = "";
+      if (isSimple) {
+        const currentCount = parseInt(match.shuttleNumbers, 10) || 0;
+        const newCount = Math.max(0, currentCount - 1);
+        if (!confirm("ลดจำนวนลูก 1 ลูก?")) return;
+        newShuttles = String(newCount);
+      } else {
+        const nums = listShuttleNumbers(match.shuttleNumbers || "");
+        if (nums.length === 0) return toast("ไม่มีลูกให้ลดแล้วครับ");
+        nums.sort((a, b) => a - b);
+        const lastNum = nums[nums.length - 1];
+        if (!confirm(`ลดลูกเบอร์ ${lastNum}?`)) return;
+        nums.pop();
+        newShuttles = formatShuttleNumbers(nums);
+      }
+
+      const newMatches = (currentSession.matches || []).map(m =>
+        m.id === matchId ? { ...m, shuttleNumbers: newShuttles } : m
+      );
       saveSession({ matches: newMatches });
       const idx = (currentSession.matches || []).findIndex(x => x.id === matchId);
       toast(`ลดจำนวนลูกเกมที่ ${idx + 1} เรียบร้อย 🏸`);
@@ -2147,14 +2168,27 @@ function renderMatches() {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const matchId = btn.dataset.matchShuttleInc;
-      const newMatches = (currentSession.matches || []).map(m => {
-        if (m.id === matchId) {
-          const currentCount = parseInt(m.shuttleNumbers, 10) || 0;
-          const newCount = currentCount + 1;
-          return { ...m, shuttleNumbers: String(newCount) };
-        }
-        return m;
-      });
+      const isSimple = !!currentSession?.simpleShuttleCount;
+      const match = (currentSession.matches || []).find(x => x.id === matchId);
+      if (!match) return;
+
+      let newShuttles = "";
+      if (isSimple) {
+        const currentCount = parseInt(match.shuttleNumbers, 10) || 0;
+        const newCount = currentCount + 1;
+        if (!confirm("เพิ่มจำนวนลูก 1 ลูก?")) return;
+        newShuttles = String(newCount);
+      } else {
+        const nums = listShuttleNumbers(match.shuttleNumbers || "");
+        const nextFree = getNextUnusedShuttle(nums, matchId);
+        if (!confirm(`เพิ่มลูกเบอร์ ${nextFree}?`)) return;
+        nums.push(nextFree);
+        newShuttles = formatShuttleNumbers(nums);
+      }
+
+      const newMatches = (currentSession.matches || []).map(m =>
+        m.id === matchId ? { ...m, shuttleNumbers: newShuttles } : m
+      );
       saveSession({ matches: newMatches });
       const idx = (currentSession.matches || []).findIndex(x => x.id === matchId);
       toast(`เพิ่มจำนวนลูกเกมที่ ${idx + 1} เรียบร้อย 🏸`);
@@ -2455,12 +2489,12 @@ function formatShuttleNumbers(nums) {
   return parts.join(", ");
 }
 
-function getNextUnusedShuttle(currentNums) {
+function getNextUnusedShuttle(currentNums, excludeMatchId = editingMatchId) {
   const sessionMatches = currentSession?.matches || [];
   let maxShuttle = 0;
   
   sessionMatches.forEach(m => {
-    if (m.id === editingMatchId) return;
+    if (m.id === excludeMatchId) return;
     const nums = listShuttleNumbers(m.shuttleNumbers || "");
     nums.forEach(n => {
       if (n > maxShuttle) maxShuttle = n;
