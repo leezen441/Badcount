@@ -2432,6 +2432,48 @@ function getNextShuttleNumber() {
   return maxShuttle + 1;
 }
 
+function formatShuttleNumbers(nums) {
+  if (nums.length === 0) return "";
+  const uniqueNums = Array.from(new Set(nums)).sort((a, b) => a - b);
+  const parts = [];
+  let start = uniqueNums[0];
+  let prev = start;
+  for (let i = 1; i <= uniqueNums.length; i++) {
+    const curr = uniqueNums[i];
+    if (curr === prev + 1) {
+      prev = curr;
+    } else {
+      if (prev === start) {
+        parts.push(String(start));
+      } else {
+        parts.push(start + "-" + prev);
+      }
+      start = curr;
+      prev = curr;
+    }
+  }
+  return parts.join(", ");
+}
+
+function getNextUnusedShuttle(currentNums) {
+  const sessionMatches = currentSession?.matches || [];
+  let maxShuttle = 0;
+  
+  sessionMatches.forEach(m => {
+    if (m.id === editingMatchId) return;
+    const nums = listShuttleNumbers(m.shuttleNumbers || "");
+    nums.forEach(n => {
+      if (n > maxShuttle) maxShuttle = n;
+    });
+  });
+  
+  currentNums.forEach(n => {
+    if (n > maxShuttle) maxShuttle = n;
+  });
+  
+  return maxShuttle + 1;
+}
+
 $("btnAddMatch").addEventListener("click", () => {
   const members = currentSession.members || [];
   if (members.length < 4) return alert("ต้องมีสมาชิกอย่างน้อย 4 คน ถึงจะจัดเกมได้ครับ");
@@ -2701,12 +2743,13 @@ function renderMatchDraft() {
   const stepperDisplay = $("displayMatchShuttles");
   
   if (lblShuttles && fldShuttles) {
+    if (stepperContainer) {
+      stepperContainer.classList.remove("hidden");
+    }
     if (isSimple) {
       lblShuttles.textContent = "จำนวนลูกแบดที่ใช้ในเกมนี้ (กดปุ่มบวกลบได้เลย)";
       fldShuttles.classList.add("hidden");
-      if (stepperContainer && stepperDisplay) {
-        stepperContainer.classList.remove("hidden");
-        // Ensure we have a valid initial value in the input (e.g. default to 1 if empty)
+      if (stepperDisplay) {
         let count = parseInt(fldShuttles.value, 10);
         if (isNaN(count) || count < 0) {
           count = 1;
@@ -2719,7 +2762,10 @@ function renderMatchDraft() {
       fldShuttles.classList.remove("hidden");
       fldShuttles.placeholder = "เว้นว่างได้ถ้าไม่ระบุ";
       fldShuttles.type = "text";
-      if (stepperContainer) stepperContainer.classList.add("hidden");
+      if (stepperDisplay) {
+        const nums = listShuttleNumbers(fldShuttles.value);
+        stepperDisplay.textContent = nums.length;
+      }
     }
   }
 
@@ -6110,17 +6156,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnMatchDec && btnMatchInc && fldShuttlesInput && stepperDisplayEl) {
     btnMatchDec.addEventListener("click", () => {
-      let count = parseInt(fldShuttlesInput.value, 10) || 0;
-      count = Math.max(0, count - 1);
-      fldShuttlesInput.value = String(count);
-      stepperDisplayEl.textContent = count;
+      const isSimple = !!currentSession?.simpleShuttleCount;
+      if (isSimple) {
+        let count = parseInt(fldShuttlesInput.value, 10) || 0;
+        count = Math.max(0, count - 1);
+        fldShuttlesInput.value = String(count);
+        stepperDisplayEl.textContent = count;
+      } else {
+        const val = fldShuttlesInput.value;
+        const nums = listShuttleNumbers(val);
+        if (nums.length > 0) {
+          nums.sort((a, b) => a - b);
+          nums.pop();
+        }
+        const newVal = formatShuttleNumbers(nums);
+        fldShuttlesInput.value = newVal;
+        stepperDisplayEl.textContent = nums.length;
+      }
     });
 
     btnMatchInc.addEventListener("click", () => {
-      let count = parseInt(fldShuttlesInput.value, 10) || 0;
-      count = count + 1;
-      fldShuttlesInput.value = String(count);
-      stepperDisplayEl.textContent = count;
+      const isSimple = !!currentSession?.simpleShuttleCount;
+      if (isSimple) {
+        let count = parseInt(fldShuttlesInput.value, 10) || 0;
+        count = count + 1;
+        fldShuttlesInput.value = String(count);
+        stepperDisplayEl.textContent = count;
+      } else {
+        const val = fldShuttlesInput.value;
+        const nums = listShuttleNumbers(val);
+        const nextFree = getNextUnusedShuttle(nums);
+        nums.push(nextFree);
+        const newVal = formatShuttleNumbers(nums);
+        fldShuttlesInput.value = newVal;
+        stepperDisplayEl.textContent = nums.length;
+      }
+    });
+
+    // ซิงค์จำนวนลูกบน Stepper ขณะที่ผู้ใช้พิมพ์ในกล่องข้อความแบบ Real-time
+    fldShuttlesInput.addEventListener("input", () => {
+      const isSimple = !!currentSession?.simpleShuttleCount;
+      if (!isSimple) {
+        const nums = listShuttleNumbers(fldShuttlesInput.value);
+        stepperDisplayEl.textContent = nums.length;
+      }
     });
   }
 });
