@@ -2043,10 +2043,17 @@ function renderMatches() {
             <div class="font-bold ${titleClass}">เกมที่ ${idx + 1}</div>
           </div>
           ${(() => {
-            if (!m.shuttleNumbers) return "";
             if (currentSession?.simpleShuttleCount) {
-              return `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ใช้ ${escapeHtml(m.shuttleNumbers)} ลูก</div>`;
+              const qty = escapeHtml(m.shuttleNumbers || "0");
+              return `
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 shrink-0 select-none">
+                  <button data-match-shuttle-dec="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 flex items-center justify-center font-black text-slate-600 dark:text-slate-350 text-[10px] transition-transform active:scale-90" title="ลดจำนวนลูก">−</button>
+                  <div class="px-1.5 text-center font-bold text-[11px] text-slate-700 dark:text-slate-200 tabular-nums">${qty} ลูก</div>
+                  <button data-match-shuttle-inc="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 flex items-center justify-center font-black text-slate-600 dark:text-slate-350 text-[10px] transition-transform active:scale-90" title="เพิ่มจำนวนลูก">+</button>
+                </div>
+              `;
             }
+            if (!m.shuttleNumbers) return "";
             return `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>`;
           })()}
         </div>
@@ -2114,6 +2121,43 @@ function renderMatches() {
         m.id === matchId ? { ...m, finished: !m.finished } : m
       );
       saveSession({ matches: newMatches });
+    });
+  });
+
+  // บวกลดจำนวนลูกแบดในเกมจากหน้า card โดยตรง (โหมดนับลูก)
+  list.querySelectorAll("button[data-match-shuttle-dec]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const matchId = btn.dataset.matchShuttleDec;
+      const newMatches = (currentSession.matches || []).map(m => {
+        if (m.id === matchId) {
+          const currentCount = parseInt(m.shuttleNumbers, 10) || 0;
+          const newCount = Math.max(0, currentCount - 1);
+          return { ...m, shuttleNumbers: String(newCount) };
+        }
+        return m;
+      });
+      saveSession({ matches: newMatches });
+      const idx = (currentSession.matches || []).findIndex(x => x.id === matchId);
+      toast(`ลดจำนวนลูกเกมที่ ${idx + 1} เรียบร้อย 🏸`);
+    });
+  });
+
+  list.querySelectorAll("button[data-match-shuttle-inc]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const matchId = btn.dataset.matchShuttleInc;
+      const newMatches = (currentSession.matches || []).map(m => {
+        if (m.id === matchId) {
+          const currentCount = parseInt(m.shuttleNumbers, 10) || 0;
+          const newCount = currentCount + 1;
+          return { ...m, shuttleNumbers: String(newCount) };
+        }
+        return m;
+      });
+      saveSession({ matches: newMatches });
+      const idx = (currentSession.matches || []).findIndex(x => x.id === matchId);
+      toast(`เพิ่มจำนวนลูกเกมที่ ${idx + 1} เรียบร้อย 🏸`);
     });
   });
 }
@@ -2638,16 +2682,29 @@ function renderMatchDraft() {
   const isSimple = !!currentSession?.simpleShuttleCount;
   const lblShuttles = $("lblMatchShuttles");
   const fldShuttles = $("fldMatchShuttles");
+  const stepperContainer = $("matchShuttlesStepper");
+  const stepperDisplay = $("displayMatchShuttles");
+  
   if (lblShuttles && fldShuttles) {
     if (isSimple) {
-      lblShuttles.textContent = "จำนวนลูกแบดที่ใช้ในเกมนี้ (ใส่ตัวเลขจำนวนลูกโดยตรง)";
-      fldShuttles.placeholder = "ใส่จำนวนลูกที่ใช้ เช่น 1, 2, 3 (เว้นว่างได้)";
-      fldShuttles.type = "number";
-      fldShuttles.min = "0";
+      lblShuttles.textContent = "จำนวนลูกแบดที่ใช้ในเกมนี้ (กดปุ่มบวกลบได้เลย)";
+      fldShuttles.classList.add("hidden");
+      if (stepperContainer && stepperDisplay) {
+        stepperContainer.classList.remove("hidden");
+        // Ensure we have a valid initial value in the input (e.g. default to 1 if empty)
+        let count = parseInt(fldShuttles.value, 10);
+        if (isNaN(count) || count < 0) {
+          count = 1;
+          fldShuttles.value = "1";
+        }
+        stepperDisplay.textContent = count;
+      }
     } else {
       lblShuttles.textContent = "เบอร์ลูกแบดที่ใช้ในเกมนี้ (ระบุเบอร์ลูก เช่น 1, 2 หรือ 1-3)";
+      fldShuttles.classList.remove("hidden");
       fldShuttles.placeholder = "เว้นว่างได้ถ้าไม่ระบุ";
       fldShuttles.type = "text";
+      if (stepperContainer) stepperContainer.classList.add("hidden");
     }
   }
 
@@ -6027,6 +6084,28 @@ document.addEventListener("DOMContentLoaded", () => {
         toast("บวกลูก Team B (ทีม B รับผิดชอบค่าลูกทั้งหมด) 🏸");
       }
       renderMatchDraft();
+    });
+  }
+
+  // ระบบปุ่มบวกลดจำนวนลูกแบดในป็อปอัปจัดเกม (Match Modal Stepper)
+  const btnMatchDec = document.getElementById("btnMatchDecShuttles");
+  const btnMatchInc = document.getElementById("btnMatchIncShuttles");
+  const fldShuttlesInput = document.getElementById("fldMatchShuttles");
+  const stepperDisplayEl = document.getElementById("displayMatchShuttles");
+
+  if (btnMatchDec && btnMatchInc && fldShuttlesInput && stepperDisplayEl) {
+    btnMatchDec.addEventListener("click", () => {
+      let count = parseInt(fldShuttlesInput.value, 10) || 0;
+      count = Math.max(0, count - 1);
+      fldShuttlesInput.value = String(count);
+      stepperDisplayEl.textContent = count;
+    });
+
+    btnMatchInc.addEventListener("click", () => {
+      let count = parseInt(fldShuttlesInput.value, 10) || 0;
+      count = count + 1;
+      fldShuttlesInput.value = String(count);
+      stepperDisplayEl.textContent = count;
     });
   }
 });
