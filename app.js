@@ -1609,7 +1609,7 @@ $("btnCopyDueList").addEventListener("click", async () => {
     return;
   }
 
-  const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
+  const joinUrl = location.origin + location.pathname + `?openExternalBrowser=1#/join/${currentSessionId}`;
   const dateText = s.date ? formatDate(s.date) : "วันนี้";
   const courtInfo = formatCourtsForShare(s.courts);
 
@@ -4365,7 +4365,7 @@ function buildShareText(session, joinUrl) {
 
 $("btnShareJoin").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
-  const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
+  const joinUrl = location.origin + location.pathname + `?openExternalBrowser=1#/join/${currentSessionId}`;
   const shareText = buildShareText(currentSession, joinUrl);
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -4390,7 +4390,7 @@ $("btnShareJoin").addEventListener("click", async () => {
 
 $("btnShareJoinPublic").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
-  const joinUrl = location.origin + location.pathname + `#/join/${currentSessionId}`;
+  const joinUrl = location.origin + location.pathname + `?openExternalBrowser=1#/join/${currentSessionId}`;
   const shareText = buildShareText(currentSession, joinUrl);
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -4507,7 +4507,7 @@ $("btnShare").addEventListener("click", async () => {
     });
   }
 
-  const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
+  const managerUrl = location.origin + location.pathname + `?openExternalBrowser=1#/m/${currentSessionId}`;
   const dateText = s.date ? formatDate(s.date) : "วันนี้";
 
   const shareText = `🛡️ Temporary Manager — ${dateText}
@@ -4557,7 +4557,7 @@ $("tempPinSmallDisplay")?.addEventListener("click", async () => {
   });
 
   // Copy ลิงก์ + PIN ใหม่ไป clipboard (ทำเหมือนตอนกดปุ่ม Temp Manager)
-  const managerUrl = location.origin + location.pathname + `#/m/${currentSessionId}`;
+  const managerUrl = location.origin + location.pathname + `?openExternalBrowser=1#/m/${currentSessionId}`;
   const dateText = s.date ? formatDate(s.date) : "วันนี้";
   const shareText = `🛡️ Temporary Manager — ${dateText}
 ━━━━━━━━━━━━━━━

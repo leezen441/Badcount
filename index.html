@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BadCount 🏸 — Count Every Game.</title>
 
+  <script>
+    // Force open in external system browser (Safari/Chrome) if loaded inside LINE's limited In-App Browser
+    if (/Line/i.test(navigator.userAgent) && !window.location.search.includes("openExternalBrowser=1")) {
+      window.location.replace(window.location.origin + window.location.pathname + "?openExternalBrowser=1" + window.location.hash);
+    }
+  </script>
+
   <!-- Open Graph / Chat preview — บังคับให้ไม่ดึงข้อความหน้าเว็บมาทำ description -->
   <meta name="description" content=" " />
   <meta property="og:title" content="BadCount 🏸 — Count Every Game." />
