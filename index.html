@@ -430,12 +430,12 @@
           </div>
         </div>
 
-        <!-- โหมดจัดเกม + ทีม A/B (per-session settings) -->
+        <!-- ระบบนับลูกแบด (per-session settings) -->
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3 p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
-          <span class="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">🎮 ตั้งค่าจัดทีม</span>
+          <span class="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">🏸 ระบบนับลูกแบด</span>
           <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" id="fldUseTeams" class="accent-emerald-600 w-4 h-4" />
-            <span>แบ่งฝั่ง ทีม A / ทีม B</span>
+            <input type="checkbox" id="fldSimpleShuttleCount" class="accent-emerald-600 w-4 h-4" />
+            <span>นับจำนวนลูกโดยตรง (ไม่ระบุเบอร์ลูก)</span>
           </label>
         </div>
 
@@ -922,7 +922,7 @@
 
       <!-- Shuttlecock Input -->
       <div class="mb-4">
-        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">เบอร์ลูกแบดที่ใช้ในเกมนี้ (เช่น 1, 2 หรือ 1-3)</label>
+        <label id="lblMatchShuttles" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">เบอร์ลูกแบดที่ใช้ในเกมนี้ (เช่น 1, 2 หรือ 1-3)</label>
         <input type="text" id="fldMatchShuttles" placeholder="เว้นว่างได้ถ้าไม่ระบุ" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-emerald-500 text-sm bg-white dark:bg-slate-900" />
       </div>
 
@@ -1136,7 +1136,7 @@
           <thead>
             <tr class="border-b border-slate-200 dark:border-slate-700/50 text-slate-400 uppercase font-semibold">
               <th class="py-2 pr-2 text-center w-12">เกมที่</th>
-              <th class="py-2 px-2 text-center w-24">🏷️ เบอร์ลูก</th>
+              <th id="lblAuditLogShuttleHeader" class="py-2 px-2 text-center w-24">🏷️ เบอร์ลูก</th>
               <th class="py-2 px-2">👥 ผู้เล่นในสนาม</th>
               <th class="py-2 pl-2">💰 ผู้รับผิดชอบ (บวกลูก)</th>
             </tr>

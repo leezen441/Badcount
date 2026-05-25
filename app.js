@@ -469,8 +469,9 @@ function initTheme() {
 initTheme();
 
 // คืนค่าเป็น array ของเบอร์ลูกแบด (อาจมีซ้ำได้) เพื่อให้ตรวจสอบเบอร์ซ้ำได้
-function listShuttleNumbers(str) {
-  if (!str) return [];
+function listShuttleNumbers(str, sessionObj = null) {
+  const s = sessionObj || currentSession;
+  if (!str || s?.simpleShuttleCount) return [];
   const nums = [];
   const parts = String(str).trim().split(/[\s,]+/);
   parts.forEach(p => {
@@ -490,8 +491,13 @@ function listShuttleNumbers(str) {
   return nums;
 }
 
-function parseShuttleCount(str) {
+function parseShuttleCount(str, sessionObj = null) {
   if (!str) return 0;
+  const s = sessionObj || currentSession;
+  if (s?.simpleShuttleCount) {
+    const val = parseInt(str, 10);
+    return isNaN(val) ? 0 : val;
+  }
   let count = 0;
   const parts = String(str).trim().split(/[\s,]+/);
   parts.forEach(p => {
@@ -1210,9 +1216,9 @@ function renderSession() {
   setIfNotFocused($("fldOtherCostType"), s.otherCostType || "perPerson");
   setIfNotFocused($("fldOtherCost"), s.otherCost || "");
   
-  const chkUseTeams = $("fldUseTeams");
-  if (chkUseTeams) {
-    chkUseTeams.checked = !!s.useTeams;
+  const chkSimpleShuttleCount = $("fldSimpleShuttleCount");
+  if (chkSimpleShuttleCount) {
+    chkSimpleShuttleCount.checked = !!s.simpleShuttleCount;
   }
 
   // Status badge
@@ -1708,27 +1714,36 @@ function renderMembers() {
       
       <div class="flex-1 min-w-0 flex items-center justify-between gap-2 sm:gap-3 rounded-xl transition-all ${isPaused ? 'bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/40 px-2 py-1.5' : ''}">
         <div class="flex-1 min-w-0 flex items-center justify-between gap-1 sm:gap-2">
-          <div class="min-w-0 flex-1 flex items-center gap-1">
-            <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate max-w-[65px] sm:max-w-none text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/Buddy">
-              ${escapeHtml(m.name)}
-            </button>
-            ${m.skill ? `<span class="text-[9px] px-1 py-0.25 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
-            ${(() => {
-              const buddy = m.buddyId 
-                ? members.find(x => x.id === m.buddyId) 
-                : members.find(x => x.buddyId === m.id);
-              if (buddy) {
-                return `<span class="text-[9px] px-1.5 py-0.25 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
+          <div class="min-w-0 flex-1 flex flex-col gap-0.5 sm:gap-1">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <button data-act="edit-player" data-idx="${idx}" class="font-bold truncate text-left hover:text-emerald-600 transition-colors ${isPaid ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'}" title="${pStats[m.id].games > 0 ? `ตี ${pStats[m.id].games} เกม • ล่าสุด: ${pStats[m.id].lastPartners.map(pid => members.find(x => x.id === pid)?.name || '?').join(', ')}` : 'ยังไม่ได้ลงสนาม'} - คลิกเพื่อตั้งค่าระดับมือ/Buddy">
+                ${escapeHtml(m.name)}
+              </button>
+              ${pStats[m.id].games > 0
+                ? `<span class="hidden sm:inline text-[11px] text-slate-400 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
+                : `<span class="hidden sm:inline text-[11px] text-slate-300 font-normal">(ยังไม่ได้ลงสนาม)</span>`
               }
-              return "";
-            })()}
-            ${m.excludeAllShuttles ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 font-extrabold rounded shrink-0">🏸 ฟรีค่าลูก</span>` : ''}
-            ${(!m.excludeAllShuttles && m.shuttlesExcluded > 0) ? `<span class="text-[9px] px-1.5 py-0.25 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 font-extrabold rounded shrink-0">🏸 ยกเว้น ${m.shuttlesExcluded} ลูก</span>` : ''}
-            ${(m.manualFee !== undefined && m.manualFee !== null && m.manualFee !== "" && !isNaN(m.manualFee)) ? `<span class="text-[10px] px-1.5 py-0.25 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-extrabold rounded shrink-0" title="กำหนดราคาคงที่เองโดยผู้ดูแล: ${m.manualFee} ฿">✍️</span>` : ''}
-            ${pStats[m.id].games > 0
-              ? `<span class="hidden sm:inline text-xs text-slate-400 ml-1 font-normal">(ตี ${pStats[m.id].games} เกม)</span>`
-              : `<span class="hidden sm:inline text-xs text-slate-300 ml-1 font-normal">(ยังไม่ได้ลงสนาม)</span>`
-            }
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-1">
+              ${m.skill ? `<span class="text-[9px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold rounded shrink-0">${m.skill}</span>` : ''}
+              ${(() => {
+                const buddy = m.buddyId 
+                  ? members.find(x => x.id === m.buddyId) 
+                  : members.find(x => x.buddyId === m.id);
+                if (buddy) {
+                  return `<span class="text-[9px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-extrabold rounded shrink-0">🤝 ${escapeHtml(buddy.name)}</span>`;
+                }
+                return "";
+              })()}
+              ${m.excludeAllShuttles ? `<span class="text-[9px] px-1.5 py-0.5 bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 font-extrabold rounded shrink-0">ฟรีค่าลูก</span>` : ''}
+              ${(!m.excludeAllShuttles && m.shuttlesExcluded > 0) ? `<span class="text-[9px] px-1.5 py-0.5 bg-sky-50 dark:bg-sky-950/20 text-sky-600 dark:text-sky-400 font-extrabold rounded shrink-0">เว้น ${m.shuttlesExcluded} ลูก</span>` : ''}
+              ${(m.manualFee !== undefined && m.manualFee !== null && m.manualFee !== "" && !isNaN(m.manualFee)) ? `<span class="text-[9px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-extrabold rounded shrink-0" title="กำหนดราคาคงที่เองโดยผู้ดูแล: ${m.manualFee} ฿">✍️ ${m.manualFee} ฿</span>` : ''}
+              ${pStats[m.id].games > 0
+                ? `<span class="inline sm:hidden text-[9px] text-slate-400 font-semibold">${pStats[m.id].games} เกม</span>`
+                : `<span class="inline sm:hidden text-[9px] text-slate-300 font-semibold">ยังไม่เล่น</span>`
+              }
+            </div>
           </div>
           
           <div class="flex flex-col items-end justify-center shrink-0 min-w-[60px] sm:min-w-[85px]">
@@ -1856,7 +1871,7 @@ function calcTotals(sessionObj) {
     const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
     if (pIds.length === 0) return;
     
-    const count = parseShuttleCount(match.shuttleNumbers);
+    const count = parseShuttleCount(match.shuttleNumbers, s);
     matchShuttlesTotal += count;
 
     // ตรวจสอบรายชื่อสมาชิกที่ถูกยกเว้นค่าลูกในเกมนี้
@@ -1933,6 +1948,11 @@ function renderAuditLog() {
   const tbody = $("auditLogTableBody");
   if (!s || !tbody) return;
 
+  const headerEl = $("lblAuditLogShuttleHeader");
+  if (headerEl) {
+    headerEl.textContent = s.simpleShuttleCount ? "🏸 จำนวนลูก" : "🏷️ เบอร์ลูก";
+  }
+
   const matches = s.matches || [];
   if (matches.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4" class="text-slate-400 text-center py-6 text-xs">ยังไม่มีประวัติการใช้ลูกในเกม</td></tr>`;
@@ -1943,8 +1963,10 @@ function renderAuditLog() {
   (s.members || []).forEach(m => membersMap[m.id] = m.name);
 
   tbody.innerHTML = matches.map((m, idx) => {
-    // 1. Shuttles Used (🏷️ ลูกเบอร์ที่ใช้)
-    const shuttlesVal = m.shuttleNumbers ? escapeHtml(m.shuttleNumbers).trim() : "—";
+    // 1. Shuttles Used (🏷️ ลูกเบอร์ที่ใช้ หรือ จำนวนลูก)
+    const shuttlesVal = m.shuttleNumbers
+      ? (s.simpleShuttleCount ? `${escapeHtml(m.shuttleNumbers)} ลูก` : escapeHtml(m.shuttleNumbers).trim())
+      : "—";
     
     // 2. Players (👥 ผู้เล่นในสนาม)
     const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
@@ -2020,7 +2042,13 @@ function renderMatches() {
             <button data-match-del="${m.id}" class="text-slate-300 dark:text-slate-600 hover:text-red-500 px-1 text-lg leading-none shrink-0" title="ลบเกมนี้">&times;</button>
             <div class="font-bold ${titleClass}">เกมที่ ${idx + 1}</div>
           </div>
-          ${m.shuttleNumbers ? `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>` : ''}
+          ${(() => {
+            if (!m.shuttleNumbers) return "";
+            if (currentSession?.simpleShuttleCount) {
+              return `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ใช้ ${escapeHtml(m.shuttleNumbers)} ลูก</div>`;
+            }
+            return `<div class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">ลูกที่ ${escapeHtml(m.shuttleNumbers)}</div>`;
+          })()}
         </div>
         <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
           ${(() => {
@@ -2265,7 +2293,7 @@ $("fldOtherCostType").addEventListener("change", e => {
   saveSession({ otherCostType: val });
 });
 
-$("fldUseTeams")?.addEventListener("change", e => saveSession({ useTeams: e.target.checked }));
+$("fldSimpleShuttleCount")?.addEventListener("change", e => saveSession({ simpleShuttleCount: e.target.checked }));
 
 // Add member
 function addMember() {
@@ -2372,7 +2400,7 @@ function isAdvanceMode() {
   if (!currentSession || !Array.isArray(currentSession.members)) return false;
   return currentSession.members.some(m => m && m.skill);
 }
-function useTeams() { return !!currentSession?.useTeams; }
+function useTeams() { return true; }
 
 function getSkillValue(memberId, members) {
   const m = (members || currentSession?.members || []).find(x => x.id === memberId);
@@ -2606,6 +2634,23 @@ function renderMatchDraft() {
   const selectedDiv = $("selectedPlayers");
   const availableDiv = $("availablePlayers");
 
+  // อัปเดตข้อมูลฉลาก (Label) และ placeholder ของช่องกรอกลูกแบดแบบไดนามิกตามโหมดระบบนับลูกแบด
+  const isSimple = !!currentSession?.simpleShuttleCount;
+  const lblShuttles = $("lblMatchShuttles");
+  const fldShuttles = $("fldMatchShuttles");
+  if (lblShuttles && fldShuttles) {
+    if (isSimple) {
+      lblShuttles.textContent = "จำนวนลูกแบดที่ใช้ในเกมนี้ (ใส่ตัวเลขจำนวนลูกโดยตรง)";
+      fldShuttles.placeholder = "ใส่จำนวนลูกที่ใช้ เช่น 1, 2, 3 (เว้นว่างได้)";
+      fldShuttles.type = "number";
+      fldShuttles.min = "0";
+    } else {
+      lblShuttles.textContent = "เบอร์ลูกแบดที่ใช้ในเกมนี้ (ระบุเบอร์ลูก เช่น 1, 2 หรือ 1-3)";
+      fldShuttles.placeholder = "เว้นว่างได้ถ้าไม่ระบุ";
+      fldShuttles.type = "text";
+    }
+  }
+
   // อัปเดต header info ทุกครั้งที่ render
   updateMatchModalInfo();
 
@@ -2669,9 +2714,7 @@ function renderMatchDraft() {
         teamAPlayers.push(id);
         const m = allMembers.find(x => x.id === id);
         if (m) {
-          const editSkillBadge = isAdvanceMode()
-            ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-rose-700 hover:bg-rose-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
-            : '';
+          const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-rose-700 hover:bg-rose-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`;
           const isExempt = matchDraftExempts.includes(id);
           teamAHtml += `
             <div class="inline-flex items-center bg-rose-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-rose-300 dark:ring-rose-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
@@ -2700,9 +2743,7 @@ function renderMatchDraft() {
         teamBPlayers.push(id);
         const m = allMembers.find(x => x.id === id);
         if (m) {
-          const editSkillBadge = isAdvanceMode()
-            ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-sky-700 hover:bg-sky-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
-            : '';
+          const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-sky-700 hover:bg-sky-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`;
           const isExempt = matchDraftExempts.includes(id);
           teamBHtml += `
             <div class="inline-flex items-center bg-sky-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-sky-300 dark:ring-sky-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
@@ -2764,9 +2805,7 @@ function renderMatchDraft() {
       if (!id) return;
       const m = allMembers.find(x => x.id === id);
       if (!m) return;
-      const editSkillBadge = isAdvanceMode()
-        ? `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`
-        : '';
+      const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`;
       const isExempt = matchDraftExempts.includes(id);
       const exemptBtn = `
         <button data-act="toggle-exempt" data-player-id="${id}" class="w-4 h-4 flex items-center justify-center rounded-full text-[10px] transition-transform active:scale-95 shrink-0 ${isExempt ? 'bg-amber-400 text-slate-900 font-extrabold' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}" title="${isExempt ? 'จ่ายปกติ' : 'ยกเว้นค่าลูกเกมนี้'}">
@@ -2915,11 +2954,9 @@ function renderMatchDraft() {
             ? "font-medium text-slate-500 dark:text-slate-400"
             : "font-medium text-slate-700 dark:text-slate-300");
 
-      const editSkillBadge = isAdvanceMode()
-        ? `<button data-act="edit-player-skill" data-player-id="${m.id}" class="text-[9px] px-1.5 py-0.5 rounded transition-all active:scale-95 shrink-0 ${m.skill ? 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold' : 'border border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400 font-bold bg-white dark:bg-slate-900 hover:border-indigo-500 hover:text-indigo-600'}" title="คลิกเพื่อตั้งระดับมือ">
+      const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${m.id}" class="text-[9px] px-1.5 py-0.5 rounded transition-all active:scale-95 shrink-0 ${m.skill ? 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold' : 'border border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400 font-bold bg-white dark:bg-slate-900 hover:border-indigo-500 hover:text-indigo-600'}" title="คลิกเพื่อตั้งระดับมือ">
             ${m.skill ? m.skill : '+ ระดับมือ'}
-          </button>`
-        : '';
+          </button>`;
 
       return `
         <div class="w-full px-3 py-2 flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${rowClass}">
@@ -5118,7 +5155,7 @@ function calcSessionTotals(s) {
     const pIds = match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean);
     if (pIds.length === 0) return;
 
-    const count = parseShuttleCount(match.shuttleNumbers);
+    const count = parseShuttleCount(match.shuttleNumbers, s);
     matchShuttlesTotal += count;
     
     // ตรวจสอบรายชื่อสมาชิกที่ถูกยกเว้นค่าลูกในเกมนี้
