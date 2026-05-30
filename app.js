@@ -5811,6 +5811,14 @@ $("playerSettingsModal")?.addEventListener("click", e => {
   if (e.target.id === "playerSettingsModal") $("playerSettingsModal").classList.add("hidden");
 });
 
+$("btnEditPlayerName")?.addEventListener("click", () => {
+  const currentName = $("playerModalName").textContent.trim();
+  const newName = prompt("แก้ไขชื่อผู้เล่น:", currentName);
+  if (newName !== null && newName.trim() !== "") {
+    $("playerModalName").textContent = newName.trim();
+  }
+});
+
 function openPlayerSettingsModal(idx, isAdminView) {
   const members = currentSession?.members || [];
   const m = members[idx];
@@ -5880,6 +5888,7 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
     const exType = $("fldPlayerExclusionType")?.value || "none";
     const exCountVal = $("fldPlayerExclusionCount")?.value.trim() || "";
     const manualFeeVal = $("fldPlayerManualFee")?.value.trim() || "";
+    const chosenName = $("playerModalName").textContent.trim();
     
     let finalExcludeAllShuttles = false;
     let finalShuttlesExcluded = 0;
@@ -5911,6 +5920,7 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
         });
         members[editingPlayerIdx] = {
           ...currentPlayer,
+          name: chosenName, // Save edited name
           skill: editingPlayerSkill || null,
           buddyId: chosenBuddyId,
           excludeAllShuttles: finalExcludeAllShuttles,
@@ -5936,6 +5946,7 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
         });
         members[editingPlayerIdx] = {
           ...currentPlayer,
+          name: chosenName, // Save edited name
           skill: editingPlayerSkill || null,
           buddyId: chosenBuddyId,
           excludeAllShuttles: finalExcludeAllShuttles,
