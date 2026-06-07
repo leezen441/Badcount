@@ -1839,7 +1839,10 @@ function __makeTotalsKey(s) {
   // สร้าง fingerprint แบบเร็ว (ไม่ใช้ JSON.stringify เพราะช้า)
   const mems = s.members || [];
   const mKey = mems.map(m => `${m.id}|${m.shuttlesUsed || 0}|${m.isPaid ? 1 : 0}|${m.excludeAllShuttles ? 1 : 0}|${m.shuttlesExcluded || 0}|${m.manualFee || ""}`).join(";");
-  const matchKey = (s.matches || []).map(m => `${m.id}:${m.shuttleNumbers || ""}:${(m.exemptPlayers || []).join("-")}`).join(",");
+  const matchKey = (s.matches || []).map(m => {
+    const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
+    return `${m.id}:${m.shuttleNumbers || ""}:${(m.exemptPlayers || []).join("-")}:${pIds.join("-")}`;
+  }).join(",");
   return `${s.courtFee}|${s.courtFeeType}|${s.shuttlePrice}|${s.otherCost}|${s.otherCostType}|${mKey}|${matchKey}`;
 }
 
