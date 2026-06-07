@@ -473,7 +473,7 @@ function listShuttleNumbers(str, sessionObj = null) {
   const s = sessionObj || currentSession;
   if (!str || s?.simpleShuttleCount) return [];
   const nums = [];
-  const parts = String(str).trim().split(/[\s,]+/);
+  const parts = String(str).trim().split(/[\s,\/\\|]+/);
   parts.forEach(p => {
     if (!p) return;
     if (p.includes('-')) {
@@ -499,8 +499,9 @@ function parseShuttleCount(str, sessionObj = null) {
     return isNaN(val) ? 0 : val;
   }
   let count = 0;
-  const parts = String(str).trim().split(/[\s,]+/);
+  const parts = String(str).trim().split(/[\s,\/\\|]+/);
   parts.forEach(p => {
+    if (!p) return;
     if (p.includes('-')) {
       const [s, e] = p.split('-');
       const start = parseInt(s, 10);
