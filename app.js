@@ -1816,8 +1816,18 @@ function renderMembers() {
 
       const members = [...(currentSession.members || [])];
 
-      if (act === "inc") members[idx].shuttlesUsed = (members[idx].shuttlesUsed || 0) + 1;
-      else if (act === "dec") members[idx].shuttlesUsed = Math.max(0, (members[idx].shuttlesUsed || 0) - 1);
+      if (act === "inc") {
+        if (!confirm(`ยืนยันการเพิ่มจำนวนลูกเบิกส่วนตัวของ "${members[idx].name}" อีก 1 ลูก?`)) return;
+        members[idx].shuttlesUsed = (members[idx].shuttlesUsed || 0) + 1;
+      }
+      else if (act === "dec") {
+        if ((members[idx].shuttlesUsed || 0) === 0) {
+          toast("จำนวนลูกเบิกส่วนตัวเป็น 0 อยู่แล้ว ไม่สามารถลดลงอีกได้");
+          return;
+        }
+        if (!confirm(`ยืนยันการลดจำนวนลูกเบิกส่วนตัวของ "${members[idx].name}" ลง 1 ลูก?`)) return;
+        members[idx].shuttlesUsed = Math.max(0, (members[idx].shuttlesUsed || 0) - 1);
+      }
       else if (act === "toggle-paid") members[idx].isPaid = !members[idx].isPaid;
       else if (act === "del") {
         if (!confirm(`ลบ "${members[idx].name}" ออกจากก๊วน?`)) return;
