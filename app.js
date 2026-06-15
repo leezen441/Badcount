@@ -96,10 +96,13 @@ async function renderPromptPayQR(container, promptpayId, amount, type = "auto") 
   if (!container) {
     throw new Error("container is required");
   }
-  // ล้างของเดิม + วาดใหม่
+  // ล้างของเดิม
   container.innerHTML = "";
+
+  // วาด QR ลงใน element ชั่วคราว (detached) ก่อน แล้วค่อย composite พร้อมขอบขาว
+  const temp = document.createElement("div");
   // eslint-disable-next-line no-new
-  new QRCode(container, {
+  new QRCode(temp, {
     text: payload,
     width: 256,
     height: 256,
@@ -107,28 +110,43 @@ async function renderPromptPayQR(container, promptpayId, amount, type = "auto") 
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.M
   });
-  // davidshimjs วาด <canvas> + <img> ภายใน container — รอ tick ให้ render เสร็จ (เพิ่มเวลาขึ้นสำหรับ mobile WebViews/LINE)
+  // davidshimjs วาด <canvas> + <img> — รอ tick ให้ render เสร็จ (เพิ่มเวลาขึ้นสำหรับ mobile WebViews/LINE)
   await new Promise(r => setTimeout(r, 100));
-  const cv = container.querySelector("canvas");
-  const img = container.querySelector("img");
+  const srcCanvas = temp.querySelector("canvas");
+  const srcImg = temp.querySelector("img");
 
-  // บนมือถือสมัยใหม่ davidshimjs วาดลง canvas เป็นหลัก ส่วน img อาจไม่มี src
-  // → โชว์ canvas + ซ่อน img เพื่อให้ภาพไม่หายไปเป็นจุดขาว
-  if (cv) {
-    cv.style.display = "block";
-    cv.style.margin = "0 auto";
-    cv.style.width = "256px";
-    cv.style.height = "256px";
-  }
-  if (img) {
-    img.style.display = "none";
-  }
+  // ⚠️ Quiet Zone: qrcodejs (davidshimjs) วาด QR ชิดขอบ ไม่มีขอบขาวรอบนอก
+  // สแกนเนอร์ Bangkok Bank mBanking ต้องการ quiet zone (ขอบขาว ≥4 module) ถึงจะหา finder pattern เจอ
+  // → วาดทับลงบน canvas สีขาวที่ใหญ่กว่า เพื่อรับประกันว่ามีขอบขาวเสมอ (แบงก์อื่นใจดีกว่าเลยอ่านได้แม้ไม่มีขอบ)
+  const QR_SIZE = 256;
+  const MARGIN = 40; // quiet zone
+  const out = document.createElement("canvas");
+  out.width = QR_SIZE + MARGIN * 2;
+  out.height = QR_SIZE + MARGIN * 2;
+  const octx = out.getContext("2d");
+  octx.fillStyle = "#ffffff";
+  octx.fillRect(0, 0, out.width, out.height);
+  try {
+    if (srcCanvas) {
+      octx.drawImage(srcCanvas, MARGIN, MARGIN, QR_SIZE, QR_SIZE);
+    } else if (srcImg && srcImg.src) {
+      const im = new Image();
+      await new Promise((res) => { im.onload = res; im.onerror = res; im.src = srcImg.src; });
+      octx.drawImage(im, MARGIN, MARGIN, QR_SIZE, QR_SIZE);
+    }
+  } catch (_) {}
 
-  // dataURL — prefer canvas (สด/ตรงเสมอ), fallback img.src
-  if (cv) {
-    try { return cv.toDataURL("image/png"); } catch (_) {}
-  }
-  return img && img.src ? img.src : null;
+  // โชว์ canvas ที่มีขอบขาวแล้ว
+  out.style.display = "block";
+  out.style.margin = "0 auto";
+  out.style.width = "256px";
+  out.style.height = "256px";
+  out.style.background = "#ffffff";
+  container.appendChild(out);
+
+  // dataURL — มีขอบขาวในตัว ใช้ได้ทั้งโชว์และดาวน์โหลด
+  try { return out.toDataURL("image/png"); } catch (_) {}
+  return srcImg && srcImg.src ? srcImg.src : null;
 }
 
 // 🔧 Expose to window สำหรับทดสอบใน Console
