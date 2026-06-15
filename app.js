@@ -55,14 +55,16 @@ function generatePromptPayPayload(promptpayId, opts = {}) {
   const tlv = (tag, value) => tag + String(value.length).padStart(2, "0") + value;
   const merchantAccount = tlv("00", "A000000677010111") + tlv(merchantTag, merchantValue);
 
+  // Field order ต้องเป็น canonical PromptPay: 29 → 58 (country) → 53 (currency) → 54 (amount) → 63
+  // Bangkok Bank parser เข้มงวดและอ่านได้เฉพาะลำดับนี้ (ออมสิน/แบงก์อื่นใจดีกว่า อ่านได้ทุกลำดับ)
   const parts = [
     tlv("00", "01"),
     tlv("01", amount > 0 ? "12" : "11"),
     tlv("29", merchantAccount),
+    tlv("58", "TH"),
     tlv("53", "764"),
   ];
   if (amount && amount > 0) parts.push(tlv("54", Number(amount).toFixed(2)));
-  parts.push(tlv("58", "TH"));
 
   const crc16 = (data) => {
     let crc = 0xFFFF;
