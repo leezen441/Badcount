@@ -4348,7 +4348,10 @@ $("btnSubmitJoin").addEventListener("click", async () => {
         name,
         shuttlesUsed: 0,
         skill: skill || null,
-        buddyId: buddyId || null
+        buddyId: buddyId || null,
+        // คนที่ลงชื่อผ่านลิงก์ join = ยังไม่มาถึงสนาม → พักคิวไว้ก่อน
+        // พอมาถึงค่อยกดปลด pause (ปุ่ม ⏸️ ต่อแถว หรือเมนูพักคิว) ในหน้าจัดการ
+        isPaused: true
       });
 
       transaction.update(ref, { members });
