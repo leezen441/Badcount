@@ -5726,42 +5726,243 @@ async function loadPersonalStatsData(playerName, filterType) {
   }
 }
 
-$("btnLoadPersonalStats")?.addEventListener("click", () => {
-  loadPersonalStatsData($("fldStatsPlayerName").value, $("fldStatsFilter").value);
-});
-$("fldStatsPlayerName")?.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
-    loadPersonalStatsData($("fldStatsPlayerName").value, $("fldStatsFilter").value);
+// ============================================================
+// 🔎 Personal Stats — Chip/Token input + Smart name suggestions
+// ============================================================
+// พิมพ์/กดชื่อ → กลายเป็น chip ในกล่อง พร้อม + คั่นอัตโนมัติ ใส่คนถัดไปได้เลย
+// Suggestion แนะนำชื่อที่ "ใกล้เคียง" กับชื่อที่เลือกไว้ (รองรับไทย+อังกฤษ) จนกว่าจะไม่มีชื่อใกล้เคียง
+
+let allPlayerNamesCache = null;   // Set ของชื่อผู้เล่นทั้งหมด (local + cloud)
+let statsChips = [];              // ชื่อที่เลือกไว้ (display form)
+let statsSuggList = [];           // รายการ suggestion ปัจจุบัน (index-based เพื่อเลี่ยงปัญหา escaping)
+
+// ---- Thai → rough Latin phonetic (สำหรับจับคู่ข้ามภาษา เช่น บอล ~ Ball, เอก ~ Ek) ----
+const THAI_ROMAN_MAP = {
+  'ก':'k','ข':'kh','ฃ':'kh','ค':'kh','ฅ':'kh','ฆ':'kh','ง':'ng',
+  'จ':'j','ฉ':'ch','ช':'ch','ซ':'s','ฌ':'ch','ญ':'y',
+  'ฎ':'d','ฏ':'t','ฐ':'th','ฑ':'th','ฒ':'th','ณ':'n',
+  'ด':'d','ต':'t','ถ':'th','ท':'th','ธ':'th','น':'n',
+  'บ':'b','ป':'p','ผ':'ph','ฝ':'f','พ':'ph','ฟ':'f','ภ':'ph','ม':'m',
+  'ย':'y','ร':'r','ล':'l','ว':'w','ศ':'s','ษ':'s','ส':'s',
+  'ห':'h','ฬ':'l','อ':'o','ฮ':'h',
+  'ะ':'a','ั':'a','า':'a','ำ':'am','ิ':'i','ี':'i','ึ':'ue','ื':'ue',
+  'ุ':'u','ู':'u','เ':'e','แ':'ae','โ':'o','ใ':'ai','ไ':'ai','ๅ':'a',
+  '็':'','่':'','้':'','๊':'','๋':'','์':'','ฺ':'','ฯ':'','ๆ':''
+};
+
+function phoneticKey(str) {
+  let out = '';
+  for (const ch of String(str).toLowerCase()) {
+    if (Object.prototype.hasOwnProperty.call(THAI_ROMAN_MAP, ch)) out += THAI_ROMAN_MAP[ch];
+    else if (/[a-z0-9]/.test(ch)) out += ch;
   }
-});
+  // ยุบตัวอักษรซ้ำ (ball→bal, ee→e) เพื่อจับเสียงที่ใกล้กัน
+  return out.replace(/(.)\1+/g, '$1');
+}
 
-// ---------- Player Suggestions Cache ----------
-let allPlayerNamesCache = null;
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => i);
+  for (let j = 1; j <= n; j++) {
+    let prev = dp[0];
+    dp[0] = j;
+    for (let i = 1; i <= m; i++) {
+      const tmp = dp[i];
+      dp[i] = Math.min(dp[i] + 1, dp[i - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return dp[m];
+}
 
-async function populatePlayerDatalist() {
-  const datalist = $("playersDatalist");
-  if (!datalist) return;
+function simRatio(a, b) {
+  if (!a && !b) return 1;
+  const L = Math.max(a.length, b.length) || 1;
+  return 1 - levenshtein(a, b) / L;
+}
 
-  // 1. เริ่มจากชื่อในเครื่องก่อน (เร็ว)
-  let names = new Set(getKnownMembers());
-  const updateUI = () => {
-    const sortedNames = Array.from(names).sort((a, b) => a.localeCompare(b, 'th'));
-    datalist.innerHTML = sortedNames.map(name => `<option value="${escapeHtml(name)}">`).join("");
-  };
-  
-  updateUI();
+// คะแนนความใกล้เคียง 0..1 ระหว่างชื่อสองชื่อ (รองรับ substring, typo, ข้ามภาษาไทย/อังกฤษ)
+function nameSimilarity(query, cand) {
+  const q = String(query).toLowerCase().trim();
+  const c = String(cand).toLowerCase().trim();
+  if (!q || !c) return 0;
+  if (q === c) return 1;
+  let best = simRatio(q, c);
+  if (c.includes(q) || q.includes(c)) {
+    const s = Math.min(q.length, c.length), l = Math.max(q.length, c.length);
+    best = Math.max(best, 0.7 + 0.3 * (s / l));
+  }
+  const pq = phoneticKey(q), pc = phoneticKey(c);
+  if (pq && pc) {
+    best = Math.max(best, simRatio(pq, pc));
+    if (pc.includes(pq) || pq.includes(pc)) {
+      const s = Math.min(pq.length, pc.length), l = Math.max(pq.length, pc.length);
+      best = Math.max(best, 0.65 + 0.3 * (s / l));
+    }
+  }
+  return best;
+}
 
-  // 2. ถ้าเคยโหลดจาก Cloud แล้วในเซสชันนี้ ให้ใช้ของเดิม
-  if (allPlayerNamesCache) {
-    names = allPlayerNamesCache;
-    updateUI();
+function getAllKnownNames() {
+  const set = new Set(getKnownMembers());
+  if (allPlayerNamesCache) allPlayerNamesCache.forEach(n => set.add(n));
+  return Array.from(set);
+}
+
+// ---- Chip rendering ----
+function renderStatsChips() {
+  const box = $("statsChipsBox");
+  const input = $("fldStatsPlayerName");
+  if (!box || !input) return;
+  box.querySelectorAll('[data-chip]').forEach(n => n.remove());
+  statsChips.forEach((name, i) => {
+    const chip = document.createElement('span');
+    chip.setAttribute('data-chip', String(i));
+    chip.className = 'inline-flex items-center gap-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-sm font-semibold pl-2 pr-1 py-1 rounded-lg';
+    const plus = i > 0 ? '<span class="text-emerald-500 font-bold mr-1">+</span>' : '';
+    chip.innerHTML = `${plus}<span>${escapeHtml(name)}</span>`;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'ml-0.5 w-4 h-4 flex items-center justify-center rounded text-emerald-600 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800 leading-none';
+    x.textContent = '×';
+    x.addEventListener('click', (e) => { e.stopPropagation(); removeStatsChip(i); });
+    chip.appendChild(x);
+    box.insertBefore(chip, input);
+  });
+  input.placeholder = statsChips.length ? '+ เพิ่มชื่อคนถัดไป…' : 'พิมพ์ชื่อผู้เล่น เช่น Ball / บอล…';
+}
+
+function addStatsChip(name) {
+  const t = String(name).trim();
+  if (!t) return;
+  if (!statsChips.some(c => c.toLowerCase() === t.toLowerCase())) {
+    statsChips.push(t);
+    addKnownMember(t);
+  }
+  const input = $("fldStatsPlayerName");
+  if (input) input.value = '';
+  renderStatsChips();
+  renderStatsSuggestions();   // refresh → คราวนี้จะแนะนำชื่อใกล้เคียงกับที่เลือก
+  input?.focus();
+}
+
+function removeStatsChip(i) {
+  statsChips.splice(i, 1);
+  renderStatsChips();
+  renderStatsSuggestions();
+  $("fldStatsPlayerName")?.focus();
+}
+
+// ---- Smart suggestions ----
+function renderStatsSuggestions() {
+  const box = $("statsSuggestBox");
+  const input = $("fldStatsPlayerName");
+  if (!box || !input) return;
+
+  const typed = input.value.trim();
+  const selectedLc = new Set(statsChips.map(c => c.toLowerCase()));
+  const all = getAllKnownNames().filter(n => !selectedLc.has(n.toLowerCase()));
+
+  let ranked;
+  if (typed) {
+    // กำลังพิมพ์ → เรียงตามความเกี่ยวข้องกับสิ่งที่พิมพ์ (prefix > substring > fuzzy)
+    const tl = typed.toLowerCase();
+    ranked = all.map(n => {
+      const nl = n.toLowerCase();
+      let s;
+      if (nl.startsWith(tl)) s = 1;
+      else if (nl.includes(tl)) s = 0.85;
+      else s = nameSimilarity(typed, n);
+      return { n, s };
+    }).filter(x => x.s >= 0.45).sort((a, b) => b.s - a.s).slice(0, 8);
+  } else if (statsChips.length) {
+    // เลือกชื่อไว้แล้ว + ช่องว่าง → แนะนำชื่อที่ใกล้เคียงกับชื่อที่เลือก (ไทย/อังกฤษ)
+    ranked = all.map(n => {
+      let s = 0;
+      statsChips.forEach(c => { s = Math.max(s, nameSimilarity(c, n)); });
+      return { n, s };
+    }).filter(x => x.s >= 0.55).sort((a, b) => b.s - a.s).slice(0, 8);
+  } else {
+    // ยังไม่มีอะไร → โชว์ชื่อทั้งหมด (เรียง ก-ฮ/A-Z) ไม่กี่รายการ
+    ranked = all.slice().sort((a, b) => a.localeCompare(b, 'th')).slice(0, 8).map(n => ({ n, s: 0 }));
+  }
+
+  statsSuggList = ranked.map(r => r.n);
+
+  if (statsSuggList.length === 0) {
+    if (statsChips.length && !typed) {
+      box.innerHTML = `<div class="px-4 py-3 text-sm text-slate-400">ไม่มีชื่อใกล้เคียงเพิ่มเติม</div>`;
+      box.classList.remove('hidden');
+    } else {
+      box.classList.add('hidden');
+    }
     return;
   }
 
-  // 3. ดึงจาก Cloud (ทุกก๊วน) เพื่อความครอบคลุม
+  const icon = (statsChips.length && !typed) ? '+' : '🔍';
+  box.innerHTML = statsSuggList.map((n, i) => `
+    <button type="button" data-sugg-idx="${i}" class="w-full text-left px-4 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-sm border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-center gap-2">
+      <span class="text-emerald-500 shrink-0">${icon}</span>
+      <span class="truncate">${escapeHtml(n)}</span>
+    </button>`).join('');
+  box.querySelectorAll('[data-sugg-idx]').forEach(btn => {
+    // ใช้ mousedown + preventDefault เพื่อไม่ให้ input blur ก่อนคลิกติด
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const idx = parseInt(btn.dataset.suggIdx, 10);
+      if (!isNaN(idx) && statsSuggList[idx]) addStatsChip(statsSuggList[idx]);
+    });
+  });
+  box.classList.remove('hidden');
+}
+
+function runPersonalStatsSearch() {
+  const input = $("fldStatsPlayerName");
+  if (input && input.value.trim()) addStatsChip(input.value);   // ผูกชื่อที่ค้างพิมพ์เป็น chip ด้วย
+  if (statsChips.length === 0) { toast("กรุณาใส่ชื่อผู้เล่น"); return; }
+  $("statsSuggestBox")?.classList.add('hidden');
+  loadPersonalStatsData(statsChips.join(' + '), $("fldStatsFilter").value);
+}
+
+(function setupStatsChipInput() {
+  const box = $("statsChipsBox");
+  const input = $("fldStatsPlayerName");
+  const sugg = $("statsSuggestBox");
+  if (!box || !input) return;
+
+  box.addEventListener('click', (e) => { if (e.target === box) input.focus(); });
+  input.addEventListener('focus', renderStatsSuggestions);
+  input.addEventListener('input', renderStatsSuggestions);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (input.value.trim()) addStatsChip(input.value);
+      else runPersonalStatsSearch();
+    } else if (e.key === '+' || e.key === ',') {
+      e.preventDefault();
+      if (input.value.trim()) addStatsChip(input.value);
+    } else if (e.key === 'Backspace' && !input.value && statsChips.length) {
+      removeStatsChip(statsChips.length - 1);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (sugg && !box.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden');
+  });
+
+  $("btnLoadPersonalStats")?.addEventListener('click', runPersonalStatsSearch);
+})();
+
+// โหลดรายชื่อผู้เล่นทั้งหมดเข้า cache (เรียกตอนเข้าหน้า personal-stats) แล้ว refresh suggestion
+async function populatePlayerDatalist() {
+  renderStatsChips();
+  if (allPlayerNamesCache) { renderStatsSuggestions(); return; }
+
+  let names = new Set(getKnownMembers());
   try {
-    const q = query(SESSIONS);
-    const snap = await getDocs(q);
+    const snap = await getDocs(query(SESSIONS));
     snap.forEach(doc => {
       const s = doc.data();
       (s.members || []).forEach(m => {
@@ -5772,10 +5973,11 @@ async function populatePlayerDatalist() {
       });
     });
     allPlayerNamesCache = names;
-    updateUI();
   } catch (err) {
     console.warn("Failed to fetch all player names for suggestions:", err);
+    allPlayerNamesCache = names;
   }
+  try { renderStatsSuggestions(); } catch (_) {}
 }
 
 let editingPlayerIdx = null;
