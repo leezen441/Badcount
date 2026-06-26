@@ -39,7 +39,7 @@ export default async function handler(req, res) {
 async function handleEvent(event) {
   if (event.type === "join" || event.type === "follow") {
     await replyMessage(event.replyToken,
-      "🏸 BadCount Bot\nพิมพ์ startbadcount เพื่อเริ่มใช้งานในแชต/กลุ่มนี้");
+      "🏸 BadCount Bot\nType \"startbadcount\" to activate me here.");
     return;
   }
 
@@ -55,19 +55,19 @@ async function handleEvent(event) {
 async function startBot(event) {
   const source = event.source || {};
   const patch = { active: true, groupId: null, roomId: null, directUserId: null, updatedAt: Date.now() };
-  let where = "แชตนี้";
-  if (source.type === "group" && source.groupId) { patch.groupId = source.groupId; where = "กลุ่มนี้"; }
-  else if (source.type === "room" && source.roomId) { patch.roomId = source.roomId; where = "ห้องนี้"; }
-  else if (source.type === "user" && source.userId) { patch.directUserId = source.userId; where = "แชตนี้"; }
+  let where = "this chat";
+  if (source.type === "group" && source.groupId) { patch.groupId = source.groupId; where = "this group"; }
+  else if (source.type === "room" && source.roomId) { patch.roomId = source.roomId; where = "this room"; }
+  else if (source.type === "user" && source.userId) { patch.directUserId = source.userId; where = "this chat"; }
 
   await setDoc(doc(db, "settings", "lineBot"), patch, { merge: true });
   await replyMessage(event.replyToken,
-    `✅ BadCount เริ่มทำงานใน${where}แล้ว\nเปิดก๊วนใหม่หรือมีคนลงชื่อ ระบบจะอัปเดตรายชื่อมาที่นี่อัตโนมัติ\n\n(พิมพ์ stopbadcount เพื่อหยุด)`);
+    `✅ BadCount is now active in ${where}.\nNew sessions and sign-ups will be posted here automatically.`);
 }
 
 // หยุดทำงาน
 async function stopBot(event) {
   await setDoc(doc(db, "settings", "lineBot"), { active: false, updatedAt: Date.now() }, { merge: true });
   await replyMessage(event.replyToken,
-    "⏹️ BadCount หยุดทำงานแล้ว — จะไม่ส่งข้อความอีก\n\n(พิมพ์ startbadcount เพื่อเริ่มใหม่)");
+    "⏹️ BadCount stopped. No more messages will be sent here.");
 }
