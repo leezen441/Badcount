@@ -9,6 +9,7 @@ import { verifySignature, replyMessage, getProfile } from "./_line.js";
 import {
   getLatestOpenSession, getSessionById, buildShareText, joinUrl, randId
 } from "./_sessions.js";
+import { pushInvite } from "./_notify.js";
 
 // อ่าน raw body ก่อนแตะ req.body (จำเป็นสำหรับตรวจลายเซ็น)
 async function getRawBody(req) {
@@ -141,6 +142,12 @@ async function handleJoin(event, source) {
     ok:     `ลงชื่อ "${name}" เรียบร้อย 🏸\n(สถานะ: พักคิวไว้ก่อน — พอถึงสนามให้แอดมินปลดพักคิว)\n\nดูยอด/จ่ายเงิน:\n${joinUrl(s.id)}`
   };
   await replyMessage(event.replyToken, messages[result] || messages.ok);
+
+  // ลงชื่อสำเร็จ → push รายชื่อล่าสุด (invite) เข้าทุกปลายทาง เพื่ออัปเดตลิสต์
+  if (result === "ok") {
+    const fresh = await getSessionById(s.id);
+    if (fresh) await pushInvite(fresh).catch(() => {});
+  }
 }
 
 async function handleBalance(event, source) {

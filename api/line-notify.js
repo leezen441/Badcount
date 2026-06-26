@@ -1,12 +1,11 @@
 // ============================================================
-// Notify group on new session — /api/line-notify
-// เว็บแอปเรียกตอนเปิดก๊วนใหม่ → push แจ้งกลุ่มไลน์ + ลิงก์ลงชื่อ
-// กัน spam: push ได้ครั้งเดียวต่อก๊วน (ใช้ flag lineNotified บน doc)
+// Notify — /api/line-notify
+// เรียกได้ 2 ทาง: ปุ่ม "LINE" ในหน้าก๊วน + ตอนมีคนลงชื่อผ่านลิงก์ join
+// → push ข้อความ invite (รายชื่อล่าสุด) เข้าทุกปลายทางที่บอทจำไว้
 // ============================================================
 import { db } from "./_firebase.js";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { pushMessage } from "./_line.js";
-import { buildShareText, joinUrl } from "./_sessions.js";
+import { pushInvite } from "./_notify.js";
 
 async function getRawBody(req) {
   const chunks = [];
@@ -37,19 +36,9 @@ export default async function handler(req, res) {
     if (!snap.exists()) { res.status(404).json({ ok: false, error: "session not found" }); return; }
 
     const s = { id: snap.id, ...snap.data() };
-
-    // ปลายทางที่บอทจดไว้: กลุ่ม (groupId) + แชต 1:1 ล่าสุด (directUserId)
-    const cfgSnap = await getDoc(doc(db, "settings", "lineBot"));
-    const cfg = cfgSnap.exists() ? cfgSnap.data() : {};
-    const targets = [...new Set([cfg.groupId, cfg.directUserId].filter(Boolean))];
-    if (targets.length === 0) { res.status(200).json({ ok: true, skipped: "no target" }); return; }
-
-    // ปุ่มกดเอง → ส่งได้ทุกครั้ง (admin คุมเอง) · ข้อความรูปแบบเดียวกับ Invite
-    const text = buildShareText(s, joinUrl(s.id));
-    let anyOk = false;
-    for (const to of targets) { if (await pushMessage(to, text)) anyOk = true; }
-    if (anyOk) { try { await updateDoc(ref, { lineNotifiedAt: Date.now() }); } catch (_) {} }
-    res.status(200).json({ ok: anyOk, targets: targets.length });
+    const result = await pushInvite(s);   // ข้อความรูปแบบ Invite → ทุกปลายทาง
+    if (result.ok && !result.skipped) { try { await updateDoc(ref, { lineNotifiedAt: Date.now() }); } catch (_) {} }
+    res.status(200).json(result);
   } catch (e) {
     console.error("notify error", e);
     res.status(500).json({ ok: false, error: "server" });
