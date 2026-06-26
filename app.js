@@ -1115,10 +1115,10 @@ $("btnLineNotify")?.addEventListener("click", async () => {
       body: JSON.stringify({ sessionId: currentSessionId })
     });
     const data = await r.json().catch(() => ({}));
-    if (data && data.skipped === "no group registered") {
-      toast("⚠️ ยังไม่ได้เพิ่มบอทเข้ากลุ่ม LINE — พิมพ์ในกลุ่ม 1 ครั้งก่อน");
+    if (data && data.skipped) {
+      toast("⚠️ ยังไม่มีปลายทางส่ง — ทักบอทแชต 1:1 หรือเพิ่มบอทเข้ากลุ่มก่อน", 3500);
     } else if (data && data.ok) {
-      toast("ส่งเข้ากลุ่ม LINE แล้ว ✓");
+      toast("ส่งเข้า LINE แล้ว ✓");
     } else {
       toast("ส่งไม่สำเร็จ ลองใหม่อีกครั้ง");
     }
