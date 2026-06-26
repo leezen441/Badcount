@@ -1142,6 +1142,18 @@ function pushLineUpdate(sessionId) {
   } catch (_) {}
 }
 
+// ทวงเงินเข้า LINE — server คำนวณยอดค้างเอง (fire & forget) ใช้กับ auto-post ตอนปิด Court
+function pushLineDue(sessionId) {
+  if (!sessionId) return;
+  try {
+    fetch("/api/line-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, type: "due" })
+    }).catch(() => {});
+  } catch (_) {}
+}
+
 // ---------- "ก๊วนอาทิตย์หน้า" — Clone จากก๊วนล่าสุด ----------
 
 // หาวันอาทิตย์ที่ใกล้ถึงที่สุด (ถ้าวันนี้คือวันอาทิตย์ ใช้วันนี้)
@@ -1635,10 +1647,27 @@ function updateSubRowPaymentButtons(unpaidCount) {
   }
 }
 
-// ---------- "ทวง" sub-row button — ใช้ logic เดียวกับ btnCopyDueList ----------
-$("btnRemindUnpaid").addEventListener("click", () => {
-  if ($("btnRemindUnpaid").disabled) return;
-  $("btnCopyDueList").click();
+// ---------- "ทวง" sub-row button → ส่งทวงเข้า LINE ทันที (server คำนวณยอด) ----------
+let remindInFlight = false;
+$("btnRemindUnpaid").addEventListener("click", async () => {
+  if ($("btnRemindUnpaid").disabled || remindInFlight || !currentSessionId) return;
+  remindInFlight = true;
+  try {
+    const r = await fetch("/api/line-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: currentSessionId, type: "due" })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (data && data.skipped === "all paid") toast("ทุกคนจ่ายครบแล้ว 🎉");
+    else if (data && data.skipped) toast("⚠️ บอทยังไม่เริ่มทำงาน — พิมพ์ startbadcount ก่อน", 3500);
+    else if (data && data.ok) toast("📣 ส่งทวงเข้า LINE แล้ว ✓");
+    else toast("ส่งไม่สำเร็จ ลองใหม่อีกครั้ง");
+  } catch (e) {
+    toast("ส่งไม่สำเร็จ — ตรวจการเชื่อมต่อ");
+  } finally {
+    remindInFlight = false;
+  }
 });
 
 // ---------- "Mark all paid" sub-row button — confirm แล้วเซ็ตทุกคน isPaid: true ----------
@@ -1657,8 +1686,9 @@ $("btnMarkAllPaid").addEventListener("click", () => {
   toast(`✓ ทำเครื่องหมายจ่ายแล้ว ${unpaidNames.length} คน`);
 });
 
-$("btnCopyDueList").addEventListener("click", async () => {
-  if (!currentSession || !currentSessionId) return;
+// สร้างข้อความ "ปิด Court — รายชื่อค้างชำระ + ยอดเงิน" (คืน null ถ้าทุกคนจ่ายครบ)
+function buildDueListText() {
+  if (!currentSession || !currentSessionId) return null;
   const s = currentSession;
   const members = s.members || [];
   const totals = calcTotals();
@@ -1667,11 +1697,7 @@ $("btnCopyDueList").addEventListener("click", async () => {
   members.forEach((m, idx) => {
     if (!m.isPaid) unpaid.push({ name: m.name, amount: totals.perMember[idx] });
   });
-
-  if (unpaid.length === 0) {
-    toast("ทุกคนจ่ายครบแล้ว 🎉");
-    return;
-  }
+  if (unpaid.length === 0) return null;
 
   const joinUrl = location.origin + location.pathname + `?openExternalBrowser=1#/join/${currentSessionId}`;
   const dateText = s.date ? formatDate(s.date) : "วันนี้";
@@ -1680,13 +1706,20 @@ $("btnCopyDueList").addEventListener("click", async () => {
   let text = `🔴 ปิด Court — ต้องชำระเงิน\n━━━━━━━━━━━━━━━\n\n`;
   text += `🏸 ตีแบดวันที่ ${dateText}\n`;
   if (courtInfo) text += `${courtInfo}\n`;
-
   text += `\nรายชื่อที่ยังค้างชำระ (${unpaid.length} คน):\n`;
   unpaid.forEach((u, idx) => {
     text += `${idx + 1}. ${u.name} : ${fmt(u.amount)} ฿\n`;
   });
-  text += `\n`;
-  text += `💰 คลิกลิงก์เพื่อชำระเงิน :\n${joinUrl}`;
+  text += `\n💰 คลิกลิงก์เพื่อชำระเงิน :\n${joinUrl}`;
+  return text;
+}
+
+$("btnCopyDueList").addEventListener("click", async () => {
+  const text = buildDueListText();
+  if (!text) {
+    toast("ทุกคนจ่ายครบแล้ว 🎉");
+    return;
+  }
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -2490,10 +2523,24 @@ $("btnCloseQR").addEventListener("click", () => $("qrModal").classList.add("hidd
 $("qrModal").addEventListener("click", e => { if (e.target.id === "qrModal") $("qrModal").classList.add("hidden"); });
 
 // Close/reopen
+let closeCourtAutoPostTimer = null;
 $("btnCloseSession").addEventListener("click", () => {
   const newStatus = currentSession.status === "closed" ? "open" : "closed";
   saveSession({ status: newStatus });
   toast(newStatus === "closed" ? "ปิด Court แล้ว ✓" : "เปิด Court อีกครั้ง ✓");
+
+  // ปิด Court ครบ 30 วิ (ยังปิดอยู่จริง) → โพสข้อความค้างชำระเข้า LINE อัตโนมัติ
+  // ถ้าเผลอกดปิดแล้วเปิดใหม่ภายใน 30 วิ → ยกเลิก ไม่โพส
+  if (closeCourtAutoPostTimer) { clearTimeout(closeCourtAutoPostTimer); closeCourtAutoPostTimer = null; }
+  if (newStatus === "closed") {
+    const sid = currentSessionId;
+    closeCourtAutoPostTimer = setTimeout(() => {
+      closeCourtAutoPostTimer = null;
+      if (currentSessionId === sid && currentSession && currentSession.status === "closed") {
+        pushLineDue(sid);
+      }
+    }, 30000);
+  }
 });
 
 // Delete
