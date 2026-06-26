@@ -7,16 +7,17 @@ import { doc, getDoc } from "firebase/firestore";
 import { pushMessage } from "./_line.js";
 import { buildShareText, joinUrl } from "./_sessions.js";
 
-export async function getTargets() {
+export async function getConfig() {
   const snap = await getDoc(doc(db, "settings", "lineBot"));
-  const cfg = snap.exists() ? snap.data() : {};
-  // กลุ่ม + แชต 1:1 ล่าสุด (กันซ้ำ)
-  return [...new Set([cfg.groupId, cfg.directUserId].filter(Boolean))];
+  return snap.exists() ? snap.data() : {};
 }
 
-// push ข้อความ invite ของ session เข้าทุกปลายทาง — คืน { ok, targets, skipped? }
+// push ข้อความ invite ของ session เข้าปลายทาง — คืน { ok, targets, skipped? }
+// จะส่งก็ต่อเมื่อ active=true (ตั้งผ่าน startbadcount) เท่านั้น
 export async function pushInvite(session) {
-  const targets = await getTargets();
+  const cfg = await getConfig();
+  if (!cfg.active) return { ok: true, targets: 0, skipped: "inactive" };
+  const targets = [...new Set([cfg.groupId, cfg.roomId, cfg.directUserId].filter(Boolean))];
   if (targets.length === 0) return { ok: true, targets: 0, skipped: "no target" };
   const text = buildShareText(session, joinUrl(session.id));
   let anyOk = false;
