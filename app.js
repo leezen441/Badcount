@@ -1093,23 +1093,42 @@ $("btnCreateSession").addEventListener("click", async () => {
     const baseSlug = dateToSlug(newSession.date);
     const slug = await findAvailableSessionSlug(baseSlug);
     await setDoc(doc(db, "sessions", slug), newSession);
-    notifyLineNewSession(slug);
     location.hash = `#/session/${slug}`;
   } catch (err) {
     alert("สร้างก๊วนไม่สำเร็จ: " + err.message);
   }
 });
 
-// แจ้งกลุ่มไลน์ว่ามีก๊วนใหม่ (ผ่าน Vercel serverless → LINE push) — fire & forget
-function notifyLineNewSession(sessionId) {
+// ส่งแจ้งก๊วนเข้ากลุ่ม LINE (กดเองจากหน้าก๊วน) — ต้องเพิ่มบอทเข้ากลุ่มก่อน
+// (บน instance ที่ไม่มีปุ่มนี้ในหน้า HTML handler จะไม่ผูกอะไร — inert)
+$("btnLineNotify")?.addEventListener("click", async () => {
+  if (!currentSessionId) return;
+  if (!confirm("ส่งข้อมูลก๊วนนี้เข้ากลุ่ม LINE เลยไหม?")) return;
+  const btn = $("btnLineNotify");
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="text-sm">⏳</span><span>กำลังส่ง...</span>';
   try {
-    fetch("/api/line-notify", {
+    const r = await fetch("/api/line-notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId })
-    }).catch(() => {});
-  } catch (_) {}
-}
+      body: JSON.stringify({ sessionId: currentSessionId })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (data && data.skipped === "no group registered") {
+      toast("⚠️ ยังไม่ได้เพิ่มบอทเข้ากลุ่ม LINE — พิมพ์ในกลุ่ม 1 ครั้งก่อน");
+    } else if (data && data.ok) {
+      toast("ส่งเข้ากลุ่ม LINE แล้ว ✓");
+    } else {
+      toast("ส่งไม่สำเร็จ ลองใหม่อีกครั้ง");
+    }
+  } catch (e) {
+    toast("ส่งไม่สำเร็จ — ตรวจการเชื่อมต่อ");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+});
 
 // ---------- "ก๊วนอาทิตย์หน้า" — Clone จากก๊วนล่าสุด ----------
 
@@ -1175,7 +1194,6 @@ $("btnCreateRecurring").addEventListener("click", async () => {
     const baseSlug = dateToSlug(newSession.date);
     const slug = await findAvailableSessionSlug(baseSlug);
     await setDoc(doc(db, "sessions", slug), newSession);
-    notifyLineNewSession(slug);
     toast(`สร้างก๊วน ${formatDate(nextSunday)} แล้ว 🎉`, 3000);
     location.hash = `#/session/${slug}`;
   } catch (err) {
