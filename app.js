@@ -1130,6 +1130,18 @@ $("btnLineNotify")?.addEventListener("click", async () => {
   }
 });
 
+// ส่ง invite รายชื่อล่าสุดเข้า LINE — เรียกตอนมีคนลงชื่อเพิ่ม (fire & forget, เงียบถ้ายังไม่มีปลายทาง)
+function pushLineUpdate(sessionId) {
+  if (!sessionId) return;
+  try {
+    fetch("/api/line-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId })
+    }).catch(() => {});
+  } catch (_) {}
+}
+
 // ---------- "ก๊วนอาทิตย์หน้า" — Clone จากก๊วนล่าสุด ----------
 
 // หาวันอาทิตย์ที่ใกล้ถึงที่สุด (ถ้าวันนี้คือวันอาทิตย์ ใช้วันนี้)
@@ -4395,6 +4407,7 @@ $("btnSubmitJoin").addEventListener("click", async () => {
 
     trackOwnSubmit(newId);
     addKnownMember(name); // จดจำชื่อในเครื่องของผู้เล่นไว้
+    pushLineUpdate(currentSessionId); // มีคนลงชื่อเพิ่ม → อัปเดตรายชื่อเข้า LINE
 
     // รีเซ็ตการเลือกฟอร์มลงชื่อหลังกดเข้าร่วมสำเร็จ
     currentJoinSkill = null;
