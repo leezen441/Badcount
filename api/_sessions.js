@@ -4,6 +4,9 @@
 // ============================================================
 import { db } from "./_firebase.js";
 import { collection, query, orderBy, limit, getDocs, doc, getDoc } from "firebase/firestore";
+import { calcSessionTotals } from "./_totals.js";
+
+const fmt = (n) => (Number(n) || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export const BASE_URL = (process.env.PUBLIC_BASE_URL || "https://badcount.vercel.app").replace(/\/+$/, "");
 
@@ -109,5 +112,30 @@ export function buildShareText(session, url) {
     text += `👇 กดลิงก์ลงชื่อเลย 😎 :\n${link}`;
   }
 
+  return text;
+}
+
+// ข้อความ "ปิด Court — รายชื่อค้างชำระ + ยอดเงิน" (คืน null ถ้าทุกคนจ่ายครบ)
+// ฟอร์แมตตรงกับ buildDueListText ฝั่งเว็บ (app.js)
+export function buildDueListText(session) {
+  const members = session.members || [];
+  const totals = calcSessionTotals(session);
+  const unpaid = [];
+  members.forEach((m, idx) => {
+    if (!m.isPaid) unpaid.push({ name: m.name, amount: totals.perMember[idx] });
+  });
+  if (unpaid.length === 0) return null;
+
+  const dateText = session.date ? formatDate(session.date) : "วันนี้";
+  const courtInfo = formatCourtsForShare(session.courts);
+
+  let text = `🔴 ปิด Court — ต้องชำระเงิน\n━━━━━━━━━━━━━━━\n\n`;
+  text += `🏸 ตีแบดวันที่ ${dateText}\n`;
+  if (courtInfo) text += `${courtInfo}\n`;
+  text += `\nรายชื่อที่ยังค้างชำระ (${unpaid.length} คน):\n`;
+  unpaid.forEach((u, idx) => {
+    text += `${idx + 1}. ${u.name} : ${fmt(u.amount)} ฿\n`;
+  });
+  text += `\n💰 คลิกลิงก์เพื่อชำระเงิน :\n${joinUrl(session.id)}`;
   return text;
 }
