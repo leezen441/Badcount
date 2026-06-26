@@ -1116,7 +1116,7 @@ $("btnLineNotify")?.addEventListener("click", async () => {
     });
     const data = await r.json().catch(() => ({}));
     if (data && data.skipped) {
-      toast("⚠️ ยังไม่มีปลายทางส่ง — ทักบอทแชต 1:1 หรือเพิ่มบอทเข้ากลุ่มก่อน", 3500);
+      toast("⚠️ บอทยังไม่เริ่มทำงาน — พิมพ์ startbadcount ในกลุ่ม/แชต LINE ก่อน", 3500);
     } else if (data && data.ok) {
       toast("ส่งเข้า LINE แล้ว ✓");
     } else {
