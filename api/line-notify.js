@@ -37,18 +37,15 @@ export default async function handler(req, res) {
     if (!snap.exists()) { res.status(404).json({ ok: false, error: "session not found" }); return; }
 
     const s = { id: snap.id, ...snap.data() };
-    if (s.lineNotified) { res.status(200).json({ ok: true, skipped: "already notified" }); return; }
 
     // หา groupId ที่บอทจดไว้ตอนถูกเชิญเข้ากลุ่ม
     const gSnap = await getDoc(doc(db, "settings", "lineBot"));
     const groupId = gSnap.exists() ? gSnap.data().groupId : null;
-
-    // mark ก่อน push เสมอ เพื่อกัน push ซ้ำแม้จะถูกเรียกหลายครั้ง
-    await updateDoc(ref, { lineNotified: true });
-
     if (!groupId) { res.status(200).json({ ok: true, skipped: "no group registered" }); return; }
 
-    const ok = await pushMessage(groupId, "🎉 เปิดก๊วนใหม่แล้ว!\n\n" + sessionSummaryText(s));
+    // ปุ่มกดเอง → ส่งได้ทุกครั้ง (admin คุมเอง) จดเวลาส่งล่าสุดไว้เฉยๆ
+    const ok = await pushMessage(groupId, "🏸 ก๊วนเปิดรับลงชื่อแล้ว!\n\n" + sessionSummaryText(s));
+    if (ok) { try { await updateDoc(ref, { lineNotifiedAt: Date.now() }); } catch (_) {} }
     res.status(200).json({ ok });
   } catch (e) {
     console.error("notify error", e);
