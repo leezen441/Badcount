@@ -38,15 +38,18 @@ export default async function handler(req, res) {
 
     const s = { id: snap.id, ...snap.data() };
 
-    // หา groupId ที่บอทจดไว้ตอนถูกเชิญเข้ากลุ่ม
-    const gSnap = await getDoc(doc(db, "settings", "lineBot"));
-    const groupId = gSnap.exists() ? gSnap.data().groupId : null;
-    if (!groupId) { res.status(200).json({ ok: true, skipped: "no group registered" }); return; }
+    // ปลายทางที่บอทจดไว้: กลุ่ม (groupId) + แชต 1:1 ล่าสุด (directUserId)
+    const cfgSnap = await getDoc(doc(db, "settings", "lineBot"));
+    const cfg = cfgSnap.exists() ? cfgSnap.data() : {};
+    const targets = [...new Set([cfg.groupId, cfg.directUserId].filter(Boolean))];
+    if (targets.length === 0) { res.status(200).json({ ok: true, skipped: "no target" }); return; }
 
-    // ปุ่มกดเอง → ส่งได้ทุกครั้ง (admin คุมเอง) จดเวลาส่งล่าสุดไว้เฉยๆ
-    const ok = await pushMessage(groupId, "🏸 ก๊วนเปิดรับลงชื่อแล้ว!\n\n" + sessionSummaryText(s));
-    if (ok) { try { await updateDoc(ref, { lineNotifiedAt: Date.now() }); } catch (_) {} }
-    res.status(200).json({ ok });
+    // ปุ่มกดเอง → ส่งได้ทุกครั้ง (admin คุมเอง)
+    const text = "🏸 ก๊วนเปิดรับลงชื่อแล้ว!\n\n" + sessionSummaryText(s);
+    let anyOk = false;
+    for (const to of targets) { if (await pushMessage(to, text)) anyOk = true; }
+    if (anyOk) { try { await updateDoc(ref, { lineNotifiedAt: Date.now() }); } catch (_) {} }
+    res.status(200).json({ ok: anyOk, targets: targets.length });
   } catch (e) {
     console.error("notify error", e);
     res.status(500).json({ ok: false, error: "server" });

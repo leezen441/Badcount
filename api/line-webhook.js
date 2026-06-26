@@ -41,9 +41,12 @@ export default async function handler(req, res) {
 async function handleEvent(event) {
   const source = event.source || {};
 
-  // จดจำ groupId ทุกครั้งที่เห็น event จากกลุ่ม → ใช้ push แจ้งเตือนภายหลัง
+  // จดจำปลายทางทุกครั้งที่เห็น event → ใช้ push แจ้งเตือนภายหลัง
+  // - กลุ่ม → groupId · แชต 1:1 → directUserId (สำหรับเทส/เตือนแอดมิน)
   if (source.type === "group" && source.groupId) {
-    await rememberGroup(source.groupId).catch(() => {});
+    await rememberTarget({ groupId: source.groupId }).catch(() => {});
+  } else if (source.type === "user" && source.userId) {
+    await rememberTarget({ directUserId: source.userId }).catch(() => {});
   }
 
   if (event.type === "join" || event.type === "follow") {
@@ -154,8 +157,8 @@ async function handleBalance(event, source) {
 
 // ---------- utils ----------
 
-async function rememberGroup(groupId) {
-  await setDoc(doc(db, "settings", "lineBot"), { groupId, updatedAt: Date.now() }, { merge: true });
+async function rememberTarget(patch) {
+  await setDoc(doc(db, "settings", "lineBot"), { ...patch, updatedAt: Date.now() }, { merge: true });
 }
 
 function welcomeText() {
