@@ -12,15 +12,29 @@ export async function getConfig() {
   return snap.exists() ? snap.data() : {};
 }
 
-// push ข้อความ invite ของ session เข้าปลายทาง — คืน { ok, targets, skipped? }
-// จะส่งก็ต่อเมื่อ active=true (ตั้งผ่าน startbadcount) เท่านั้น
-export async function pushInvite(session) {
+// ปลายทางที่ active (ต้อง startbadcount ก่อน) — คืน { targets, skipped? }
+async function getActiveTargets() {
   const cfg = await getConfig();
-  if (!cfg.active) return { ok: true, targets: 0, skipped: "inactive" };
+  if (!cfg.active) return { targets: [], skipped: "inactive" };
   const targets = [...new Set([cfg.groupId, cfg.roomId, cfg.directUserId].filter(Boolean))];
-  if (targets.length === 0) return { ok: true, targets: 0, skipped: "no target" };
-  const text = buildShareText(session, joinUrl(session.id));
+  if (targets.length === 0) return { targets: [], skipped: "no target" };
+  return { targets };
+}
+
+async function pushToTargets(text) {
+  const { targets, skipped } = await getActiveTargets();
+  if (skipped) return { ok: true, targets: 0, skipped };
   let anyOk = false;
   for (const to of targets) { if (await pushMessage(to, text)) anyOk = true; }
   return { ok: anyOk, targets: targets.length };
+}
+
+// push ข้อความ invite (รายชื่อล่าสุด) ของ session
+export async function pushInvite(session) {
+  return pushToTargets(buildShareText(session, joinUrl(session.id)));
+}
+
+// push ข้อความ text ตรงๆ (ใช้กับ auto-post ตอนปิด Court — ข้อความค้างชำระที่เว็บคำนวณมาแล้ว)
+export async function pushText(text) {
+  return pushToTargets(text);
 }

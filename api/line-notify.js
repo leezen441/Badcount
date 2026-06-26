@@ -5,7 +5,7 @@
 // ============================================================
 import { db } from "./_firebase.js";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { pushInvite } from "./_notify.js";
+import { pushInvite, pushText } from "./_notify.js";
 
 async function getRawBody(req) {
   const chunks = [];
@@ -36,7 +36,9 @@ export default async function handler(req, res) {
     if (!snap.exists()) { res.status(404).json({ ok: false, error: "session not found" }); return; }
 
     const s = { id: snap.id, ...snap.data() };
-    const result = await pushInvite(s);   // ข้อความรูปแบบ Invite → ทุกปลายทาง
+    // ถ้ามี text override (เช่น ข้อความค้างชำระตอนปิด Court) → ส่ง text นั้น · ไม่งั้นส่ง invite
+    const overrideText = payload && typeof payload.text === "string" ? payload.text.trim().slice(0, 4900) : "";
+    const result = overrideText ? await pushText(overrideText) : await pushInvite(s);
     if (result.ok && !result.skipped) { try { await updateDoc(ref, { lineNotifiedAt: Date.now() }); } catch (_) {} }
     res.status(200).json(result);
   } catch (e) {
