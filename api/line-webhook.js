@@ -7,7 +7,7 @@ import { db } from "./_firebase.js";
 import { doc, setDoc, runTransaction } from "firebase/firestore";
 import { verifySignature, replyMessage, getProfile } from "./_line.js";
 import {
-  getLatestOpenSession, getSessionById, sessionSummaryText, joinUrl, randId
+  getLatestOpenSession, getSessionById, buildShareText, joinUrl, randId
 } from "./_sessions.js";
 
 // อ่าน raw body ก่อนแตะ req.body (จำเป็นสำหรับตรวจลายเซ็น)
@@ -87,7 +87,7 @@ async function handleEvent(event) {
 async function handleLatestLink(event) {
   const s = await getLatestOpenSession();
   if (!s) { await replyMessage(event.replyToken, "ยังไม่มีก๊วนที่เปิดอยู่ตอนนี้ครับ 🙏"); return; }
-  await replyMessage(event.replyToken, sessionSummaryText(s));
+  await replyMessage(event.replyToken, buildShareText(s, joinUrl(s.id)));
 }
 
 async function handleJoin(event, source) {

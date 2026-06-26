@@ -6,7 +6,7 @@
 import { db } from "./_firebase.js";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { pushMessage } from "./_line.js";
-import { sessionSummaryText } from "./_sessions.js";
+import { buildShareText, joinUrl } from "./_sessions.js";
 
 async function getRawBody(req) {
   const chunks = [];
@@ -44,8 +44,8 @@ export default async function handler(req, res) {
     const targets = [...new Set([cfg.groupId, cfg.directUserId].filter(Boolean))];
     if (targets.length === 0) { res.status(200).json({ ok: true, skipped: "no target" }); return; }
 
-    // ปุ่มกดเอง → ส่งได้ทุกครั้ง (admin คุมเอง)
-    const text = "🏸 ก๊วนเปิดรับลงชื่อแล้ว!\n\n" + sessionSummaryText(s);
+    // ปุ่มกดเอง → ส่งได้ทุกครั้ง (admin คุมเอง) · ข้อความรูปแบบเดียวกับ Invite
+    const text = buildShareText(s, joinUrl(s.id));
     let anyOk = false;
     for (const to of targets) { if (await pushMessage(to, text)) anyOk = true; }
     if (anyOk) { try { await updateDoc(ref, { lineNotifiedAt: Date.now() }); } catch (_) {} }
