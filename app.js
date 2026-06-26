@@ -1093,11 +1093,23 @@ $("btnCreateSession").addEventListener("click", async () => {
     const baseSlug = dateToSlug(newSession.date);
     const slug = await findAvailableSessionSlug(baseSlug);
     await setDoc(doc(db, "sessions", slug), newSession);
+    notifyLineNewSession(slug);
     location.hash = `#/session/${slug}`;
   } catch (err) {
     alert("สร้างก๊วนไม่สำเร็จ: " + err.message);
   }
 });
+
+// แจ้งกลุ่มไลน์ว่ามีก๊วนใหม่ (ผ่าน Vercel serverless → LINE push) — fire & forget
+function notifyLineNewSession(sessionId) {
+  try {
+    fetch("/api/line-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId })
+    }).catch(() => {});
+  } catch (_) {}
+}
 
 // ---------- "ก๊วนอาทิตย์หน้า" — Clone จากก๊วนล่าสุด ----------
 
@@ -1163,6 +1175,7 @@ $("btnCreateRecurring").addEventListener("click", async () => {
     const baseSlug = dateToSlug(newSession.date);
     const slug = await findAvailableSessionSlug(baseSlug);
     await setDoc(doc(db, "sessions", slug), newSession);
+    notifyLineNewSession(slug);
     toast(`สร้างก๊วน ${formatDate(nextSunday)} แล้ว 🎉`, 3000);
     location.hash = `#/session/${slug}`;
   } catch (err) {

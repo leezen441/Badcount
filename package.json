@@ -1,0 +1,10 @@
+{
+  "name": "badcount-line-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Serverless functions for BadCount LINE bot (Vercel /api)",
+  "dependencies": {
+    "firebase": "^10.13.0"
+  }
+}
