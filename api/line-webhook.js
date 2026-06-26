@@ -6,7 +6,7 @@
 // นอกนั้นเงียบหมด (ไม่มีเมนู/คำสั่งอื่น)
 // ============================================================
 import { db } from "./_firebase.js";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { verifySignature, replyMessage } from "./_line.js";
 
 // อ่าน raw body ก่อนแตะ req.body (จำเป็นสำหรับตรวจลายเซ็น)
@@ -46,9 +46,29 @@ async function handleEvent(event) {
   if (event.type !== "message" || !event.message || event.message.type !== "text") return;
 
   const text = (event.message.text || "").trim();
-  if (/^start\s*badcount$/i.test(text)) { await startBot(event); return; }
-  if (/^stop\s*badcount$/i.test(text)) { await stopBot(event); return; }
-  // ข้อความอื่น → เงียบ
+  const isStart = /^start\s*badcount$/i.test(text);
+  const isStop = /^stop\s*badcount$/i.test(text);
+  if (!isStart && !isStop) return;   // ข้อความอื่น → เงียบ
+
+  // ล็อกเจ้าของ: เฉพาะ LINE ID เจ้าของเท่านั้นที่สั่ง start/stop ได้
+  const userId = event.source && event.source.userId;
+  if (!(await isOwner(userId))) return;   // ไม่ใช่เจ้าของ → เงียบ
+
+  if (isStart) await startBot(event);
+  else await stopBot(event);
+}
+
+// Trust-On-First-Use: ยังไม่มีเจ้าของ → คนแรกที่สั่ง = เจ้าของ (ล็อกถาวร) · มีแล้ว → ต้องตรง userId
+async function isOwner(userId) {
+  if (!userId) return false;
+  const ref = doc(db, "settings", "lineBot");
+  const snap = await getDoc(ref);
+  const cfg = snap.exists() ? snap.data() : {};
+  if (!cfg.adminUserId) {
+    await setDoc(ref, { adminUserId: userId }, { merge: true });
+    return true;
+  }
+  return cfg.adminUserId === userId;
 }
 
 // เริ่มทำงาน: จำปลายทางนี้ (เคลียร์ปลายทางเก่า ให้ทำงานทีละที่) + active
