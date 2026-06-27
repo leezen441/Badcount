@@ -139,3 +139,8 @@ export function buildDueListText(session) {
   text += `\n💰 คลิกลิงก์เพื่อชำระเงิน :\n${joinUrl(session.id)}`;
   return text;
 }
+
+// ข้อความประกาศ "คอร์ดวันนี้เปิดแล้ว" (ภาษาอังกฤษ ไม่มีลิงก์) — ใช้ตอนสร้างเกมแรกของวัน
+export function buildCourtsOpenText() {
+  return `🔥 Courts are open 🏸\nToday's session has started!`;
+}

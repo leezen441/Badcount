@@ -6,7 +6,7 @@
 import { db } from "./_firebase.js";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { pushInvite, pushText } from "./_notify.js";
-import { buildDueListText } from "./_sessions.js";
+import { buildDueListText, buildCourtsOpenText } from "./_sessions.js";
 
 async function getRawBody(req) {
   const chunks = [];
@@ -37,6 +37,16 @@ export default async function handler(req, res) {
     if (!snap.exists()) { res.status(404).json({ ok: false, error: "session not found" }); return; }
 
     const s = { id: snap.id, ...snap.data() };
+
+    // ประกาศ "คอร์ดวันนี้เปิดแล้ว" — ส่งครั้งเดียวต่อก๊วน (กันส่งซ้ำด้วย lineOpenNotifiedAt)
+    if (payload && payload.type === "open") {
+      if (s.lineOpenNotifiedAt) { res.status(200).json({ ok: true, skipped: "already notified" }); return; }
+      const r = await pushText(buildCourtsOpenText(s));
+      if (r.ok && !r.skipped) { try { await updateDoc(ref, { lineOpenNotifiedAt: Date.now() }); } catch (_) {} }
+      res.status(200).json(r);
+      return;
+    }
+
     let result;
     if (payload && payload.type === "due") {
       // ทวงเงิน → คำนวณยอดค้างฝั่ง server (แม่นยำ ไม่ต้องเชื่อ text จาก client)
