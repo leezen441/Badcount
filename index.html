@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.12.0">
+  <link rel="stylesheet" href="./premium.css?v=3.13.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -791,13 +791,22 @@
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
         <h2 class="text-xl font-bold mb-4">💰 สรุปยอดรวม (Admin Summary)</h2>
         
-        <div class="flex gap-2 mb-6">
-          <select id="fldAdminSummaryFilter" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900">
-            <option value="month">รายเดือน (This Month)</option>
-            <option value="year">รายปี (This Year)</option>
-            <option value="all">ทั้งหมด (All Time)</option>
-          </select>
-          <button id="btnLoadAdminSummary" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold">สรุปผล</button>
+        <!-- Mode toggle: รายเดือน / รายปี / ทั้งหมด -->
+        <div class="flex gap-2 mb-3">
+          <button id="btnAsModeMonth" class="as-mode-btn flex-1 px-4 py-2 rounded-xl font-bold text-sm transition-colors">รายเดือน</button>
+          <button id="btnAsModeYear" class="as-mode-btn flex-1 px-4 py-2 rounded-xl font-bold text-sm transition-colors">รายปี</button>
+          <button id="btnAsModeAll" class="as-mode-btn flex-1 px-4 py-2 rounded-xl font-bold text-sm transition-colors">ทั้งหมด</button>
+        </div>
+
+        <!-- Period navigator: ◀ [เดือน/ปี] ▶ -->
+        <div id="asNav" class="flex items-center gap-2 mb-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-1.5">
+          <button id="btnAsPrev" class="shrink-0 p-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition" title="ก่อนหน้า" aria-label="ก่อนหน้า">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div id="asNavLabel" class="flex-1 text-center font-bold text-base text-slate-800 dark:text-slate-100 select-none">—</div>
+          <button id="btnAsNext" class="shrink-0 p-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition" title="ถัดไป" aria-label="ถัดไป">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
         </div>
 
         <div id="adminSummaryResult" class="hidden">
@@ -1227,6 +1236,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.12.0"></script>
+  <script type="module" src="./app.js?v=3.13.0"></script>
 </body>
 </html>

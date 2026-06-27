@@ -816,7 +816,8 @@ function route() {
     populatePlayerDatalist();
   } else if (parts[0] === "admin-summary") {
     showView("admin-summary");
-    loadAdminSummaryData($("fldAdminSummaryFilter").value);
+    renderAdminSummaryNav();
+    loadAdminSummaryData();
   } else {
     showView("home");
     loadRecentSessions();
@@ -5620,10 +5621,56 @@ setTimeout(updateInstallBanner, 1000);
 // ============================================================
 
 // --- Admin Summary ---
-async function loadAdminSummaryData(filterType) {
+// --- Admin Summary period navigation (month / year / all) ---
+const THAI_MONTHS_FULL = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+const adminSummaryState = (() => {
+  const n = new Date();
+  return { mode: 'month', year: n.getFullYear(), month: n.getMonth() + 1 };
+})();
+
+function renderAdminSummaryNav() {
+  ['Month','Year','All'].forEach(cap => {
+    const btn = $(`btnAsMode${cap}`);
+    if (!btn) return;
+    const active = adminSummaryState.mode === cap.toLowerCase();
+    btn.className = `as-mode-btn flex-1 px-4 py-2 rounded-xl font-bold text-sm transition-colors ${active
+      ? 'bg-indigo-600 text-white shadow-sm'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`;
+  });
+
+  const nav = $("asNav");
+  const label = $("asNavLabel");
+  if (adminSummaryState.mode === 'all') {
+    nav?.classList.add('hidden');
+  } else {
+    nav?.classList.remove('hidden');
+    if (label) {
+      label.textContent = adminSummaryState.mode === 'month'
+        ? `${THAI_MONTHS_FULL[adminSummaryState.month - 1]} ${adminSummaryState.year + 543}`
+        : `ปี ${adminSummaryState.year + 543}`;
+    }
+  }
+}
+
+function shiftAdminSummary(dir) {
+  if (adminSummaryState.mode === 'month') {
+    let m = adminSummaryState.month + dir;
+    let y = adminSummaryState.year;
+    if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
+    adminSummaryState.month = m;
+    adminSummaryState.year = y;
+  } else if (adminSummaryState.mode === 'year') {
+    adminSummaryState.year += dir;
+  }
+  renderAdminSummaryNav();
+  loadAdminSummaryData();
+}
+
+async function loadAdminSummaryData() {
   const container = $("adminSummaryResult");
   if (!container) return;
-  
+
   container.classList.add("hidden");
   $("asPeriod").textContent = "กำลังคำนวณ...";
   container.classList.remove("hidden");
@@ -5632,18 +5679,18 @@ async function loadAdminSummaryData(filterType) {
     const snap = await getDocs(SESSIONS);
     let totalCourt = 0, totalShuttle = 0, totalOther = 0;
     let closedRevenue = 0, expectedCollection = 0, unpaid = 0;
-    const now = new Date();
-    const currYear = String(now.getFullYear());
-    const currMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const { mode, year, month } = adminSummaryState;
+    const yStr = String(year);
+    const mStr = String(month).padStart(2, '0');
 
     snap.forEach(doc => {
       const s = doc.data();
       if (!s.date) return;
-      
+
       let match = false;
-      if (filterType === 'all') match = true;
-      else if (filterType === 'year' && s.date.startsWith(currYear)) match = true;
-      else if (filterType === 'month' && s.date.startsWith(`${currYear}-${currMonth}`)) match = true;
+      if (mode === 'all') match = true;
+      else if (mode === 'year' && s.date.startsWith(yStr)) match = true;
+      else if (mode === 'month' && s.date.startsWith(`${yStr}-${mStr}`)) match = true;
 
       if (match) {
         const totals = calcTotals(s);
@@ -5677,8 +5724,8 @@ async function loadAdminSummaryData(filterType) {
     $("asUnpaid").textContent = fmt(unpaid) + " ฿";
 
     let periodLabel = "ทั้งหมด (All Time)";
-    if (filterType === 'month') periodLabel = `เดือน ${currMonth}/${currYear}`;
-    else if (filterType === 'year') periodLabel = `ปี ${currYear}`;
+    if (mode === 'month') periodLabel = `${THAI_MONTHS_FULL[month - 1]} ${year + 543}`;
+    else if (mode === 'year') periodLabel = `ปี ${year + 543}`;
     $("asPeriod").textContent = `ข้อมูล: ${periodLabel}`;
 
   } catch (err) {
@@ -5687,9 +5734,15 @@ async function loadAdminSummaryData(filterType) {
   }
 }
 
-$("btnLoadAdminSummary")?.addEventListener("click", () => {
-  loadAdminSummaryData($("fldAdminSummaryFilter").value);
+["Month", "Year", "All"].forEach(cap => {
+  $(`btnAsMode${cap}`)?.addEventListener("click", () => {
+    adminSummaryState.mode = cap.toLowerCase();
+    renderAdminSummaryNav();
+    loadAdminSummaryData();
+  });
 });
+$("btnAsPrev")?.addEventListener("click", () => shiftAdminSummary(-1));
+$("btnAsNext")?.addEventListener("click", () => shiftAdminSummary(1));
 
 // --- Personal Stats ---
 async function loadPersonalStatsData(playerName, filterType) {
