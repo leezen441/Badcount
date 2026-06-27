@@ -1846,10 +1846,22 @@ function renderMembers() {
           <div class="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
             <div class="flex items-center gap-0.5">
               ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
-                <button data-act="view-slip" data-idx="${idx}" class="text-lg sm:text-xl leading-none p-0.5 hover:scale-110 active:scale-95 transition-transform" title="ดูสลิป">🖼️</button>
+                <button data-act="view-slip" data-idx="${idx}" class="text-emerald-500 hover:text-emerald-600 hover:scale-110 active:scale-95 transition-transform p-0.5" title="ดูสลิป">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 sm:w-6 sm:h-6">
+                    <path d="M6 3h12a1 1 0 0 1 1 1v16l-2.2-1.3-2.3 1.3-2.3-1.3-2.3 1.3L7.2 18.7 5 20V4a1 1 0 0 1 1-1Z"/>
+                    <path d="M9 8h6M9 11.5h6M9 15h3.5"/>
+                  </svg>
+                </button>
               ` : ''}
               ${!isPaid ? `
-                <button data-act="show-dyn-qr" data-idx="${idx}" class="text-lg sm:text-xl leading-none p-0.5 hover:scale-110 active:scale-95 transition-transform" title="สแกน QR / จ่ายเงิน">💸</button>
+                <button data-act="show-dyn-qr" data-idx="${idx}" class="text-amber-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition-transform p-0.5" title="สแกน QR / จ่ายเงิน">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" class="w-5 h-5 sm:w-6 sm:h-6">
+                    <rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.5"/>
+                    <rect x="3.5" y="14" width="6.5" height="6.5" rx="1.5"/>
+                    <rect x="14" y="3.5" width="6.5" height="6.5" rx="1.5"/>
+                    <path fill="currentColor" stroke="none" d="M14 14h2.5v2.5H14zM18 18h2.5v2.5H18zM18 14h2.5v2.5H18zM14 18h2.5v2.5H14z"/>
+                  </svg>
+                </button>
               ` : ''}
             </div>
             <div class="font-extrabold text-xs sm:text-base ${priceColor} whitespace-nowrap text-right min-w-[52px] sm:min-w-[72px]">${fmt(totals.perMember[idx])} ฿</div>
