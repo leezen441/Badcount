@@ -2484,21 +2484,22 @@ $("fldOtherCostType").addEventListener("change", e => {
 $("fldSimpleShuttleCount")?.addEventListener("change", e => saveSession({ simpleShuttleCount: e.target.checked }));
 
 // Add member
-function addMember() {
+async function addMember() {
   const input = $("fldNewMember");
   const name = input.value.trim();
   if (!name) return;
-  const members = [...(currentSession.members || [])];
-  if (members.some(m => (m.name || "").toLowerCase() === name.toLowerCase())) {
+  if ((currentSession.members || []).some(m => (m.name || "").toLowerCase() === name.toLowerCase())) {
     toast(`มีชื่อ "${name}" ในก๊วนแล้ว`);
     return;
   }
   const newId = uid();
   trackOwnSubmit(newId);
-  members.push({ id: newId, name, shuttlesUsed: 0 });
+  input.value = "";
+  await loadPlayerProfiles();
+  const members = [...(currentSession.members || [])];   // อ่านหลัง await ให้สดที่สุด
+  members.push({ id: newId, name, shuttlesUsed: 0, skill: rememberedSkill(name) });
   addKnownMember(name); // จดจำไว้สำหรับครั้งหน้า
   saveSession({ members });
-  input.value = "";
   input.focus();
 }
 $("btnAddMember").addEventListener("click", addMember);
@@ -4405,7 +4406,9 @@ $("btnSubmitJoin").addEventListener("click", async () => {
     const ref = doc(db, "sessions", currentSessionId);
     let errorMsg = "";
     const newId = uid();
-    const skill = (currentSession && currentSession.mode === "advance") ? currentJoinSkill : null;
+    await loadPlayerProfiles();
+    const explicitSkill = (currentSession && currentSession.mode === "advance") ? currentJoinSkill : null;
+    const skill = explicitSkill || rememberedSkill(name);   // ไม่ได้เลือกเอง → ใช้ระดับมือที่เคยตั้งไว้
     const buddyId = (currentSession && currentSession.mode === "advance") ? ($("fldJoinBuddy")?.value || null) : null;
 
     await runTransaction(db, async (transaction) => {
@@ -5824,6 +5827,7 @@ async function loadPersonalStatsData(playerName, filterType) {
 // Suggestion แนะนำชื่อที่ "ใกล้เคียง" กับชื่อที่เลือกไว้ (รองรับไทย+อังกฤษ) จนกว่าจะไม่มีชื่อใกล้เคียง
 
 let allPlayerNamesCache = null;   // Set ของชื่อผู้เล่นทั้งหมด (local + cloud)
+let playerSkillCache = new Map(); // nameLower → ระดับมือล่าสุดที่เคยตั้ง (จำข้ามก๊วน)
 let statsChips = [];              // ชื่อที่เลือกไว้ (display form)
 let statsSuggList = [];           // รายการ suggestion ปัจจุบัน (index-based เพื่อเลี่ยงปัญหา escaping)
 
@@ -6047,27 +6051,41 @@ function runPersonalStatsSearch() {
 })();
 
 // โหลดรายชื่อผู้เล่นทั้งหมดเข้า cache (เรียกตอนเข้าหน้า personal-stats) แล้ว refresh suggestion
-async function populatePlayerDatalist() {
-  renderStatsChips();
-  if (allPlayerNamesCache) { renderStatsSuggestions(); return; }
-
-  let names = new Set(getKnownMembers());
+// โหลดรายชื่อ + ระดับมือล่าสุดของผู้เล่นทั้งหมดจาก cloud (cache ครั้งเดียว/เซสชัน)
+async function loadPlayerProfiles() {
+  if (allPlayerNamesCache) return;   // โหลดแล้ว
+  const names = new Set(getKnownMembers());
+  const skills = new Map();
   try {
-    const snap = await getDocs(query(SESSIONS));
+    // เรียงก๊วนใหม่→เก่า เพื่อให้ระดับมือจากก๊วนล่าสุดของแต่ละชื่อชนะ
+    const snap = await getDocs(query(SESSIONS, orderBy("date", "desc")));
     snap.forEach(doc => {
       const s = doc.data();
       (s.members || []).forEach(m => {
-        if (m.name) {
-          const trimmed = m.name.trim();
-          if (trimmed) names.add(trimmed);
-        }
+        if (!m.name) return;
+        const trimmed = m.name.trim();
+        if (!trimmed) return;
+        names.add(trimmed);
+        const lc = trimmed.toLowerCase();
+        if (!skills.has(lc) && m.skill) skills.set(lc, m.skill);
       });
     });
-    allPlayerNamesCache = names;
   } catch (err) {
-    console.warn("Failed to fetch all player names for suggestions:", err);
-    allPlayerNamesCache = names;
+    console.warn("loadPlayerProfiles failed:", err);
   }
+  allPlayerNamesCache = names;
+  playerSkillCache = skills;
+}
+
+// คืนระดับมือที่จำไว้ของชื่อนี้ (จากก๊วนก่อนๆ) — ไม่มี = null
+function rememberedSkill(name) {
+  if (!name) return null;
+  return playerSkillCache.get(String(name).trim().toLowerCase()) || null;
+}
+
+async function populatePlayerDatalist() {
+  renderStatsChips();
+  await loadPlayerProfiles();
   try { renderStatsSuggestions(); } catch (_) {}
 }
 
