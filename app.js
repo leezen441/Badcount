@@ -1843,20 +1843,16 @@ function renderMembers() {
             </div>
           </div>
           
-          <div class="flex flex-col items-end justify-center shrink-0 min-w-[60px] sm:min-w-[85px]">
-            <div class="font-extrabold text-xs sm:text-base ${priceColor} whitespace-nowrap">${fmt(totals.perMember[idx])} ฿</div>
-            <div class="flex gap-1 mt-0.5">
+          <div class="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+            <div class="flex items-center gap-0.5">
               ${(m.slipImage || m.slipQR || m.hasReceipt) ? `
-                <button data-act="view-slip" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="ดูสลิป">
-                  <span>🖼️</span>
-                </button>
+                <button data-act="view-slip" data-idx="${idx}" class="text-lg sm:text-xl leading-none p-0.5 hover:scale-110 active:scale-95 transition-transform" title="ดูสลิป">🖼️</button>
               ` : ''}
               ${!isPaid ? `
-                <button data-act="show-dyn-qr" data-idx="${idx}" class="text-[9px] px-1 py-0.25 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-extrabold rounded flex items-center gap-0.5 hover:scale-105 transition-transform" title="สแกน QR">
-                  <span>💸</span>
-                </button>
+                <button data-act="show-dyn-qr" data-idx="${idx}" class="text-lg sm:text-xl leading-none p-0.5 hover:scale-110 active:scale-95 transition-transform" title="สแกน QR / จ่ายเงิน">💸</button>
               ` : ''}
             </div>
+            <div class="font-extrabold text-xs sm:text-base ${priceColor} whitespace-nowrap text-right min-w-[52px] sm:min-w-[72px]">${fmt(totals.perMember[idx])} ฿</div>
           </div>
         </div>
 
