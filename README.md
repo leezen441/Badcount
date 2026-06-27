@@ -51,8 +51,9 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 - ✅ **PWA Install**: รองรับการติดตั้งแบบแอปพลิเคชันเดี่ยว (Standalone) เต็มหน้าจอ ไร้แถบ URL เบราว์เซอร์ ทำงานได้รวดเร็ว
 
 ### ⚡ ระบบ Cache-Busting & PWA Resilient Updates
-- ✅ **การควบคุม Cache ออฟไลน์**: ใช้ **Service Worker Cache Namespace (`badcount-v13`)** ในไฟล์ `sw.js` เพื่อเคลียร์แคชเก่าเมื่ออัปเดตระบบ
-- ✅ **Cache-Busting Query Parameters**: กำหนดเวอร์ชันให้การโหลดไฟล์ใน `index.html` เสมอ เช่น `premium.css?v=3.0.7` และ `app.js?v=3.0.7` เพื่อบังคับให้เบราว์เซอร์รับรู้การอัปเดตไฟล์แบบทันที (Instant load)
+- ✅ **การควบคุม Cache ออฟไลน์**: ใช้ **Service Worker Cache Namespace (`badcount-v29`)** ในไฟล์ `sw.js` เพื่อเคลียร์แคชเก่าเมื่ออัปเดตระบบ
+- ✅ **Cache-Busting Query Parameters**: กำหนดเวอร์ชันให้การโหลดไฟล์ใน `index.html` เสมอ เช่น `premium.css?v=3.12.0` และ `app.js?v=3.12.0` เพื่อบังคับให้เบราว์เซอร์รับรู้การอัปเดตไฟล์แบบทันที (Instant load)
+  - ⚠️ **กฎสำคัญ**: ทุกครั้งที่แก้ `app.js`/`premium.css` ต้อง bump `?v=` ใน `index.html` และ `CACHE_NAME` ใน `sw.js` ไม่งั้นผู้ใช้ไม่เห็นของใหม่
 - ✅ **Resilient Realtime Sync**: ตรวจจับสถานะการเชื่อมต่อเครือข่าย (Online/Offline notifications) และระบบตรวจจับ Visibility ของแอป เพื่อบังคับเชื่อมต่อ Firestore ใหม่หากผู้ใช้เปิดหน้าต่างกลับมาจาก background ช่วยแก้ปัญหาข้อมูล Staleness
 
 ### 📤 Export & Sharing
@@ -70,6 +71,13 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 - ✅ **Session Persistence**: ล็อกอินยาวนานต่อเนื่อง 30 วันไม่ต้องใส่รหัสซ้ำ
 - ✅ **3-Tier Permission Control**: ควบคุมระดับสิทธิ์การเข้าถึงข้อมูลผ่านรูปแบบ URL Pattern
 
+### 🆕 ฟีเจอร์ล่าสุด (2026)
+- ✅ **🤖 LINE Bot**: เชื่อมก๊วนเข้ากลุ่มไลน์ — แจ้งรายชื่อ/ทวงเงินอัตโนมัติ (ดูหัวข้อ LINE Bot ด้านล่าง)
+- ✅ **ลงชื่อ = พักคิวอัตโนมัติ**: คนลงชื่อผ่านลิงก์ join จะถูกตั้งสถานะ "พักคิว" (ไม่เข้าคิวจัดเกม) จนแอดมินกดปลดเมื่อมาถึงสนาม
+- ✅ **จำระดับมือข้ามก๊วน**: ถ้าชื่อนั้นเคยตั้งระดับมือในก๊วนก่อน ระบบใส่ระดับมือล่าสุดให้อัตโนมัติตอนลงชื่อ/เพิ่มสมาชิก
+- ✅ **ค้นสถิติแบบ Chip + Suggest อัจฉริยะ**: หน้า Personal Stats พิมพ์/กดชื่อเป็น chip ได้หลายคน + แนะนำชื่อใกล้เคียง (รองรับไทย+อังกฤษ เช่น Ball↔บอล, เอก↔Ek)
+- ✅ **PromptPay QR สแกนได้ทุกแบงก์**: แก้ field order ให้เป็น canonical + เพิ่ม quiet zone (ขอบขาว) แก้ปัญหา Bangkok Bank/ออมสินสแกนไม่ได้
+
 ---
 
 ## 🌐 Routes / URL Patterns
@@ -85,26 +93,65 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 | `/#/session/{id}` | Admin (ต้อง Login) | หน้าจัดการกลุ่มแบบเต็มสิทธิ์ เพิ่ม/ลดสมาชิก จัดสนาม คำนวณเงิน จัดเกมนับแต้ม |
 | `/#/m-home` | Manager ( Temp Manager ) | หน้าหลักแสดงรายการกลุ่มล่าสุดสำหรับสิทธิ์ผู้จัดการชั่วคราว |
 | `/#/m/{id}` | Temp Manager | หน้าจัดการเฉพาะกลุ่มนี้ชั่วคราว (ต้องยืนยันตัวตนด้วย PIN 4 หลักของกลุ่มนั้นก่อนเข้าใช้) |
-| `/#/join/{id}` | Member (Public) | ลงชื่อเข้าร่วมกลุ่มระบุ Buddy เลือกมือเล่น ดูยอดค่าใช้จ่าย อัปโหลดรูปสลิปหลักฐานการโอนเงิน |
+| `/#/join/{id}` | Member (Public) | ลงชื่อเข้าร่วมกลุ่ม (ลงชื่อ = พักคิวอัตโนมัติจนแอดมินปลด · จำระดับมือจากก๊วนก่อนให้เอง) ระบุ Buddy ดูยอด อัปโหลดสลิป |
+
+---
+
+## 🤖 LINE Bot Integration (เฉพาะ instance หลัก / Team A)
+
+บอท LINE Official Account เชื่อมก๊วนกับกลุ่มไลน์ผ่าน **Vercel Serverless Functions** (โฟลเดอร์ `api/`) ต่อ Firestore โปรเจกต์เดียวกัน
+
+### คำสั่งบอท (สั่งได้เฉพาะเจ้าของ)
+| พิมพ์ในแชต/กลุ่ม | การทำงาน |
+|---|---|
+| `startbadcount` | เริ่มทำงาน + จำแชต/กลุ่มนี้เป็นปลายทาง · **คนแรกที่พิมพ์ = เจ้าของถาวร** (Trust-On-First-Use) คนอื่นสั่งไม่ได้ |
+| `stopbadcount` | หยุดทำงาน ไม่ส่งข้อความอีก |
+
+### สิ่งที่บอททำให้อัตโนมัติ
+- **อัปเดตรายชื่อ**: มีคนลงชื่อผ่านลิงก์ join → push ข้อความ invite (รายชื่อล่าสุด) เข้ากลุ่ม
+- **ปุ่ม LINE** (ข้างช่องวันที่ในหน้าก๊วน): กดส่งข้อมูลก๊วน + รายชื่อเข้ากลุ่มเอง
+- **ปุ่มทวง / ปิด Court ครบ 30 วิ**: โพสข้อความค้างชำระ (รายชื่อ + ยอดเงิน) เข้ากลุ่ม (เปิด-ปิดเร็วใน 30 วิ ไม่โพส)
+- **Cron ทุกเช้า 8 โมง**: ทวงก๊วนที่ปิดล่าสุดที่ยังมีคนค้างจ่าย — จ่ายครบเมื่อไหร่หยุดเอง
+
+### การตั้งค่า (ครั้งเดียว)
+1. สร้าง **Messaging API channel** ที่ [LINE Developers Console](https://developers.line.biz) → ได้ Channel access token + Channel secret
+2. ใส่ใน **Vercel → Environment Variables**: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET` (และตัวเลือก `CRON_SECRET` เพื่อกันคนนอกเรียก cron)
+3. ตั้ง **Webhook URL** = `https://<โดเมน>/api/line-webhook` → เปิด Use webhook
+4. ที่ [OA Manager](https://manager.line.biz): ปิด Auto-reply · เปิด Webhooks · เปิด Allow bots to join group chats
+5. เชิญบอทเข้ากลุ่ม → พิมพ์ `startbadcount` (คุณต้องเป็นคนพิมพ์คนแรกเพื่อล็อกเป็นเจ้าของ)
+
+### ผลต่อฐานข้อมูล (เพิ่มเท่านั้น — ไม่กระทบข้อมูลเดิม)
+- เพิ่ม doc `settings/lineBot` (เก็บ adminUserId / ปลายทาง / active)
+- เพิ่ม field `lineNotifiedAt` ใน session (optional) — ไม่แตะ members / ค่าใช้จ่าย / สลิป
+- **ใช้ Security Rules เดิมได้เลย** (settings write + session update อนุญาตอยู่แล้ว ไม่ต้องแก้)
+
+> หมายเหตุ: บอทผูกกับ Firebase project ของ instance นั้น — ถ้าจะทำ Team B (kdy) ต้องสร้าง channel + ตั้ง env แยก และ copy โฟลเดอร์ `api/` + `vercel.json` + `package.json` (แก้ firebase config เป็น badcount-kdy)
 
 ---
 
 ## 📁 โครงสร้างไฟล์
 
 ```
-Badminton/
-  ├─ index.html          ← หน้า UI หลัก ปรับโครงสร้างจัดกึ่งกลางและ Cache-busted ( premium.css?v=3.0.7 / app.js?v=3.0.7 )
-  ├─ premium.css         ← ธีมสไตล์ชีทพรีเมียมเขียวนีออน-ดำกราไฟต์ (มีตัวแปรระบบสี)
-  ├─ app.js              ← ส่วนการประมวลผล Logic หลัก, ระบบแบ่งทีม, คำนวณเงิน และ PWA
-  ├─ firebase-config.js  ← ตั้งค่าการเชื่อมต่อฐานข้อมูล Firebase ของคุณ
-  ├─ manifest.json       ← แฟ้มข้อมูลสำหรับติดตั้ง PWA แอปพลิเคชัน
-  ├─ icon.svg            ← ไอคอนเวกเตอร์ของแอปสไตล์ Abstract Sporty 🏸
-  ├─ icon-maskable.svg   ← ไอคอนสำหรับการติดตั้งบนอุปกรณ์ Android
-  ├─ sw.js               ← Service Worker จัดการ Cache-Busting ( badcount-v13 )
-  ├─ qrcode.min.js       ← ไลบรารีสำหรับสร้างและแสดงผล QR Code (Local)
-  ├─ fix_dark.js         ← สคริปต์ยูทิลิตี้สำหรับช่วยฉีดคลาส dark mode ลงในองค์ประกอบ
+Badcount/
+  ├─ index.html          ← หน้า UI หลัก (Cache-busted: premium.css?v=3.12.0 / app.js?v=3.12.0)
+  ├─ premium.css         ← ธีมเขียวนีออน-ดำกราไฟต์ (มีตัวแปรระบบสี)
+  ├─ app.js              ← Logic หลัก: แบ่งทีม, คำนวณเงิน, PWA, ลงชื่อ, จำระดับมือ, ปุ่ม LINE
+  ├─ firebase-config.js  ← ตั้งค่าการเชื่อมต่อฐานข้อมูล Firebase
+  ├─ manifest.json       ← PWA manifest
+  ├─ icon.svg / icon-maskable.svg ← ไอคอนแอป (Abstract Sporty 🏸)
+  ├─ sw.js               ← Service Worker จัดการ Cache-Busting ( badcount-v29 )
+  ├─ qrcode.min.js       ← ไลบรารีสร้าง/แสดง QR Code (Local)
+  ├─ fix_dark.js         ← ยูทิลิตี้ช่วยฉีดคลาส dark mode
+  ├─ package.json        ← ประกาศ dependency (firebase) สำหรับ serverless functions
+  ├─ vercel.json         ← ตั้งเวลา Cron บอท (ทวงทุกเช้า 8 โมง = 0 1 * * * UTC)
+  ├─ api/                ← 🤖 LINE Bot — Vercel Serverless Functions
+  │   ├─ line-webhook.js   ← รับ event จากไลน์ (startbadcount / stopbadcount)
+  │   ├─ line-notify.js    ← push invite / ทวงเงิน เข้า LINE
+  │   ├─ line-cron.js      ← cron ทวงทุกเช้า
+  │   ├─ _totals.js        ← คำนวณยอด (port จาก app.js ให้ตรงกันเป๊ะ)
+  │   └─ _firebase.js / _line.js / _sessions.js / _notify.js ← helpers ร่วม
   ├─ .gitignore
-  └─ README.md           ← คู่มือฉบับปรับปรุงนี้
+  └─ README.md           ← คู่มือฉบับนี้
 ```
 
 ---
