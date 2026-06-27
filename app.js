@@ -1155,6 +1155,18 @@ function pushLineDue(sessionId) {
   } catch (_) {}
 }
 
+// ประกาศ "คอร์ดวันนี้เปิดแล้ว" เข้า LINE — server ส่งครั้งเดียวต่อก๊วน (fire & forget)
+function pushLineOpen(sessionId) {
+  if (!sessionId) return;
+  try {
+    fetch("/api/line-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, type: "open" })
+    }).catch(() => {});
+  } catch (_) {}
+}
+
 // ---------- "ก๊วนอาทิตย์หน้า" — Clone จากก๊วนล่าสุด ----------
 
 // หาวันอาทิตย์ที่ใกล้ถึงที่สุด (ถ้าวันนี้คือวันอาทิตย์ ใช้วันนี้)
@@ -2553,6 +2565,24 @@ $("btnCloseSession").addEventListener("click", () => {
   }
 });
 
+// เกมแรกของวันถูกสร้าง + อยู่ครบ 1 นาที (ไม่ถูกลบ) → ประกาศ "คอร์ดเปิด" เข้า LINE
+// ถ้าเกมแรกถูกลบภายใน 1 นาที → ยกเลิก ไม่ประกาศ / ประกาศครั้งเดียวต่อก๊วน
+let firstGameAutoPostTimer = null;
+function scheduleCourtsOpenPost(matchId) {
+  if (!currentSession || currentSession.status === "closed") return;
+  if (currentSession.lineOpenNotifiedAt) return; // ประกาศไปแล้ว
+  const sid = currentSessionId;
+  if (firstGameAutoPostTimer) { clearTimeout(firstGameAutoPostTimer); firstGameAutoPostTimer = null; }
+  firstGameAutoPostTimer = setTimeout(() => {
+    firstGameAutoPostTimer = null;
+    if (currentSessionId !== sid || !currentSession) return;
+    if (currentSession.status === "closed" || currentSession.lineOpenNotifiedAt) return;
+    const stillThere = (currentSession.matches || []).some(m => m.id === matchId);
+    if (!stillThere) return; // เกมแรกถูกลบไปแล้ว → ไม่ประกาศ
+    pushLineOpen(sid);
+  }, 60000);
+}
+
 // Delete
 $("btnDeleteSession").addEventListener("click", async () => {
   if (isInManagerLinkView() || isManagerAuthed()) {
@@ -3519,6 +3549,7 @@ $("btnSaveMatch").addEventListener("click", () => {
   const finalDraftPlayers = [...matchDraftPlayers];
   const finalDraftExempts = [...matchDraftExempts];
 
+  let createdMatchId = null;
   if (editingMatchId) {
     const idx = matches.findIndex(x => x.id === editingMatchId);
     if (idx !== -1) {
@@ -3526,11 +3557,15 @@ $("btnSaveMatch").addEventListener("click", () => {
       delete matches[idx].a1; delete matches[idx].a2; delete matches[idx].b1; delete matches[idx].b2;
     }
   } else {
-    matches.push({ id: uid(), players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts });
+    createdMatchId = uid();
+    matches.push({ id: createdMatchId, players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts });
   }
 
   saveSession({ matches });
   $("matchModal").classList.add("hidden");
+
+  // เกมแรกของวัน (เพิ่งสร้าง + เป็นเกมเดียวในก๊วน) → ตั้งเวลาประกาศ "คอร์ดเปิด" เข้า LINE
+  if (createdMatchId && matches.length === 1) scheduleCourtsOpenPost(createdMatchId);
 });
 
 $("btnViewStats").addEventListener("click", () => {
