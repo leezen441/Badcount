@@ -1105,6 +1105,8 @@ $("btnCreateSession").addEventListener("click", async () => {
 $("btnLineNotify")?.addEventListener("click", async () => {
   if (!currentSessionId) return;
   if (!confirm("ส่งข้อมูลก๊วนนี้เข้ากลุ่ม LINE เลยไหม?")) return;
+  // กดส่งเอง → ยกเลิก auto-post ตอนปิดรับสมาชิกที่ค้างอยู่ (กันส่งซ้ำ)
+  if (regClosedAutoPostTimer) { clearTimeout(regClosedAutoPostTimer); regClosedAutoPostTimer = null; }
   const btn = $("btnLineNotify");
   const orig = btn.innerHTML;
   btn.disabled = true;
@@ -1423,7 +1425,7 @@ $("btnToggleRegistration")?.addEventListener("click", () => {
       if (currentSessionId === sid && currentSession && currentSession.registrationClosed && currentSession.status !== "closed") {
         pushLineUpdate(sid);
       }
-    }, 60000);
+    }, 10000);
   }
 });
 
@@ -1679,6 +1681,8 @@ let remindInFlight = false;
 $("btnRemindUnpaid").addEventListener("click", async () => {
   if ($("btnRemindUnpaid").disabled || remindInFlight || !currentSessionId) return;
   remindInFlight = true;
+  // กดทวงเอง → ยกเลิก auto-post ตอนปิดคอร์ดที่ค้างอยู่ (กันส่งซ้ำ)
+  if (closeCourtAutoPostTimer) { clearTimeout(closeCourtAutoPostTimer); closeCourtAutoPostTimer = null; }
   try {
     const r = await fetch("/api/line-notify", {
       method: "POST",
@@ -2575,7 +2579,7 @@ $("btnCloseSession").addEventListener("click", () => {
       if (currentSessionId === sid && currentSession && currentSession.status === "closed") {
         pushLineDue(sid);
       }
-    }, 30000);
+    }, 10000);
   }
 });
 
@@ -2594,7 +2598,7 @@ function scheduleCourtsOpenPost(matchId) {
     const stillThere = (currentSession.matches || []).some(m => m.id === matchId);
     if (!stillThere) return; // เกมแรกถูกลบไปแล้ว → ไม่ประกาศ
     pushLineOpen(sid);
-  }, 60000);
+  }, 10000);
 }
 
 // Delete
