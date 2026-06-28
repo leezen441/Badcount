@@ -1406,11 +1406,25 @@ function updateInviteButtonState() {
 }
 
 // Toggle Registration handler
+let regClosedAutoPostTimer = null;
 $("btnToggleRegistration")?.addEventListener("click", () => {
   if (!currentSession || currentSession.status === "closed") return;
   const newValue = !currentSession.registrationClosed;
   saveSession({ registrationClosed: newValue });
   toast(newValue ? "🔒 ปิดรับสมาชิกแล้ว" : "✅ เปิดรับสมาชิกอีกครั้ง");
+
+  // ปิดรับสมาชิกครบ 1 นาที (ยังปิดอยู่จริง) → โพสต์ invite "ปิดรับแล้ว" + รายชื่อ เข้า LINE
+  // ถ้าเผลอเปิดรับใหม่ภายใน 1 นาที → ยกเลิก ไม่โพสต์
+  if (regClosedAutoPostTimer) { clearTimeout(regClosedAutoPostTimer); regClosedAutoPostTimer = null; }
+  if (newValue) {
+    const sid = currentSessionId;
+    regClosedAutoPostTimer = setTimeout(() => {
+      regClosedAutoPostTimer = null;
+      if (currentSessionId === sid && currentSession && currentSession.registrationClosed && currentSession.status !== "closed") {
+        pushLineUpdate(sid);
+      }
+    }, 60000);
+  }
 });
 
 // ---------- Courts ----------
