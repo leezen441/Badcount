@@ -25,8 +25,16 @@ async function pushToTargets(text) {
   const { targets, skipped } = await getActiveTargets();
   if (skipped) return { ok: true, targets: 0, skipped };
   let anyOk = false;
-  for (const to of targets) { if (await pushMessage(to, text)) anyOk = true; }
-  return { ok: anyOk, targets: targets.length };
+  const errors = [];
+  for (const to of targets) {
+    const res = await pushMessage(to, text);
+    if (res.ok) {
+      anyOk = true;
+    } else {
+      errors.push({ target: to, status: res.status, body: res.body, error: res.error });
+    }
+  }
+  return { ok: anyOk, targets: targets.length, errors: errors.length ? errors : undefined };
 }
 
 // push ข้อความ invite (รายชื่อล่าสุด) ของ session

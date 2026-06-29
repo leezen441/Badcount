@@ -29,14 +29,25 @@ function normalize(messages) {
 }
 
 async function linePost(path, payload) {
-  if (!TOKEN) { console.error("[LINE] missing LINE_CHANNEL_ACCESS_TOKEN"); return false; }
-  const r = await fetch(LINE_API + path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOKEN },
-    body: JSON.stringify(payload)
-  });
-  if (!r.ok) console.error("[LINE]", path, r.status, await r.text().catch(() => ""));
-  return r.ok;
+  if (!TOKEN) {
+    console.error("[LINE] missing LINE_CHANNEL_ACCESS_TOKEN");
+    return { ok: false, error: "missing LINE_CHANNEL_ACCESS_TOKEN" };
+  }
+  try {
+    const r = await fetch(LINE_API + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOKEN },
+      body: JSON.stringify(payload)
+    });
+    const text = await r.text().catch(() => "");
+    if (!r.ok) {
+      console.error("[LINE]", path, r.status, text);
+      return { ok: false, status: r.status, body: text };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 export function replyMessage(replyToken, messages) {
