@@ -4519,7 +4519,8 @@ $("btnSubmitJoin").addEventListener("click", async () => {
 
     trackOwnSubmit(newId);
     addKnownMember(name); // จดจำชื่อในเครื่องของผู้เล่นไว้
-    pushLineUpdate(currentSessionId); // มีคนลงชื่อเพิ่ม → อัปเดตรายชื่อเข้า LINE
+    // (ตัด auto-invite ต่อการลงชื่อออก เพื่อประหยัด quota LINE — push เข้ากลุ่มนับตามจำนวนสมาชิก)
+    // ต้องการอัปเดตรายชื่อเข้ากลุ่ม ใช้ปุ่ม "LINE" ในหน้าก๊วนเอารอบเดียวแทน
 
     // รีเซ็ตการเลือกฟอร์มลงชื่อหลังกดเข้าร่วมสำเร็จ
     currentJoinSkill = null;
