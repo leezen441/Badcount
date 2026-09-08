@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.17.0">
+  <link rel="stylesheet" href="./premium.css?v=3.17.1">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -1007,59 +1007,77 @@
           <button id="btnPayViaBank" type="button" class="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow-sm transition-transform active:scale-95">
             🏦 จ่ายผ่านแอปธนาคาร
           </button>
-          <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-1.5">Pay via mobile banking — เลือกแอปแล้วเปิดหน้าโอนพร้อมยอด</p>
+          <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-1.5">Pay via mobile banking — เปิดแอปแล้ววางยอดที่คัดลอกไว้</p>
           <div id="paymentBankList" class="hidden mt-2.5 space-y-1.5">
-            <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 px-0.5">เลือกแอปธนาคาร</p>
-            <button type="button" data-bank="kbank" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
+            <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3 mb-1">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <div class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">ยอดที่ต้องโอน (คัดลอกแล้วเมื่อกดแอป)</div>
+                  <div id="paymentBankAmountHint" class="text-2xl font-black text-emerald-700 dark:text-emerald-300 leading-tight">— ฿</div>
+                </div>
+                <button type="button" id="btnCopyPayAmount" class="shrink-0 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg">คัดลอกยอด</button>
+              </div>
+              <div id="paymentBankPromptpayRow" class="hidden mt-2">
+                <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">PromptPay</div>
+                  <div id="paymentBankPromptpayHint" class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">—</div>
+                </div>
+                <button type="button" id="btnCopyPayPromptpay" class="shrink-0 text-[11px] font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 px-3 py-1.5 rounded-lg">คัดลอกเบอร์</button>
+                </div>
+              </div>
+            </div>
+            <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 px-0.5">เลือกแอปธนาคารบนเครื่อง</p>
+            <a href="kplus://" data-bank="kbank" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#138F2D] text-white text-[11px] font-black flex items-center justify-center shrink-0">K+</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">K PLUS</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกสิกรไทย (KBank)</span>
               </span>
-            </button>
-            <button type="button" data-bank="scb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
+            </a>
+            <a href="scbeasy://" data-bank="scb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#4E2A84] text-white text-[10px] font-black flex items-center justify-center shrink-0">SCB</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">SCB EASY</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารไทยพาณิชย์ (SCB)</span>
               </span>
-            </button>
-            <button type="button" data-bank="ktb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
+            </a>
+            <a href="krungthainext://" data-bank="ktb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#00A0E4] text-white text-[10px] font-black flex items-center justify-center shrink-0">NEXT</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Krungthai NEXT</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงไทย (KTB)</span>
               </span>
-            </button>
-            <button type="button" data-bank="bbl" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
+            </a>
+            <a href="bualuangmbanking://" data-bank="bbl" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#1E4598] text-white text-[10px] font-black flex items-center justify-center shrink-0">BBL</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Bualuang mBanking</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงเทพ (BBL)</span>
               </span>
-            </button>
-            <button type="button" data-bank="bay" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
+            </a>
+            <a href="krungsri://" data-bank="bay" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#6C1D5F] text-[#FFD100] text-[10px] font-black flex items-center justify-center shrink-0">KMA</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Krungsri App (KMA)</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงศรีอยุธยา (BAY)</span>
               </span>
-            </button>
-            <button type="button" data-bank="ttb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
+            </a>
+            <a href="ttbtouch://" data-bank="ttb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#005EB8] text-white text-[10px] font-black flex items-center justify-center shrink-0">ttb</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">ttb touch</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารทหารไทยธนชาต (ttb)</span>
               </span>
-            </button>
-            <button type="button" data-bank="uob" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
+            </a>
+            <a href="uobtmrw://" data-bank="uob" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#0B2F6B] text-white text-[10px] font-black flex items-center justify-center shrink-0">UOB</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">UOB TMRW</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารยูโอบี (UOB)</span>
               </span>
-            </button>
-            <p class="text-[9.5px] text-slate-400 dark:text-slate-500 px-0.5 pt-0.5 leading-relaxed">ยอดและ PromptPay จะถูกคัดลอกไว้ — ถ้าแอปไม่ใส่ยอดให้อัตโนมัติ ให้วางในหน้าโอนได้เลย</p>
+            </a>
+            <p class="text-[9.5px] text-slate-400 dark:text-slate-500 px-0.5 pt-0.5 leading-relaxed">แอปธนาคารไม่รับยอดจากเว็บโดยตรง — กดแอปแล้วไปที่โอน PromptPay / สแกน QR แล้ววางยอดที่คัดลอกไว้</p>
           </div>
         </div>
       </div>
@@ -1295,6 +1313,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.17.0"></script>
+  <script type="module" src="./app.js?v=3.17.1"></script>
 </body>
 </html>
