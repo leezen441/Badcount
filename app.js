@@ -3804,63 +3804,62 @@ let paymentQRMemberName = null;
 let paymentAmountValue = 0;
 
 // ============================================================
-// 🏦 แอปธนาคารไทย — เปิดแอปจากหน้าจ่ายเงิน
+// 🏦 จ่ายผ่านแอปธนาคาร (Thai mobile banking)
 // ------------------------------------------------------------
-// ⚠️ ข้อเท็จจริง: ธนาคารไทย "ไม่มี" public deeplink ให้เว็บทั่วไปยิง
-// เลข PromptPay + ยอดเงิน เข้าไปเติมในหน้าโอนได้ (ต้องเป็น merchant
-// ที่ลงทะเบียน + เซ็น payload กับธนาคารเท่านั้น)
-// ดังนั้นวิธีเดียวที่ "ยอดขึ้นเองจริง ๆ" คือ:
-//   1) บันทึกรูป QR (ยอดถูกล็อกอยู่ใน EMVCo payload แล้ว)
-//   2) เปิดแอปธนาคาร → สแกน QR → เลือกรูปจากคลังภาพ → ยอดขึ้นเอง
+// ⛔ ทำไมถึงไม่มีปุ่ม "เด้งเปิดแอปธนาคาร" อีกต่อไป
 //
-// 🐞 บั๊กเดิมที่ทำให้ "เด้งไป Play Store / ขึ้นให้อัปเดตแอป":
-//   - ใส่ package= ใน intent:// → พอ scheme resolve ไม่ได้
-//     Chrome จะพาไป Play Store ของ package นั้นทันที
-//   - package ของ ttb / UOB ผิด (ชี้ไปแอปรุ่นเก่า) → จึงขึ้นให้อัปเดต
-// วิธีแก้: ตัด package= ออกจาก intent ที่ใช้เปิดแอป + แก้ package ให้ถูก
+// ธนาคารไทยไม่เปิด URL scheme สาธารณะให้เว็บเรียกเปิดแอปเลย
+// deeplink เข้าแอปธนาคารมีได้ทางเดียวคือผ่าน payment gateway
+// (Omise/Opn, 2C2P ฯลฯ) ที่ต้องมีบัญชี merchant + secret key แล้ว
+// ให้เซิร์ฟเวอร์ของ gateway ออก authorize URI ให้เป็นครั้ง ๆ ไป
+// → เว็บ static แบบนี้ทำไม่ได้
+//
+// ของเดิมที่เคยลอง (kplus://, scbeasy://, krungthainext://,
+// bualuangmbanking://, krungsri://, ttbtouch://, uobtmrw://)
+// ทดสอบบนเครื่องจริงแล้ว "ไม่ติดสักธนาคาร" ทั้ง Android และ iOS
+// ผลคือกดแล้วเงียบ หรือ (ตอนที่ยังใส่ package= ใน intent://)
+// โดนเด้งไป Play Store — ทั้งสองแบบคือประสบการณ์ที่พัง
+//
+// ✅ วิธีที่ใช้ได้จริง 100% ทุกธนาคาร และยอดขึ้นเองไม่ต้องพิมพ์:
+//    1) บันทึกรูป QR เข้าคลังภาพ (ยอดล็อกอยู่ใน EMVCo payload แล้ว)
+//    2) เปิดแอปธนาคารเอง → ปุ่มสแกน → เลือกรูปจากคลังภาพ
+// หน้านี้จึงเปลี่ยนเป็น "คู่มือทีละขั้น" แทนปุ่มที่กดแล้วไม่เกิดอะไร
 // ============================================================
 const THAI_BANK_APPS = {
   kbank: {
     label: "K PLUS",
-    schemes: ["kplus://"],
-    androidPackage: "com.kasikorn.retail.mbanking.wap",
-    scanHint: "แตะ สแกน → ไอคอนรูปภาพ เพื่อเลือก QR จากคลังภาพ"
+    scanLabel: "สแกน",
+    note: "ปุ่มสแกนอยู่แถบล่างกลางจอ"
   },
   scb: {
     label: "SCB EASY",
-    schemes: ["scbeasy://", "scbeasysim://"],
-    androidPackage: "com.scb.phone",
-    scanHint: "แตะ สแกน → ไอคอนรูปภาพ เพื่อเลือก QR จากคลังภาพ"
+    scanLabel: "สแกน",
+    note: "ปุ่มสแกนอยู่แถบล่างกลางจอ"
   },
   ktb: {
     label: "Krungthai NEXT",
-    schemes: ["krungthainext://", "ktbnext://"],
-    androidPackage: "ktbcs.netbank",
-    scanHint: "แตะ สแกน → เลือกรูปจากอัลบั้ม"
+    scanLabel: "สแกน",
+    note: "ปุ่มสแกนอยู่แถบล่างกลางจอ"
   },
   bbl: {
     label: "Bualuang mBanking",
-    schemes: ["bualuangmbanking://", "bblmbanking://"],
-    androidPackage: "com.bbl.mobilebanking",
-    scanHint: "แตะ สแกน → เลือกรูปจากคลังภาพ"
+    scanLabel: "สแกน",
+    note: "ปุ่มสแกนอยู่หน้าแรกหลังใส่รหัส"
   },
   bay: {
     label: "krungsri app (KMA)",
-    schemes: ["krungsri://", "kma://", "krungsriapp://"],
-    androidPackage: "com.krungsri.kma",
-    scanHint: "แตะ สแกน → เลือกรูปจากอัลบั้ม"
+    scanLabel: "สแกน",
+    note: "ปุ่มสแกนอยู่แถบล่างกลางจอ"
   },
   ttb: {
     label: "ttb touch",
-    schemes: ["ttbtouch://", "tmbtouch://"],
-    androidPackage: "com.TMBTOUCH.PRODUCTION",
-    scanHint: "แตะ สแกน → เลือกรูปจากคลังภาพ"
+    scanLabel: "สแกน",
+    note: "ปุ่มสแกนอยู่แถบล่างกลางจอ"
   },
   uob: {
     label: "UOB TMRW",
-    schemes: ["uobtmrw://", "tmrwth://", "uobmighty://"],
-    androidPackage: "com.uob.mightyth2",
-    scanHint: "แตะ Scan → Gallery เพื่อเลือกรูป QR"
+    scanLabel: "Scan",
+    note: "ปุ่ม Scan อยู่แถบล่างกลางจอ"
   }
 };
 
@@ -3875,42 +3874,50 @@ function getPaymentDevice() {
     isAndroid: /Android/i.test(ua),
     isIOS,
     isLine,
-    // WebView ในแอปพวกนี้บล็อก custom scheme → เปิดแอปธนาคารไม่ติดแน่นอน
+    // WebView ในแอปพวกนี้บันทึก/แชร์รูปให้ไม่ได้
     inAppBrowser: isLine || isFB || isTikTok,
     inAppName: isLine ? "LINE" : (isFB ? "Facebook / Instagram" : (isTikTok ? "TikTok" : ""))
   };
 }
 
-// scheme เดียว → URL ที่ใช้เปิดแอปจริง
-// Android ใช้ intent:// "โดยไม่ใส่ package" เพื่อไม่ให้เด้งไป Play Store
-function bankSchemeToHref(scheme, isAndroid) {
-  const name = String(scheme || "").replace(/:.*$/, "");
-  if (!name) return "";
-  return isAndroid ? `intent://#Intent;scheme=${name};end` : `${name}://`;
+// สร้างคู่มือสแกนของธนาคารนั้น ๆ (แสดงใต้ปุ่มแบบ accordion)
+function bankStepsHtml(bank) {
+  const { isIOS } = getPaymentDevice();
+  const gallery = isIOS ? "คลังรูป / Photos" : "แกลเลอรี / รูปภาพ";
+  return (
+    `<ol class="list-decimal ml-4 space-y-1 leading-relaxed">` +
+    `<li>บันทึกรูป QR เข้าคลังภาพให้เรียบร้อยก่อน (ปุ่มสเต็ป 1 ด้านบน)</li>` +
+    `<li>เปิดแอป <b>${bank.label}</b> จากหน้าจอโฮมแล้วใส่รหัสตามปกติ</li>` +
+    `<li>แตะปุ่ม <b>${bank.scanLabel}</b> <span class="opacity-70">(${bank.note})</span></li>` +
+    `<li>ที่หน้าสแกน มองหา <b>ไอคอนรูปภาพ</b> ตรงมุมจอ แล้วแตะเพื่อเปิด <b>${gallery}</b></li>` +
+    `<li>เลือกรูป QR ที่บันทึกไว้ → เลขบัญชีและยอด <b>${formattedPayAmount()} ฿</b> จะขึ้นเอง กดยืนยันได้เลย</li>` +
+    `</ol>`
+  );
 }
 
-function bankLaunchHref(bank, isAndroid) {
-  return bankSchemeToHref(bank.schemes[0], isAndroid) || "#";
-}
+function toggleBankSteps(btn) {
+  const bank = THAI_BANK_APPS[btn.getAttribute("data-bank")];
+  const box = btn.parentElement?.querySelector("[data-bank-steps]");
+  if (!bank || !box) return;
 
-// รายการ URL ที่จะไล่ลองเปิด
-// Android ลองได้หลายอัน เพราะถ้าไม่มีแอปรับจะล้มเหลวแบบเงียบ ๆ
-// iOS ลองอันเดียว เพราะถ้าเปิดไม่ได้ Safari จะเด้ง alert ทุกครั้ง
-function bankLaunchCandidates(bank) {
-  const { isAndroid } = getPaymentDevice();
-  const list = isAndroid ? bank.schemes : bank.schemes.slice(0, 1);
-  return list.map((s) => bankSchemeToHref(s, isAndroid)).filter(Boolean);
-}
+  const willOpen = box.classList.contains("hidden");
 
-function applyBankLaunchHrefs() {
-  const { isAndroid } = getPaymentDevice();
-  $("paymentBankList")?.querySelectorAll("a[data-bank]").forEach((el) => {
-    const bank = THAI_BANK_APPS[el.getAttribute("data-bank")];
-    if (!bank) return;
-    el.setAttribute("href", bankLaunchHref(bank, isAndroid));
-    const hintEl = el.querySelector("[data-bank-hint]");
-    if (hintEl) hintEl.textContent = bank.scanHint || "";
+  // ปิดของธนาคารอื่นก่อน (เปิดทีละอัน)
+  $("paymentBankList")?.querySelectorAll("[data-bank-steps]").forEach((el) => {
+    el.classList.add("hidden");
+    el.innerHTML = "";
   });
+  $("paymentBankList")?.querySelectorAll("[data-bank-caret]").forEach((el) => {
+    el.textContent = "▾";
+  });
+
+  if (!willOpen) return;
+
+  box.innerHTML = bankStepsHtml(bank);
+  box.classList.remove("hidden");
+  const caret = btn.querySelector("[data-bank-caret]");
+  if (caret) caret.textContent = "▴";
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function copyTextSync(text) {
@@ -3958,18 +3965,57 @@ function updatePaymentBankHints() {
   row?.classList.toggle("hidden", !pp);
 }
 
-// ---------- บันทึกรูป QR (ใช้ร่วมกับปุ่ม 💾 ด้านบน) ----------
-function savePaymentQRImage() {
+// ---------- บันทึก / แชร์ รูป QR ----------
+// ⚠️ จุดสำคัญ: `<a download>` บน iOS Safari "ไม่เข้าคลังภาพ" (ไปโผล่ใน Files)
+// แอปธนาคารอ่านรูปจาก "คลังภาพ/Photos" เท่านั้น → ต้องใช้ Web Share API
+// ซึ่งจะมีเมนู "บันทึกรูปภาพ / Save Image" ให้เซฟลง Photos ได้จริง
+function dataUrlToFile(dataUrl, filename) {
+  const parts = String(dataUrl).split(",");
+  const mime = (parts[0].match(/:(.*?);/) || [])[1] || "image/png";
+  const bin = atob(parts[1] || "");
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new File([buf], filename, { type: mime });
+}
+
+function paymentQRFileName() {
+  const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
+  return `PromptPay_${safeName}_${formattedPayAmount()}.png`;
+}
+
+// ต้องเรียกตรง ๆ จาก event ของการกดปุ่ม (ห้ามมี await ก่อนถึง navigator.share)
+async function savePaymentQRImage() {
   if (!paymentQRDataUrl) {
     toast("⚠️ ยังไม่มี QR ให้บันทึก");
     return false;
   }
+  const amt = formattedPayAmount();
+  const filename = paymentQRFileName();
 
-  const { isLine } = getPaymentDevice();
-  if (isLine) {
+  // 1) Web Share API — วิธีเดียวที่เซฟเข้าคลังภาพได้จริงบนมือถือ
+  try {
+    const file = dataUrlToFile(paymentQRDataUrl, filename);
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: `PromptPay ${amt} ฿`,
+        text: `ค่าก๊วนแบด ${amt} ฿ — สแกน QR นี้ในแอปธนาคาร (ยอดล็อกไว้แล้ว)`
+      });
+      toast("✅ เลือก 'บันทึกรูปภาพ' แล้วไปสแกนในแอปธนาคารได้เลย", 4000);
+      return true;
+    }
+  } catch (err) {
+    // ผู้ใช้กดยกเลิก share sheet เอง — ไม่ต้องทำอะไรต่อ
+    if (err && (err.name === "AbortError" || err.name === "NotAllowedError")) return false;
+    console.warn("[Payment] share failed, fallback to download:", err);
+  }
+
+  // 2) In-app browser (LINE ฯลฯ) ที่แชร์ไม่ได้และดาวน์โหลดไม่ได้
+  const { inAppBrowser, inAppName } = getPaymentDevice();
+  if (inAppBrowser) {
     alert(
-      "⚠️ แอป LINE ไม่รองรับการดาวน์โหลดรูปภาพโดยตรง!\n\n" +
-      "วิธีที่ง่ายที่สุด: แตะค้างที่รูป QR แล้วเลือก 'บันทึกรูปภาพ'\n\n" +
+      `⚠️ เบราว์เซอร์ในแอป ${inAppName || "นี้"} บันทึกรูปให้ไม่ได้\n\n` +
+      "วิธีที่ง่ายที่สุด: แตะค้างที่รูป QR ด้านบน แล้วเลือก 'บันทึกรูปภาพ'\n\n" +
       "หรือเปิดลิงก์นี้ในเบราว์เซอร์ปกติ:\n" +
       "• iPhone (iOS): แตะไอคอนเข็มทิศ 🧭 มุมขวาล่าง เพื่อเปิดใน Safari\n" +
       "• Android: แตะจุด 3 จุด ┇ มุมขวาบน แล้วเลือก 'เปิดใน Chrome'"
@@ -3977,103 +4023,51 @@ function savePaymentQRImage() {
     return false;
   }
 
-  const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
-  const a = document.createElement("a");
-  a.href = paymentQRDataUrl;
-  a.download = `PromptPay_${safeName}_${Date.now()}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  toast(`💾 บันทึก QR แล้ว — ยอด ${formattedPayAmount()} ฿ ถูกล็อกในรูป`, 3000);
-  return true;
-}
-
-// ---------- เปิดแอปธนาคาร ----------
-let bankLaunchTimer = null;
-
-function showBankOpenFailed(bank) {
-  const box = $("paymentBankFallbackNote");
-  const { isAndroid } = getPaymentDevice();
-  const storeUrl = isAndroid
-    ? `https://play.google.com/store/apps/details?id=${bank.androidPackage}`
-    : "";
-  if (box) {
-    box.innerHTML =
-      `<div class="font-bold mb-1">⚠️ เปิด ${bank.label} อัตโนมัติไม่สำเร็จ</div>` +
-      `<div class="leading-relaxed">เปิดแอป ${bank.label} เองจากหน้าจอโฮม แล้วแตะ <b>สแกน QR → เลือกรูปจากคลังภาพ</b> ` +
-      `เลือกรูป QR ที่บันทึกไว้ — ยอด <b>${formattedPayAmount()} ฿</b> จะขึ้นให้อัตโนมัติ</div>` +
-      (storeUrl
-        ? `<a href="${storeUrl}" target="_blank" rel="noopener" class="inline-block mt-1.5 underline font-semibold">ยังไม่ได้ติดตั้ง ${bank.label}?</a>`
-        : "");
-    box.classList.remove("hidden");
-    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  // 3) เบราว์เซอร์ปกติ / เดสก์ท็อป — ดาวน์โหลดไฟล์
+  try {
+    const a = document.createElement("a");
+    a.href = paymentQRDataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (err) {
+    toast("บันทึกไม่สำเร็จ — แตะค้างที่รูป QR แล้วเลือก 'บันทึกรูปภาพ' แทน", 4000);
+    return false;
   }
-  toast(`เปิด ${bank.label} ไม่ได้ — ใช้วิธีสแกนรูป QR ที่บันทึกไว้แทน`, 4000);
-}
 
-function launchBankApp(bank) {
-  const candidates = bankLaunchCandidates(bank);
-  if (!candidates.length) return;
-
-  $("paymentBankFallbackNote")?.classList.add("hidden");
-  clearTimeout(bankLaunchTimer);
-
-  let idx = 0;
-  let opened = false;
-  const markOpened = () => { opened = true; };
-  const onVis = () => { if (document.hidden) markOpened(); };
-
-  const cleanup = () => {
-    document.removeEventListener("visibilitychange", onVis);
-    window.removeEventListener("pagehide", markOpened);
-    window.removeEventListener("blur", markOpened);
-  };
-
-  document.addEventListener("visibilitychange", onVis);
-  window.addEventListener("pagehide", markOpened);
-  window.addEventListener("blur", markOpened);
-
-  const step = () => {
-    if (opened || document.hidden) { cleanup(); return; }
-    if (idx >= candidates.length) { cleanup(); showBankOpenFailed(bank); return; }
-    try { window.location.href = candidates[idx++]; } catch (_) {}
-    bankLaunchTimer = setTimeout(step, 1300);
-  };
-  step();
-}
-
-function prepareBankAppLaunch() {
-  const amt = formattedPayAmount();
-  const copied = copyTextSync(amt);
-  toast(copied
-    ? `📋 คัดลอกยอด ${amt} ฿ ไว้แล้ว (เผื่อต้องพิมพ์เอง)`
-    : `ยอดที่ต้องโอน ${amt} ฿`, 3000);
-  return copied;
+  const { isIOS } = getPaymentDevice();
+  toast(isIOS
+    ? "💾 บันทึกแล้ว — ถ้าหาไม่เจอในคลังภาพ ให้แตะค้างที่รูป QR แล้วเลือก 'บันทึกรูปภาพ'"
+    : `💾 บันทึก QR แล้ว — ยอด ${amt} ฿ ถูกล็อกในรูป`, 4000);
+  return true;
 }
 
 function resetPaymentBankList() {
   $("paymentBankList")?.classList.add("hidden");
-  $("paymentBankFallbackNote")?.classList.add("hidden");
-  clearTimeout(bankLaunchTimer);
+  $("paymentBankList")?.querySelectorAll("[data-bank-steps]").forEach((el) => {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+  });
+  $("paymentBankList")?.querySelectorAll("[data-bank-caret]").forEach((el) => {
+    el.textContent = "▾";
+  });
 }
 
 function setupPaymentBankButtons() {
-  applyBankLaunchHrefs();
-
   $("btnPayViaBank")?.addEventListener("click", () => {
     const list = $("paymentBankList");
     if (!list) return;
     const willShow = list.classList.contains("hidden");
     list.classList.toggle("hidden", !willShow);
     if (willShow) {
-      applyBankLaunchHrefs();
       updatePaymentBankHints();
       copyTextSync(formattedPayAmount());
       list.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   });
 
-  // STEP 1 — บันทึกรูป QR (ยอดล็อกอยู่ในรูปแล้ว)
+  // STEP 1 — บันทึกรูป QR เข้าคลังภาพ
   $("btnSaveQRForBank")?.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -4098,45 +4092,13 @@ function setupPaymentBankButtons() {
     toast(copyTextSync(pp) ? `📋 คัดลอก PromptPay ${pp} แล้ว` : "คัดลอกเบอร์ไม่สำเร็จ", 2500);
   });
 
-  // STEP 2 — เปิดแอปธนาคาร
+  // STEP 2 — แตะชื่อธนาคารเพื่อดูวิธีสแกนรูป QR ของแอปนั้น (ไม่พาไปไหน)
   $("paymentBankList")?.addEventListener("click", (e) => {
     if (e.target.closest("#btnCopyPayAmount, #btnCopyPayPromptpay, #btnSaveQRForBank")) return;
-    // ลิงก์ Play Store ในกล่องแจ้งเตือน — ปล่อยให้ทำงานปกติ
-    if (e.target.closest("#paymentBankFallbackNote a")) return;
-
-    const link = e.target.closest("a[data-bank]");
-    if (!link) return;
+    const btn = e.target.closest("button[data-bank]");
+    if (!btn) return;
     e.preventDefault();
-
-    const bank = THAI_BANK_APPS[link.getAttribute("data-bank")];
-    if (!bank) return;
-
-    const amount = Number(paymentAmountValue) || 0;
-    if (!(amount > 0)) {
-      toast("⚠️ ยังไม่มียอดให้โอน");
-      return;
-    }
-
-    const { isAndroid, isIOS, inAppBrowser, inAppName } = getPaymentDevice();
-
-    if (inAppBrowser) {
-      alert(
-        `⚠️ เบราว์เซอร์ในแอป ${inAppName} เปิดแอปธนาคารไม่ได้\n\n` +
-        "ให้ทำแบบนี้แทน:\n" +
-        "1) แตะค้างที่รูป QR ด้านบน → บันทึกรูปภาพ\n" +
-        `2) เปิดแอป ${bank.label} เอง → สแกน QR → เลือกรูปจากคลังภาพ\n\n` +
-        `ยอด ${formattedPayAmount()} ฿ ถูกล็อกอยู่ในรูป QR แล้ว ไม่ต้องพิมพ์เอง`
-      );
-      return;
-    }
-
-    if (!isAndroid && !isIOS) {
-      toast("เปิดแอปธนาคารได้เฉพาะบนมือถือ — บนคอมให้สแกน QR จากมือถือแทน", 3500);
-      return;
-    }
-
-    prepareBankAppLaunch();
-    launchBankApp(bank);
+    toggleBankSteps(btn);
   });
 }
 
@@ -4160,7 +4122,6 @@ async function openPaymentModal(memberIdx) {
   const cost = totals.perMember?.[memberIdx] ?? 0;
   paymentAmountValue = Number(cost) || 0;
   resetPaymentBankList();
-  applyBankLaunchHrefs();
   updatePaymentBankHints();
   const bankWrap = $("paymentBankPayWrap");
   if (bankWrap) bankWrap.classList.toggle("hidden", !(paymentAmountValue > 0));
