@@ -1007,12 +1007,12 @@
           <button id="btnPayViaBank" type="button" class="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow-sm transition-transform active:scale-95">
             🏦 จ่ายผ่านแอปธนาคาร
           </button>
-          <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-1.5">Pay via mobile banking — เปิดแอปแล้ววางยอดที่คัดลอกไว้</p>
-          <div id="paymentBankList" class="hidden mt-2.5 space-y-1.5">
+          <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-1.5">Pay via mobile banking — บันทึก QR แล้วสแกนจากคลังภาพ ยอดขึ้นเอง</p>
+          <div id="paymentBankList" class="hidden mt-2.5 space-y-2">
             <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3 mb-1">
               <div class="flex items-center justify-between gap-2">
                 <div>
-                  <div class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">ยอดที่ต้องโอน (คัดลอกแล้วเมื่อกดแอป)</div>
+                  <div class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">ยอดที่ต้องโอน (คัดลอกไว้ให้แล้ว)</div>
                   <div id="paymentBankAmountHint" class="text-2xl font-black text-emerald-700 dark:text-emerald-300 leading-tight">— ฿</div>
                 </div>
                 <button type="button" id="btnCopyPayAmount" class="shrink-0 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg">คัดลอกยอด</button>
@@ -1027,12 +1027,28 @@
                 </div>
               </div>
             </div>
+            <!-- STEP 1 — บันทึกรูป QR (ยอดถูกล็อกอยู่ใน payload แล้ว) -->
+            <div class="rounded-xl border border-sky-200 dark:border-sky-800/50 bg-sky-50 dark:bg-sky-950/30 p-3">
+              <div class="text-[11px] font-black text-sky-700 dark:text-sky-300 mb-1.5">1️⃣ บันทึกรูป QR ก่อน</div>
+              <p class="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed mb-2">ยอด <b id="paymentBankStepAmount" class="text-sky-700 dark:text-sky-300">— ฿</b> ถูกล็อกอยู่ในรูป QR แล้ว — สแกนรูปนี้ในแอปธนาคารแล้วยอดจะขึ้นเอง ไม่ต้องพิมพ์</p>
+              <button type="button" id="btnSaveQRForBank" class="w-full inline-flex items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-bold py-2 px-3 rounded-lg shadow-sm transition-transform active:scale-95">
+                💾 บันทึกรูป QR ลงเครื่อง
+              </button>
+            </div>
+
+            <!-- STEP 2 — เปิดแอปธนาคารแล้วสแกนรูปจากคลังภาพ -->
+            <div class="rounded-xl border border-violet-200 dark:border-violet-800/50 bg-violet-50 dark:bg-violet-950/30 p-3">
+              <div class="text-[11px] font-black text-violet-700 dark:text-violet-300 mb-1">2️⃣ เปิดแอปธนาคาร → สแกนรูป QR</div>
+              <p class="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed">ในแอปธนาคารแตะ <b>สแกน / Scan QR</b> แล้วเลือก <b>ไอคอนรูปภาพ (คลังภาพ / อัลบั้ม)</b> → เลือกรูป QR ที่เพิ่งบันทึก<br>ระบบจะเติมเลขบัญชีและยอดให้อัตโนมัติ กด "ยืนยัน" ได้เลย</p>
+            </div>
+
             <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 px-0.5">เลือกแอปธนาคารบนเครื่อง</p>
             <a href="kplus://" data-bank="kbank" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
               <span class="w-9 h-9 rounded-lg bg-[#138F2D] text-white text-[11px] font-black flex items-center justify-center shrink-0">K+</span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">K PLUS</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกสิกรไทย (KBank)</span>
+                <span data-bank-hint class="block text-[9px] text-indigo-500 dark:text-indigo-400 mt-0.5 leading-tight"></span>
               </span>
             </a>
             <a href="scbeasy://" data-bank="scb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
@@ -1040,6 +1056,7 @@
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">SCB EASY</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารไทยพาณิชย์ (SCB)</span>
+                <span data-bank-hint class="block text-[9px] text-indigo-500 dark:text-indigo-400 mt-0.5 leading-tight"></span>
               </span>
             </a>
             <a href="krungthainext://" data-bank="ktb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
@@ -1047,6 +1064,7 @@
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Krungthai NEXT</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงไทย (KTB)</span>
+                <span data-bank-hint class="block text-[9px] text-indigo-500 dark:text-indigo-400 mt-0.5 leading-tight"></span>
               </span>
             </a>
             <a href="bualuangmbanking://" data-bank="bbl" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
@@ -1054,6 +1072,7 @@
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Bualuang mBanking</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงเทพ (BBL)</span>
+                <span data-bank-hint class="block text-[9px] text-indigo-500 dark:text-indigo-400 mt-0.5 leading-tight"></span>
               </span>
             </a>
             <a href="krungsri://" data-bank="bay" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
@@ -1061,6 +1080,7 @@
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Krungsri App (KMA)</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงศรีอยุธยา (BAY)</span>
+                <span data-bank-hint class="block text-[9px] text-indigo-500 dark:text-indigo-400 mt-0.5 leading-tight"></span>
               </span>
             </a>
             <a href="ttbtouch://" data-bank="ttb" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
@@ -1068,6 +1088,7 @@
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">ttb touch</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารทหารไทยธนชาต (ttb)</span>
+                <span data-bank-hint class="block text-[9px] text-indigo-500 dark:text-indigo-400 mt-0.5 leading-tight"></span>
               </span>
             </a>
             <a href="uobtmrw://" data-bank="uob" class="payment-bank-btn w-full flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-transform active:scale-[0.98] no-underline">
@@ -1075,9 +1096,11 @@
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">UOB TMRW</span>
                 <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารยูโอบี (UOB)</span>
+                <span data-bank-hint class="block text-[9px] text-indigo-500 dark:text-indigo-400 mt-0.5 leading-tight"></span>
               </span>
             </a>
-            <p class="text-[9.5px] text-slate-400 dark:text-slate-500 px-0.5 pt-0.5 leading-relaxed">แอปธนาคารไม่รับยอดจากเว็บโดยตรง — กดแอปแล้วไปที่โอน PromptPay / สแกน QR แล้ววางยอดที่คัดลอกไว้</p>
+            <div id="paymentBankFallbackNote" class="hidden text-[10px] text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-2.5"></div>
+            <p class="text-[9.5px] text-slate-400 dark:text-slate-500 px-0.5 pt-0.5 leading-relaxed">ธนาคารไทยไม่เปิด deeplink ให้เว็บส่งยอดเข้าไปเติมในแอปได้ (ต้องเป็นร้านค้าที่ลงทะเบียนกับธนาคาร) — การสแกนรูป QR จึงเป็นวิธีเดียวที่ยอดขึ้นเองจริง ๆ</p>
           </div>
         </div>
       </div>

@@ -3803,68 +3803,113 @@ let paymentQRDataUrl = null;        // เก็บ dataURL ปัจจุบ�
 let paymentQRMemberName = null;
 let paymentAmountValue = 0;
 
-// แอปธนาคารไทย — เปิดด้วยลิงก์จริง (ไม่ใช้ timer ไป App Store)
-// ธนาคารไม่มี public API ให้ใส่ยอด PromptPay จากเว็บ จึงคัดลอกเฉพาะตัวเลขยอดให้วาง
+// ============================================================
+// 🏦 แอปธนาคารไทย — เปิดแอปจากหน้าจ่ายเงิน
+// ------------------------------------------------------------
+// ⚠️ ข้อเท็จจริง: ธนาคารไทย "ไม่มี" public deeplink ให้เว็บทั่วไปยิง
+// เลข PromptPay + ยอดเงิน เข้าไปเติมในหน้าโอนได้ (ต้องเป็น merchant
+// ที่ลงทะเบียน + เซ็น payload กับธนาคารเท่านั้น)
+// ดังนั้นวิธีเดียวที่ "ยอดขึ้นเองจริง ๆ" คือ:
+//   1) บันทึกรูป QR (ยอดถูกล็อกอยู่ใน EMVCo payload แล้ว)
+//   2) เปิดแอปธนาคาร → สแกน QR → เลือกรูปจากคลังภาพ → ยอดขึ้นเอง
+//
+// 🐞 บั๊กเดิมที่ทำให้ "เด้งไป Play Store / ขึ้นให้อัปเดตแอป":
+//   - ใส่ package= ใน intent:// → พอ scheme resolve ไม่ได้
+//     Chrome จะพาไป Play Store ของ package นั้นทันที
+//   - package ของ ttb / UOB ผิด (ชี้ไปแอปรุ่นเก่า) → จึงขึ้นให้อัปเดต
+// วิธีแก้: ตัด package= ออกจาก intent ที่ใช้เปิดแอป + แก้ package ให้ถูก
+// ============================================================
 const THAI_BANK_APPS = {
   kbank: {
     label: "K PLUS",
-    scheme: "kplus",
-    androidPackage: "com.kasikorn.retail.mbanking.wap"
+    schemes: ["kplus://"],
+    androidPackage: "com.kasikorn.retail.mbanking.wap",
+    scanHint: "แตะ สแกน → ไอคอนรูปภาพ เพื่อเลือก QR จากคลังภาพ"
   },
   scb: {
     label: "SCB EASY",
-    scheme: "scbeasy",
-    androidPackage: "com.scb.phone"
+    schemes: ["scbeasy://", "scbeasysim://"],
+    androidPackage: "com.scb.phone",
+    scanHint: "แตะ สแกน → ไอคอนรูปภาพ เพื่อเลือก QR จากคลังภาพ"
   },
   ktb: {
     label: "Krungthai NEXT",
-    scheme: "krungthainext",
-    androidPackage: "ktbcs.netbank"
+    schemes: ["krungthainext://", "ktbnext://"],
+    androidPackage: "ktbcs.netbank",
+    scanHint: "แตะ สแกน → เลือกรูปจากอัลบั้ม"
   },
   bbl: {
     label: "Bualuang mBanking",
-    scheme: "bualuangmbanking",
-    androidPackage: "com.bbl.mobilebanking"
+    schemes: ["bualuangmbanking://", "bblmbanking://"],
+    androidPackage: "com.bbl.mobilebanking",
+    scanHint: "แตะ สแกน → เลือกรูปจากคลังภาพ"
   },
   bay: {
-    label: "Krungsri App",
-    scheme: "krungsri",
-    androidPackage: "com.krungsri.kma"
+    label: "krungsri app (KMA)",
+    schemes: ["krungsri://", "kma://", "krungsriapp://"],
+    androidPackage: "com.krungsri.kma",
+    scanHint: "แตะ สแกน → เลือกรูปจากอัลบั้ม"
   },
   ttb: {
     label: "ttb touch",
-    scheme: "ttbtouch",
-    androidPackage: "com.TMBTOUCH.prod"
+    schemes: ["ttbtouch://", "tmbtouch://"],
+    androidPackage: "com.TMBTOUCH.PRODUCTION",
+    scanHint: "แตะ สแกน → เลือกรูปจากคลังภาพ"
   },
   uob: {
     label: "UOB TMRW",
-    scheme: "uobtmrw",
-    androidPackage: "com.uob.mighty.app"
+    schemes: ["uobtmrw://", "tmrwth://", "uobmighty://"],
+    androidPackage: "com.uob.mightyth2",
+    scanHint: "แตะ Scan → Gallery เพื่อเลือกรูป QR"
   }
 };
 
 function getPaymentDevice() {
   const ua = navigator.userAgent || "";
+  const isIOS = /iPhone|iPad|iPod/i.test(ua) ||
+    (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1);
+  const isLine = /\bLine\b/i.test(ua);
+  const isFB = /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(ua);
+  const isTikTok = /BytedanceWebview|musical_ly|TikTok/i.test(ua);
   return {
     isAndroid: /Android/i.test(ua),
-    isIOS: /iPhone|iPad|iPod/i.test(ua),
-    isLine: /Line/i.test(ua)
+    isIOS,
+    isLine,
+    // WebView ในแอปพวกนี้บล็อก custom scheme → เปิดแอปธนาคารไม่ติดแน่นอน
+    inAppBrowser: isLine || isFB || isTikTok,
+    inAppName: isLine ? "LINE" : (isFB ? "Facebook / Instagram" : (isTikTok ? "TikTok" : ""))
   };
 }
 
+// scheme เดียว → URL ที่ใช้เปิดแอปจริง
+// Android ใช้ intent:// "โดยไม่ใส่ package" เพื่อไม่ให้เด้งไป Play Store
+function bankSchemeToHref(scheme, isAndroid) {
+  const name = String(scheme || "").replace(/:.*$/, "");
+  if (!name) return "";
+  return isAndroid ? `intent://#Intent;scheme=${name};end` : `${name}://`;
+}
+
 function bankLaunchHref(bank, isAndroid) {
-  if (isAndroid) {
-    return `intent://#Intent;scheme=${bank.scheme};package=${bank.androidPackage};end`;
-  }
-  return `${bank.scheme}://`;
+  return bankSchemeToHref(bank.schemes[0], isAndroid) || "#";
+}
+
+// รายการ URL ที่จะไล่ลองเปิด
+// Android ลองได้หลายอัน เพราะถ้าไม่มีแอปรับจะล้มเหลวแบบเงียบ ๆ
+// iOS ลองอันเดียว เพราะถ้าเปิดไม่ได้ Safari จะเด้ง alert ทุกครั้ง
+function bankLaunchCandidates(bank) {
+  const { isAndroid } = getPaymentDevice();
+  const list = isAndroid ? bank.schemes : bank.schemes.slice(0, 1);
+  return list.map((s) => bankSchemeToHref(s, isAndroid)).filter(Boolean);
 }
 
 function applyBankLaunchHrefs() {
   const { isAndroid } = getPaymentDevice();
-  $("paymentBankList")?.querySelectorAll("[data-bank]").forEach((el) => {
+  $("paymentBankList")?.querySelectorAll("a[data-bank]").forEach((el) => {
     const bank = THAI_BANK_APPS[el.getAttribute("data-bank")];
     if (!bank) return;
     el.setAttribute("href", bankLaunchHref(bank, isAndroid));
+    const hintEl = el.querySelector("[data-bank-hint]");
+    if (hintEl) hintEl.textContent = bank.scanHint || "";
   });
 }
 
@@ -3904,6 +3949,8 @@ function updatePaymentBankHints() {
   const amt = formattedPayAmount();
   const amtEl = $("paymentBankAmountHint");
   if (amtEl) amtEl.textContent = amt + " ฿";
+  const stepAmt = $("paymentBankStepAmount");
+  if (stepAmt) stepAmt.textContent = amt + " ฿";
   const pp = currentPromptPayId();
   const row = $("paymentBankPromptpayRow");
   const ppEl = $("paymentBankPromptpayHint");
@@ -3911,17 +3958,103 @@ function updatePaymentBankHints() {
   row?.classList.toggle("hidden", !pp);
 }
 
+// ---------- บันทึกรูป QR (ใช้ร่วมกับปุ่ม 💾 ด้านบน) ----------
+function savePaymentQRImage() {
+  if (!paymentQRDataUrl) {
+    toast("⚠️ ยังไม่มี QR ให้บันทึก");
+    return false;
+  }
+
+  const { isLine } = getPaymentDevice();
+  if (isLine) {
+    alert(
+      "⚠️ แอป LINE ไม่รองรับการดาวน์โหลดรูปภาพโดยตรง!\n\n" +
+      "วิธีที่ง่ายที่สุด: แตะค้างที่รูป QR แล้วเลือก 'บันทึกรูปภาพ'\n\n" +
+      "หรือเปิดลิงก์นี้ในเบราว์เซอร์ปกติ:\n" +
+      "• iPhone (iOS): แตะไอคอนเข็มทิศ 🧭 มุมขวาล่าง เพื่อเปิดใน Safari\n" +
+      "• Android: แตะจุด 3 จุด ┇ มุมขวาบน แล้วเลือก 'เปิดใน Chrome'"
+    );
+    return false;
+  }
+
+  const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
+  const a = document.createElement("a");
+  a.href = paymentQRDataUrl;
+  a.download = `PromptPay_${safeName}_${Date.now()}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast(`💾 บันทึก QR แล้ว — ยอด ${formattedPayAmount()} ฿ ถูกล็อกในรูป`, 3000);
+  return true;
+}
+
+// ---------- เปิดแอปธนาคาร ----------
+let bankLaunchTimer = null;
+
+function showBankOpenFailed(bank) {
+  const box = $("paymentBankFallbackNote");
+  const { isAndroid } = getPaymentDevice();
+  const storeUrl = isAndroid
+    ? `https://play.google.com/store/apps/details?id=${bank.androidPackage}`
+    : "";
+  if (box) {
+    box.innerHTML =
+      `<div class="font-bold mb-1">⚠️ เปิด ${bank.label} อัตโนมัติไม่สำเร็จ</div>` +
+      `<div class="leading-relaxed">เปิดแอป ${bank.label} เองจากหน้าจอโฮม แล้วแตะ <b>สแกน QR → เลือกรูปจากคลังภาพ</b> ` +
+      `เลือกรูป QR ที่บันทึกไว้ — ยอด <b>${formattedPayAmount()} ฿</b> จะขึ้นให้อัตโนมัติ</div>` +
+      (storeUrl
+        ? `<a href="${storeUrl}" target="_blank" rel="noopener" class="inline-block mt-1.5 underline font-semibold">ยังไม่ได้ติดตั้ง ${bank.label}?</a>`
+        : "");
+    box.classList.remove("hidden");
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  toast(`เปิด ${bank.label} ไม่ได้ — ใช้วิธีสแกนรูป QR ที่บันทึกไว้แทน`, 4000);
+}
+
+function launchBankApp(bank) {
+  const candidates = bankLaunchCandidates(bank);
+  if (!candidates.length) return;
+
+  $("paymentBankFallbackNote")?.classList.add("hidden");
+  clearTimeout(bankLaunchTimer);
+
+  let idx = 0;
+  let opened = false;
+  const markOpened = () => { opened = true; };
+  const onVis = () => { if (document.hidden) markOpened(); };
+
+  const cleanup = () => {
+    document.removeEventListener("visibilitychange", onVis);
+    window.removeEventListener("pagehide", markOpened);
+    window.removeEventListener("blur", markOpened);
+  };
+
+  document.addEventListener("visibilitychange", onVis);
+  window.addEventListener("pagehide", markOpened);
+  window.addEventListener("blur", markOpened);
+
+  const step = () => {
+    if (opened || document.hidden) { cleanup(); return; }
+    if (idx >= candidates.length) { cleanup(); showBankOpenFailed(bank); return; }
+    try { window.location.href = candidates[idx++]; } catch (_) {}
+    bankLaunchTimer = setTimeout(step, 1300);
+  };
+  step();
+}
+
 function prepareBankAppLaunch() {
   const amt = formattedPayAmount();
   const copied = copyTextSync(amt);
   toast(copied
-    ? `📋 คัดลอกยอด ${amt} ฿ แล้ว — ในแอปไปที่โอน PromptPay แล้ววางยอด`
-    : `ยอดที่ต้องโอน ${amt} ฿ — คัดลอกยอดจากปุ่มด้านบนแล้ววางในแอป`, 4000);
+    ? `📋 คัดลอกยอด ${amt} ฿ ไว้แล้ว (เผื่อต้องพิมพ์เอง)`
+    : `ยอดที่ต้องโอน ${amt} ฿`, 3000);
   return copied;
 }
 
 function resetPaymentBankList() {
   $("paymentBankList")?.classList.add("hidden");
+  $("paymentBankFallbackNote")?.classList.add("hidden");
+  clearTimeout(bankLaunchTimer);
 }
 
 function setupPaymentBankButtons() {
@@ -3933,10 +4066,18 @@ function setupPaymentBankButtons() {
     const willShow = list.classList.contains("hidden");
     list.classList.toggle("hidden", !willShow);
     if (willShow) {
+      applyBankLaunchHrefs();
       updatePaymentBankHints();
       copyTextSync(formattedPayAmount());
       list.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
+  });
+
+  // STEP 1 — บันทึกรูป QR (ยอดล็อกอยู่ในรูปแล้ว)
+  $("btnSaveQRForBank")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    savePaymentQRImage();
   });
 
   $("btnCopyPayAmount")?.addEventListener("click", (e) => {
@@ -3957,36 +4098,45 @@ function setupPaymentBankButtons() {
     toast(copyTextSync(pp) ? `📋 คัดลอก PromptPay ${pp} แล้ว` : "คัดลอกเบอร์ไม่สำเร็จ", 2500);
   });
 
+  // STEP 2 — เปิดแอปธนาคาร
   $("paymentBankList")?.addEventListener("click", (e) => {
-    if (e.target.closest("#btnCopyPayAmount, #btnCopyPayPromptpay")) return;
+    if (e.target.closest("#btnCopyPayAmount, #btnCopyPayPromptpay, #btnSaveQRForBank")) return;
+    // ลิงก์ Play Store ในกล่องแจ้งเตือน — ปล่อยให้ทำงานปกติ
+    if (e.target.closest("#paymentBankFallbackNote a")) return;
+
     const link = e.target.closest("a[data-bank]");
     if (!link) return;
+    e.preventDefault();
+
+    const bank = THAI_BANK_APPS[link.getAttribute("data-bank")];
+    if (!bank) return;
 
     const amount = Number(paymentAmountValue) || 0;
     if (!(amount > 0)) {
-      e.preventDefault();
       toast("⚠️ ยังไม่มียอดให้โอน");
       return;
     }
 
-    const { isAndroid, isIOS, isLine } = getPaymentDevice();
-    prepareBankAppLaunch();
+    const { isAndroid, isIOS, inAppBrowser, inAppName } = getPaymentDevice();
 
-    if (isLine) {
-      e.preventDefault();
+    if (inAppBrowser) {
       alert(
-        "⚠️ แอป LINE มักเด้งเข้าแอปธนาคารไม่ได้\n\n" +
-        "กรุณาเปิดหน้านี้ใน Chrome หรือ Safari แล้วกดเลือกธนาคารอีกครั้ง\n" +
-        `ยอด ${formattedPayAmount()} ฿ ถูกคัดลอกแล้ว`
+        `⚠️ เบราว์เซอร์ในแอป ${inAppName} เปิดแอปธนาคารไม่ได้\n\n` +
+        "ให้ทำแบบนี้แทน:\n" +
+        "1) แตะค้างที่รูป QR ด้านบน → บันทึกรูปภาพ\n" +
+        `2) เปิดแอป ${bank.label} เอง → สแกน QR → เลือกรูปจากคลังภาพ\n\n` +
+        `ยอด ${formattedPayAmount()} ฿ ถูกล็อกอยู่ในรูป QR แล้ว ไม่ต้องพิมพ์เอง`
       );
       return;
     }
 
     if (!isAndroid && !isIOS) {
-      e.preventDefault();
+      toast("เปิดแอปธนาคารได้เฉพาะบนมือถือ — บนคอมให้สแกน QR จากมือถือแทน", 3500);
       return;
     }
-    // ปล่อยให้ <a href="kplus://"> เปิดแอปเอง — อย่า await / อย่าพาไป App Store
+
+    prepareBankAppLaunch();
+    launchBankApp(bank);
   });
 }
 
@@ -4091,33 +4241,9 @@ async function openPaymentModal(memberIdx) {
   noQR?.classList.remove("hidden");
 }
 
-// Download dynamic QR ลงเครื่อง
+// Download dynamic QR ลงเครื่อง — ใช้ตัวเดียวกับสเต็ป 1 ของ "จ่ายผ่านแอปธนาคาร"
 $("btnDownloadPaymentQR")?.addEventListener("click", () => {
-  if (!paymentQRDataUrl) {
-    toast("⚠️ ยังไม่มี QR ให้บันทึก");
-    return;
-  }
-
-  // Intercept if running inside LINE in-app browser to guide user to open in Chrome/Safari
-  const isLine = /Line/i.test(navigator.userAgent);
-  if (isLine) {
-    alert(
-      "⚠️ แอป LINE ไม่รองรับการดาวน์โหลดรูปภาพโดยตรง!\n\n" +
-      "กรุณาเปิดลิงก์นี้ในเบราว์เซอร์ปกติเพื่อบันทึกรูปภาพ:\n" +
-      "• สำหรับ iPhone (iOS): แตะไอคอนรูปเข็มทิศ 🧭 ที่มุมขวาล่างสุด เพื่อเปิดใน Safari\n" +
-      "• สำหรับ Android: แตะปุ่มจุด 3 จุด ┇ ที่มุมขวาบนสุด แล้วเลือก 'เปิดด้วยเบราว์เซอร์อื่น' หรือ 'เปิดใน Chrome'"
-    );
-    return;
-  }
-
-  const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
-  const a = document.createElement("a");
-  a.href = paymentQRDataUrl;
-  a.download = `PromptPay_${safeName}_${Date.now()}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  toast("💾 บันทึก QR แล้ว");
+  savePaymentQRImage();
 });
 
 function closePaymentModal() {
