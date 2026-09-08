@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.19.0">
+  <link rel="stylesheet" href="./premium.css?v=3.20.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -998,131 +998,21 @@
         <div id="paymentQRCanvas" class="mx-auto inline-block bg-white p-2 rounded-lg shadow-sm"></div>
         <!-- Standard <img> tag that enables native long-press saving in LINE/Facebook/Safari/Chrome -->
         <img id="paymentQRImg" src="" alt="QR Code" class="hidden mx-auto block bg-white p-2 rounded-xl shadow-sm w-full max-w-[220px] border border-slate-100 dark:border-slate-800/40" />
-        <p class="text-[10.5px] text-indigo-600 dark:text-indigo-400 mt-2.5 font-bold">💡 แตะค้างที่รูป QR ก็บันทึกรูปได้เหมือนกัน</p>
-        <p class="text-[9.5px] text-slate-400 mt-0.5">หรือเปิดแอปธนาคารเพื่อสแกนจ่ายโดยตรง</p>
+        <p class="text-[10.5px] text-indigo-600 dark:text-indigo-400 mt-2.5 font-bold">💡 แตะค้างที่รูป QR แล้วเลือก “บันทึกรูปภาพ” — เข้าคลังภาพเลย</p>
+        <p class="text-[9.5px] text-slate-400 mt-0.5">แล้วเปิดแอปธนาคาร → สแกน → เลือกรูปจากคลังภาพ (ยอดขึ้นเอง)</p>
         <button id="btnDownloadPaymentQR" class="mt-3 inline-flex items-center justify-center gap-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-transform active:scale-95">
-          📤 บันทึกรูป QR เข้าคลังภาพ
+          💾 บันทึกรูป QR
         </button>
-        <div id="paymentBankPayWrap" class="hidden mt-3 text-left">
-          <button id="btnPayViaBank" type="button" class="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow-sm transition-transform active:scale-95">
-            🏦 จ่ายผ่านแอปธนาคาร
-          </button>
-          <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-1.5">Pay via mobile banking — บันทึก QR แล้วสแกนจากคลังภาพ ยอดขึ้นเอง</p>
-          <div id="paymentBankList" class="hidden mt-2.5 space-y-2">
-            <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3 mb-1">
-              <div class="flex items-center justify-between gap-2">
-                <div>
-                  <div class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">ยอดที่ต้องโอน (คัดลอกไว้ให้แล้ว)</div>
-                  <div id="paymentBankAmountHint" class="text-2xl font-black text-emerald-700 dark:text-emerald-300 leading-tight">— ฿</div>
-                </div>
-                <button type="button" id="btnCopyPayAmount" class="shrink-0 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg">คัดลอกยอด</button>
-              </div>
-              <div id="paymentBankPromptpayRow" class="hidden mt-2">
-                <div class="flex items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">PromptPay</div>
-                  <div id="paymentBankPromptpayHint" class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">—</div>
-                </div>
-                <button type="button" id="btnCopyPayPromptpay" class="shrink-0 text-[11px] font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 px-3 py-1.5 rounded-lg">คัดลอกเบอร์</button>
-                </div>
-              </div>
-            </div>
-            <!-- STEP 1 — บันทึกรูป QR (ยอดถูกล็อกอยู่ใน payload แล้ว) -->
-            <div class="rounded-xl border border-sky-200 dark:border-sky-800/50 bg-sky-50 dark:bg-sky-950/30 p-3">
-              <div class="text-[11px] font-black text-sky-700 dark:text-sky-300 mb-1.5">1️⃣ บันทึกรูป QR ก่อน</div>
-              <p class="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed mb-2">ยอด <b id="paymentBankStepAmount" class="text-sky-700 dark:text-sky-300">— ฿</b> ถูกล็อกอยู่ในรูป QR แล้ว<br>กดปุ่มด้านล่าง → เลือก <b>“บันทึกรูปภาพ / Save Image”</b> ในเมนูที่เด้งขึ้นมา</p>
-              <button type="button" id="btnSaveQRForBank" class="w-full inline-flex items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-bold py-2 px-3 rounded-lg shadow-sm transition-transform active:scale-95">
-                📤 บันทึกรูป QR เข้าคลังภาพ
-              </button>
-            </div>
 
-            <!-- STEP 2 — เปิดแอปธนาคารแล้วสแกนรูปจากคลังภาพ -->
-            <div class="rounded-xl border border-violet-200 dark:border-violet-800/50 bg-violet-50 dark:bg-violet-950/30 p-3">
-              <div class="text-[11px] font-black text-violet-700 dark:text-violet-300 mb-1">2️⃣ เปิดแอปธนาคารเอง → สแกนรูป QR</div>
-              <p class="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed">แอปธนาคารเปิดจากเว็บไม่ได้ — ต้องกดเปิดเองจากหน้าจอโฮม<br><b>แตะธนาคารของคุณด้านล่าง</b> เพื่อดูวิธีสแกนรูปทีละขั้น</p>
-            </div>
-
-            <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 px-0.5">แตะธนาคารของคุณ → ดูวิธีสแกนรูป QR ทีละขั้น</p>
-            <div class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden">
-              <button type="button" data-bank="kbank" class="payment-bank-btn w-full flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/80 px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
-                <span class="w-9 h-9 rounded-lg bg-[#138F2D] text-white text-[11px] font-black flex items-center justify-center shrink-0">K+</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">K PLUS</span>
-                  <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกสิกรไทย (KBank)</span>
-                </span>
-                <span data-bank-caret class="shrink-0 text-slate-400 text-xs leading-none">▾</span>
-              </button>
-              <div data-bank-steps class="hidden px-3 pb-3 pt-2 text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700"></div>
-            </div>
-            <div class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden">
-              <button type="button" data-bank="scb" class="payment-bank-btn w-full flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/80 px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
-                <span class="w-9 h-9 rounded-lg bg-[#4E2A84] text-white text-[10px] font-black flex items-center justify-center shrink-0">SCB</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">SCB EASY</span>
-                  <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารไทยพาณิชย์ (SCB)</span>
-                </span>
-                <span data-bank-caret class="shrink-0 text-slate-400 text-xs leading-none">▾</span>
-              </button>
-              <div data-bank-steps class="hidden px-3 pb-3 pt-2 text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700"></div>
-            </div>
-            <div class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden">
-              <button type="button" data-bank="ktb" class="payment-bank-btn w-full flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/80 px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
-                <span class="w-9 h-9 rounded-lg bg-[#00A0E4] text-white text-[10px] font-black flex items-center justify-center shrink-0">NEXT</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Krungthai NEXT</span>
-                  <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงไทย (KTB)</span>
-                </span>
-                <span data-bank-caret class="shrink-0 text-slate-400 text-xs leading-none">▾</span>
-              </button>
-              <div data-bank-steps class="hidden px-3 pb-3 pt-2 text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700"></div>
-            </div>
-            <div class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden">
-              <button type="button" data-bank="bbl" class="payment-bank-btn w-full flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/80 px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
-                <span class="w-9 h-9 rounded-lg bg-[#1E4598] text-white text-[10px] font-black flex items-center justify-center shrink-0">BBL</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Bualuang mBanking</span>
-                  <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงเทพ (BBL)</span>
-                </span>
-                <span data-bank-caret class="shrink-0 text-slate-400 text-xs leading-none">▾</span>
-              </button>
-              <div data-bank-steps class="hidden px-3 pb-3 pt-2 text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700"></div>
-            </div>
-            <div class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden">
-              <button type="button" data-bank="bay" class="payment-bank-btn w-full flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/80 px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
-                <span class="w-9 h-9 rounded-lg bg-[#6C1D5F] text-[#FFD100] text-[10px] font-black flex items-center justify-center shrink-0">KMA</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Krungsri App (KMA)</span>
-                  <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารกรุงศรีอยุธยา (BAY)</span>
-                </span>
-                <span data-bank-caret class="shrink-0 text-slate-400 text-xs leading-none">▾</span>
-              </button>
-              <div data-bank-steps class="hidden px-3 pb-3 pt-2 text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700"></div>
-            </div>
-            <div class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden">
-              <button type="button" data-bank="ttb" class="payment-bank-btn w-full flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/80 px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
-                <span class="w-9 h-9 rounded-lg bg-[#005EB8] text-white text-[10px] font-black flex items-center justify-center shrink-0">ttb</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">ttb touch</span>
-                  <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารทหารไทยธนชาต (ttb)</span>
-                </span>
-                <span data-bank-caret class="shrink-0 text-slate-400 text-xs leading-none">▾</span>
-              </button>
-              <div data-bank-steps class="hidden px-3 pb-3 pt-2 text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700"></div>
-            </div>
-            <div class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden">
-              <button type="button" data-bank="uob" class="payment-bank-btn w-full flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/80 px-3 py-2.5 text-left transition-transform active:scale-[0.98]">
-                <span class="w-9 h-9 rounded-lg bg-[#0B2F6B] text-white text-[10px] font-black flex items-center justify-center shrink-0">UOB</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">UOB TMRW</span>
-                  <span class="block text-[10px] text-slate-500 dark:text-slate-400">ธนาคารยูโอบี (UOB)</span>
-                </span>
-                <span data-bank-caret class="shrink-0 text-slate-400 text-xs leading-none">▾</span>
-              </button>
-              <div data-bank-steps class="hidden px-3 pb-3 pt-2 text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-700"></div>
-            </div>
-            <p class="text-[9.5px] text-slate-400 dark:text-slate-500 px-0.5 pt-0.5 leading-relaxed">ธนาคารไทยไม่เปิด URL scheme สาธารณะให้เว็บเรียกเปิดแอป — deeplink เข้าแอปธนาคารมีได้ทางเดียวคือผ่าน payment gateway ที่ต้องมีบัญชี merchant ของธนาคาร<br><span class="opacity-60">build 3.19.0</span></p>
-          </div>
+        <!-- เผื่อสแกนไม่ได้ ต้องโอนเอง -->
+        <div id="paymentPromptPayRow" class="hidden mt-3 flex items-center justify-between gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-left">
+          <span class="min-w-0">
+            <span class="block text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">PromptPay</span>
+            <span id="paymentPromptPayValue" class="block text-sm font-bold text-slate-800 dark:text-slate-100 truncate">—</span>
+          </span>
+          <button type="button" id="btnCopyPromptPay" class="shrink-0 text-[11px] font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 px-3 py-1.5 rounded-lg">คัดลอกเลข</button>
         </div>
+        <p class="text-[8.5px] text-slate-400/60 dark:text-slate-500/60 mt-2">build 3.20.0</p>
       </div>
 
       <!-- No QR fallback -->
@@ -1356,6 +1246,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.19.0"></script>
+  <script type="module" src="./app.js?v=3.20.0"></script>
 </body>
 </html>
