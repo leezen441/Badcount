@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.20.0">
+  <link rel="stylesheet" href="./premium.css?v=3.16.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -998,21 +998,11 @@
         <div id="paymentQRCanvas" class="mx-auto inline-block bg-white p-2 rounded-lg shadow-sm"></div>
         <!-- Standard <img> tag that enables native long-press saving in LINE/Facebook/Safari/Chrome -->
         <img id="paymentQRImg" src="" alt="QR Code" class="hidden mx-auto block bg-white p-2 rounded-xl shadow-sm w-full max-w-[220px] border border-slate-100 dark:border-slate-800/40" />
-        <p class="text-[10.5px] text-indigo-600 dark:text-indigo-400 mt-2.5 font-bold">💡 แตะค้างที่รูป QR แล้วเลือก “บันทึกรูปภาพ” — เข้าคลังภาพเลย</p>
-        <p class="text-[9.5px] text-slate-400 mt-0.5">แล้วเปิดแอปธนาคาร → สแกน → เลือกรูปจากคลังภาพ (ยอดขึ้นเอง)</p>
+        <p class="text-[10.5px] text-indigo-600 dark:text-indigo-400 mt-2.5 font-bold">💡 แตะค้างที่รูป QR เพื่อบันทึกรูปภาพ (สำหรับ LINE)</p>
+        <p class="text-[9.5px] text-slate-400 mt-0.5">หรือเปิดแอปธนาคารเพื่อสแกนจ่ายโดยตรง</p>
         <button id="btnDownloadPaymentQR" class="mt-3 inline-flex items-center justify-center gap-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-transform active:scale-95">
-          💾 บันทึกรูป QR
+          💾 บันทึกรูป QR Code
         </button>
-
-        <!-- เผื่อสแกนไม่ได้ ต้องโอนเอง -->
-        <div id="paymentPromptPayRow" class="hidden mt-3 flex items-center justify-between gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-left">
-          <span class="min-w-0">
-            <span class="block text-[9.5px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">PromptPay</span>
-            <span id="paymentPromptPayValue" class="block text-sm font-bold text-slate-800 dark:text-slate-100 truncate">—</span>
-          </span>
-          <button type="button" id="btnCopyPromptPay" class="shrink-0 text-[11px] font-bold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 px-3 py-1.5 rounded-lg">คัดลอกเลข</button>
-        </div>
-        <p class="text-[8.5px] text-slate-400/60 dark:text-slate-500/60 mt-2">build 3.20.0</p>
       </div>
 
       <!-- No QR fallback -->
@@ -1246,6 +1236,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.20.0"></script>
+  <script type="module" src="./app.js?v=3.16.0"></script>
 </body>
 </html>

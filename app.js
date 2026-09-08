@@ -3801,148 +3801,6 @@ async function compressImage(file, maxWidth = 800, quality = 0.7) {
 let paymentMemberIdx = null;
 let paymentQRDataUrl = null;        // เก็บ dataURL ปัจจุบันสำหรับปุ่ม Download
 let paymentQRMemberName = null;
-let paymentAmountValue = 0;
-
-// ============================================================
-// 💳 หน้าจ่ายเงิน — ตัวช่วยเล็ก ๆ (คัดลอกเลข / บันทึกรูป QR)
-// ------------------------------------------------------------
-// 📌 เคยมีปุ่ม "จ่ายผ่านแอปธนาคาร" อยู่ตรงนี้ — ถอดออกแล้ว
-// เพราะเปิดแอปธนาคารไทยจากหน้าเว็บทำไม่ได้จริง:
-//   • ธนาคารไม่ประกาศ URL scheme สาธารณะ (ทดสอบครบ 7 แอป ไม่ติดสักตัว)
-//   • deeplink เข้าแอปธนาคารมีทางเดียวคือผ่าน payment gateway
-//     ที่ต้องมีบัญชี merchant + secret key (Omise/Opn, 2C2P ฯลฯ)
-//   • ยัดรูป QR เข้าแอปอื่นก็ไม่ได้ — ระบบปฏิบัติการบล็อกโดยตั้งใจ
-// อย่าเอากลับมาใส่อีกโดยไม่มี gateway จริง มันจะกดแล้วไม่เกิดอะไร
-// ============================================================
-
-function getPaymentDevice() {
-  const ua = navigator.userAgent || "";
-  const isIOS = /iPhone|iPad|iPod/i.test(ua) ||
-    (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1);
-  const isLine = /\bLine\b/i.test(ua);
-  const isFB = /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(ua);
-  const isTikTok = /BytedanceWebview|musical_ly|TikTok/i.test(ua);
-  return {
-    isAndroid: /Android/i.test(ua),
-    isIOS,
-    isLine,
-    // WebView ในแอปพวกนี้ดาวน์โหลดรูปให้ไม่ได้
-    inAppBrowser: isLine || isFB || isTikTok,
-    inAppName: isLine ? "LINE" : (isFB ? "Facebook / Instagram" : (isTikTok ? "TikTok" : ""))
-  };
-}
-
-function copyTextSync(text) {
-  if (!text) return false;
-  let ok = false;
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    ta.setSelectionRange(0, text.length);
-    ok = document.execCommand("copy");
-    ta.remove();
-  } catch (_) {}
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      // writeText คืน promise — ต้อง .catch ไว้ ไม่งั้นเวลาแท็บไม่ได้ focus
-      // จะโยน NotAllowedError ค้างเป็น unhandled rejection ใน console
-      // (ไม่ต้องสน error เพราะ execCommand ด้านบนคัดลอกสำเร็จไปแล้ว)
-      navigator.clipboard.writeText(text).catch(() => {});
-      ok = true;
-    }
-  } catch (_) {}
-  return ok;
-}
-
-function formattedPayAmount() {
-  return (Number(paymentAmountValue) || 0).toFixed(2);
-}
-
-function currentPromptPayId() {
-  return (getAdminPromptPayConfig().id || "").replace(/\D/g, "");
-}
-
-// แถวเล็ก ๆ ใต้ QR: เลข PromptPay + ปุ่มคัดลอก (เผื่อสแกนไม่ได้ ต้องโอนเอง)
-function updatePaymentPromptPayRow() {
-  const pp = currentPromptPayId();
-  const row = $("paymentPromptPayRow");
-  const val = $("paymentPromptPayValue");
-  if (val) val.textContent = pp || "—";
-  row?.classList.toggle("hidden", !pp);
-}
-
-// ---------- บันทึกรูป QR ----------
-// บันทึกตรง ๆ ด้วย <a download> — ไม่เรียก share sheet
-// (เคยลองใช้ Web Share API แล้ว แต่มันเด้งเมนู "ส่งไปแอปอื่น/คัดลอก"
-//  ซึ่งสับสนกว่าเดิม จึงกลับมาใช้ดาวน์โหลดตรง ๆ)
-// หมายเหตุ iOS: Safari บันทึกลง "ไฟล์" ไม่ใช่ "คลังภาพ" — ถ้าอยากให้เข้า
-// คลังภาพต้องแตะค้างที่รูป QR แล้วเลือก "บันทึกรูปภาพ" (บอกไว้ใต้รูปแล้ว)
-function paymentQRFileName() {
-  const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
-  return `PromptPay_${safeName}_${formattedPayAmount()}.png`;
-}
-
-function savePaymentQRImage() {
-  if (!paymentQRDataUrl) {
-    toast("⚠️ ยังไม่มี QR ให้บันทึก");
-    return false;
-  }
-
-  const { isIOS, inAppBrowser, inAppName } = getPaymentDevice();
-
-  // in-app browser (LINE/FB/IG/TikTok) ดาวน์โหลดไม่ได้ → บอกวิธีแตะค้าง
-  if (inAppBrowser) {
-    alert(
-      `⚠️ เบราว์เซอร์ในแอป ${inAppName || "นี้"} บันทึกรูปให้ไม่ได้\n\n` +
-      "ให้ใช้วิธีนี้แทน: แตะค้างที่รูป QR ด้านบน แล้วเลือก 'บันทึกรูปภาพ'\n\n" +
-      "หรือเปิดลิงก์นี้ในเบราว์เซอร์ปกติ:\n" +
-      "• iPhone: แตะไอคอนเข็มทิศ 🧭 มุมขวาล่าง เพื่อเปิดใน Safari\n" +
-      "• Android: แตะจุด 3 จุด ┇ มุมขวาบน แล้วเลือก 'เปิดใน Chrome'"
-    );
-    return false;
-  }
-
-  try {
-    const a = document.createElement("a");
-    a.href = paymentQRDataUrl;
-    a.download = paymentQRFileName();
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch (err) {
-    toast("บันทึกไม่สำเร็จ — แตะค้างที่รูป QR แล้วเลือก 'บันทึกรูปภาพ' แทน", 4000);
-    return false;
-  }
-
-  toast(isIOS
-    ? "💾 บันทึกลง 'ไฟล์' แล้ว — ถ้าอยากให้อยู่ในคลังภาพ แตะค้างที่รูป QR แล้วเลือก 'บันทึกรูปภาพ'"
-    : `💾 บันทึก QR แล้ว — ยอด ${formattedPayAmount()} ฿ ถูกล็อกในรูป`, 4500);
-  return true;
-}
-
-function setupPaymentHelperButtons() {
-  $("btnCopyPromptPay")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const pp = currentPromptPayId();
-    if (!pp) {
-      toast("⚠️ ยังไม่ได้ตั้ง PromptPay");
-      return;
-    }
-    toast(copyTextSync(pp) ? `📋 คัดลอกเลข PromptPay ${pp} แล้ว` : "คัดลอกไม่สำเร็จ", 2500);
-  });
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", setupPaymentHelperButtons);
-} else {
-  setupPaymentHelperButtons();
-}
 
 async function openPaymentModal(memberIdx) {
   if (!currentSession) return;
@@ -3956,8 +3814,6 @@ async function openPaymentModal(memberIdx) {
 
   const totals = calcSessionTotals(currentSession);
   const cost = totals.perMember?.[memberIdx] ?? 0;
-  paymentAmountValue = Number(cost) || 0;
-  updatePaymentPromptPayRow();
 
   $("paymentMemberName").textContent = m.name || "—";
   $("paymentAmount").textContent = fmt(cost) + " ฿";
@@ -4035,15 +3891,38 @@ async function openPaymentModal(memberIdx) {
   noQR?.classList.remove("hidden");
 }
 
-// Download dynamic QR ลงเครื่อง — ใช้ตัวเดียวกับสเต็ป 1 ของ "จ่ายผ่านแอปธนาคาร"
+// Download dynamic QR ลงเครื่อง
 $("btnDownloadPaymentQR")?.addEventListener("click", () => {
-  savePaymentQRImage();
+  if (!paymentQRDataUrl) {
+    toast("⚠️ ยังไม่มี QR ให้บันทึก");
+    return;
+  }
+
+  // Intercept if running inside LINE in-app browser to guide user to open in Chrome/Safari
+  const isLine = /Line/i.test(navigator.userAgent);
+  if (isLine) {
+    alert(
+      "⚠️ แอป LINE ไม่รองรับการดาวน์โหลดรูปภาพโดยตรง!\n\n" +
+      "กรุณาเปิดลิงก์นี้ในเบราว์เซอร์ปกติเพื่อบันทึกรูปภาพ:\n" +
+      "• สำหรับ iPhone (iOS): แตะไอคอนรูปเข็มทิศ 🧭 ที่มุมขวาล่างสุด เพื่อเปิดใน Safari\n" +
+      "• สำหรับ Android: แตะปุ่มจุด 3 จุด ┇ ที่มุมขวาบนสุด แล้วเลือก 'เปิดด้วยเบราว์เซอร์อื่น' หรือ 'เปิดใน Chrome'"
+    );
+    return;
+  }
+
+  const safeName = (paymentQRMemberName || "member").replace(/[^a-zA-Z0-9ก-๙]/g, "_").slice(0, 25);
+  const a = document.createElement("a");
+  a.href = paymentQRDataUrl;
+  a.download = `PromptPay_${safeName}_${Date.now()}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast("💾 บันทึก QR แล้ว");
 });
 
 function closePaymentModal() {
   $("paymentModal").classList.add("hidden");
   paymentMemberIdx = null;
-  paymentAmountValue = 0;
 }
 
 $("btnClosePaymentModal")?.addEventListener("click", closePaymentModal);
