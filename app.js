@@ -3801,6 +3801,221 @@ async function compressImage(file, maxWidth = 800, quality = 0.7) {
 let paymentMemberIdx = null;
 let paymentQRDataUrl = null;        // เก็บ dataURL ปัจจุบันสำหรับปุ่ม Download
 let paymentQRMemberName = null;
+let paymentAmountValue = 0;
+let bankAppLaunchTimer = null;
+
+// แอปธนาคารไทย — เปิดด้วย URL scheme / Android Intent
+// ธนาคารไม่มี public API ให้ล็อก PromptPay+ยอดครบทุกแอป จึงส่งยอดใน query
+// และคัดลอกยอด/PromptPay ไว้ให้วางในหน้าโอนได้ทันทีถ้าแอปไม่ใส่ให้อัตโนมัติ
+const THAI_BANK_APPS = {
+  kbank: {
+    label: "K PLUS",
+    scheme: "kplus",
+    androidPackage: "com.kasikorn.retail.mbanking.wap",
+    appStoreId: "364868437"
+  },
+  scb: {
+    label: "SCB EASY",
+    scheme: "scbeasy",
+    androidPackage: "com.scb.phone",
+    appStoreId: "388932995"
+  },
+  ktb: {
+    label: "Krungthai NEXT",
+    scheme: "krungthainext",
+    androidPackage: "ktbcs.netbank",
+    appStoreId: "1445822096"
+  },
+  bbl: {
+    label: "Bualuang mBanking",
+    scheme: "bualuangmbanking",
+    androidPackage: "com.bbl.mobilebanking",
+    appStoreId: "660238716"
+  },
+  bay: {
+    label: "Krungsri App",
+    scheme: "kmamobile",
+    androidPackage: "com.krungsri.kma",
+    appStoreId: "586871187"
+  },
+  ttb: {
+    label: "ttb touch",
+    scheme: "ttbtouch",
+    androidPackage: "com.TMBTOUCH.prod",
+    appStoreId: "436764677"
+  },
+  uob: {
+    label: "UOB TMRW",
+    scheme: "uobtmrw",
+    androidPackage: "com.uob.mighty.app",
+    appStoreId: "1445538897"
+  }
+};
+
+function getPaymentDevice() {
+  const ua = navigator.userAgent || "";
+  return {
+    isAndroid: /Android/i.test(ua),
+    isIOS: /iPhone|iPad|iPod/i.test(ua),
+    isLine: /Line/i.test(ua)
+  };
+}
+
+function buildBankPayQuery(promptpayId, amount, payload) {
+  const params = new URLSearchParams();
+  if (amount > 0) params.set("amount", Number(amount).toFixed(2));
+  if (promptpayId) {
+    params.set("promptpay", promptpayId);
+    params.set("target", promptpayId);
+    params.set("to", promptpayId);
+  }
+  if (payload) params.set("qr", payload);
+  const q = params.toString();
+  return q ? `pay?${q}` : "";
+}
+
+function buildBankLaunchUrl(bank, { promptpayId, amount, payload, isAndroid }) {
+  const path = buildBankPayQuery(promptpayId, amount, payload);
+  const storeAndroid = `https://play.google.com/store/apps/details?id=${bank.androidPackage}`;
+  if (isAndroid) {
+    const intentPath = path || "pay";
+    return `intent://${intentPath}#Intent;scheme=${bank.scheme};package=${bank.androidPackage};S.browser_fallback_url=${encodeURIComponent(storeAndroid)};end`;
+  }
+  return path ? `${bank.scheme}://${path}` : `${bank.scheme}://`;
+}
+
+function launchExternalUrl(url) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function copyPaymentTransferText(promptpayId, amount) {
+  const amt = Number(amount).toFixed(2);
+  const lines = [`ยอดโอน ${amt} บาท`];
+  if (promptpayId) lines.push(`PromptPay ${promptpayId}`);
+  const text = lines.join("\n");
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (_) {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function scheduleBankStoreFallback(storeUrl) {
+  if (bankAppLaunchTimer) {
+    clearTimeout(bankAppLaunchTimer);
+    bankAppLaunchTimer = null;
+  }
+  const onHide = () => {
+    if (bankAppLaunchTimer) {
+      clearTimeout(bankAppLaunchTimer);
+      bankAppLaunchTimer = null;
+    }
+    document.removeEventListener("visibilitychange", onHide);
+    window.removeEventListener("pagehide", onHide);
+  };
+  document.addEventListener("visibilitychange", onHide);
+  window.addEventListener("pagehide", onHide);
+  bankAppLaunchTimer = setTimeout(() => {
+    bankAppLaunchTimer = null;
+    document.removeEventListener("visibilitychange", onHide);
+    window.removeEventListener("pagehide", onHide);
+    if (!document.hidden) launchExternalUrl(storeUrl);
+  }, 1800);
+}
+
+async function openBankPaymentApp(bankId) {
+  const bank = THAI_BANK_APPS[bankId];
+  if (!bank) return;
+
+  const amount = Number(paymentAmountValue) || 0;
+  if (!(amount > 0)) {
+    toast("⚠️ ยังไม่มียอดให้โอน");
+    return;
+  }
+
+  if (!globalDefaultsLoaded) {
+    try { await loadGlobalDefaults(); } catch (_) {}
+  }
+  const cfg = getAdminPromptPayConfig();
+  const promptpayId = (cfg.id || "").replace(/\D/g, "");
+  const payload = promptpayId
+    ? generatePromptPayPayload(promptpayId, { amount, type: cfg.type })
+    : null;
+
+  const copied = await copyPaymentTransferText(promptpayId, amount);
+  const { isAndroid, isIOS, isLine } = getPaymentDevice();
+
+  if (isLine) {
+    alert(
+      "⚠️ แอป LINE มักเด้งเข้าแอปธนาคารไม่ได้\n\n" +
+      "กรุณาเปิดหน้านี้ใน Chrome หรือ Safari แล้วกดเลือกธนาคารอีกครั้ง\n" +
+      `ยอด ${amount.toFixed(2)} ฿ ${copied ? "ถูกคัดลอกแล้ว" : ""}`
+    );
+    return;
+  }
+
+  if (!isAndroid && !isIOS) {
+    toast(copied
+      ? `📋 คัดลอกยอด ${amount.toFixed(2)} ฿ แล้ว — เปิดบนมือถือเพื่อเข้าแอปธนาคาร`
+      : "เปิดบนมือถือเพื่อจ่ายผ่านแอปธนาคาร", 3500);
+    return;
+  }
+
+  const url = buildBankLaunchUrl(bank, { promptpayId, amount, payload, isAndroid });
+  const storeUrl = isAndroid
+    ? `https://play.google.com/store/apps/details?id=${bank.androidPackage}`
+    : `https://apps.apple.com/th/app/id${bank.appStoreId}`;
+
+  toast(`กำลังเปิด ${bank.label} — ยอด ${amount.toFixed(2)} ฿${copied ? " ถูกคัดลอกแล้ว" : ""}`, 3200);
+  launchExternalUrl(url);
+  scheduleBankStoreFallback(storeUrl);
+}
+
+function resetPaymentBankList() {
+  $("paymentBankList")?.classList.add("hidden");
+}
+
+function setupPaymentBankButtons() {
+  $("btnPayViaBank")?.addEventListener("click", () => {
+    const list = $("paymentBankList");
+    if (!list) return;
+    const willShow = list.classList.contains("hidden");
+    list.classList.toggle("hidden", !willShow);
+    if (willShow) list.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  $("paymentBankList")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-bank]");
+    if (!btn) return;
+    openBankPaymentApp(btn.getAttribute("data-bank"));
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupPaymentBankButtons);
+} else {
+  setupPaymentBankButtons();
+}
 
 async function openPaymentModal(memberIdx) {
   if (!currentSession) return;
@@ -3814,6 +4029,10 @@ async function openPaymentModal(memberIdx) {
 
   const totals = calcSessionTotals(currentSession);
   const cost = totals.perMember?.[memberIdx] ?? 0;
+  paymentAmountValue = Number(cost) || 0;
+  resetPaymentBankList();
+  const bankWrap = $("paymentBankPayWrap");
+  if (bankWrap) bankWrap.classList.toggle("hidden", !(paymentAmountValue > 0));
 
   $("paymentMemberName").textContent = m.name || "—";
   $("paymentAmount").textContent = fmt(cost) + " ฿";
@@ -3923,6 +4142,8 @@ $("btnDownloadPaymentQR")?.addEventListener("click", () => {
 function closePaymentModal() {
   $("paymentModal").classList.add("hidden");
   paymentMemberIdx = null;
+  paymentAmountValue = 0;
+  resetPaymentBankList();
 }
 
 $("btnClosePaymentModal")?.addEventListener("click", closePaymentModal);
