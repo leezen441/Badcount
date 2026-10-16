@@ -3,7 +3,7 @@
 Web App (PWA) ธีม **Sporty Neon-Lime & Sleek Graphite-Black** สำหรับจดสมาชิก นับลูก คำนวณค่าใช้จ่าย และจัดคิวเกมแบดมินตัน
 Real-time sync ทุกคนเห็นพร้อมกัน — ใช้ฟรี 100%
 
-เวอร์ชันปัจจุบัน: **`3.17.0`** (cache `badcount-v34`)
+เวอร์ชันปัจจุบัน: **`3.17.1`** (cache `badcount-v35`)
 
 🌐 **Live**: [badcount.vercel.app](https://badcount.vercel.app)  
 📦 **GitHub**: [leezen441/Badcount](https://github.com/leezen441/Badcount)
@@ -78,7 +78,7 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 - ✅ **3-Tier Permission**: Admin / Manager / Member (ลิงก์ join สาธารณะ ไม่มีล็อกอิน)
 
 ### 🆕 ฟีเจอร์ล่าสุด (ตรงกับโค้ดปัจจุบัน)
-- ✅ **🤖 LINE Bot**: ส่งเฉพาะตอนกดปุ่มเอง (ปุ่ม LINE ส่งรายชื่อ, ปุ่มทวงเงิน) — **ไม่มีการส่งอัตโนมัติแล้ว** (ตัดเพื่อประหยัดโควตา LINE)
+- ✅ **🤖 LINE Bot**: **พักการส่งเข้ากลุ่มทั้งหมด** (ประหยัดโควตา LINE) — ไม่มีส่งอัตโนมัติ, ปุ่ม LINE ซ่อนไว้, ปุ่มทวงเปลี่ยนเป็นแชร์/คัดลอกข้อความแทน · โค้ดส่งยังเก็บไว้ครบ
 - ✅ **ลงชื่อ = พักคิวอัตโนมัติ**: join ผ่านลิงก์ → `isPaused: true` จนแอดมินปลดเมื่อมาถึงสนาม
 - ✅ **จำระดับมือข้ามก๊วน**: ชื่อที่เคยตั้งมือไว้ ระบบใส่ระดับล่าสุดให้ตอนลงชื่อ/เพิ่มสมาชิก
 - ✅ **Personal Stats แบบ Chip + Suggest**: พิมพ์/กดชื่อหลายคน + แนะนำชื่อใกล้เคียง (ไทย↔อังกฤษ เช่น Ball↔บอล)
@@ -116,8 +116,8 @@ Hash router ใน `app.js` (`route()`):
 ข้อความอื่นบอทเงียบ / ตอนถูกเชิญเข้ากลุ่มจะทักให้พิมพ์ `startbadcount`
 
 ### สิ่งที่บอททำจริง (ตรงกับโค้ด)
-- **ปุ่ม LINE** ในหน้าก๊วน: ส่งข้อมูลก๊วน + รายชื่อเข้ากลุ่มทันที
-- **ปุ่มทวง** ในหน้าก๊วน: ส่งรายชื่อคนค้างชำระ + ยอดเข้ากลุ่ม (จ่ายครบแล้วไม่ส่ง)
+- **ปุ่ม LINE** ในหน้าก๊วน: **ซ่อนไว้ชั่วคราว** (ครอบด้วย HTML comment ใน `index.html` ข้างช่องวันที่) — handler ใน `app.js` และ `api/line-notify.js` ยังอยู่ครบ ลบคอมเมนต์ออกก็ใช้ได้ทันที
+- **ปุ่มทวง** ในหน้าก๊วน: **ไม่ส่งผ่านบอทแล้ว** — แชร์/คัดลอกข้อความทวง (เหมือนปุ่ม 🔔 ทวงเงิน) ให้วางในแชตเอง ไม่กินโควตา · ฟังก์ชันส่งผ่านบอท `remindUnpaidViaLine()` ใน `app.js` ยังเก็บไว้ ผูกกลับที่ listener ของ `btnRemindUnpaid` เพื่อใช้ใหม่
 - **ไม่มีการส่งอัตโนมัติ** — ตัดออกทั้งหมดเพื่อประหยัดโควตา LINE (push เข้ากลุ่มนับตามจำนวนสมาชิก): ไม่ส่งตอนมีคนลงชื่อ, ตอนปิดรับ, ตอนปิด Court, ตอนสร้างเกมแรก และไม่มี cron ทวงทุกเช้า
 
 ### การตั้งค่า (ครั้งเดียว)
@@ -147,7 +147,7 @@ Badcount/
   ├─ firebase-config.js  ← Firestore web config (โปรเจกต์ badcount-a1296)
   ├─ manifest.json       ← PWA manifest
   ├─ icon.svg / icon-maskable.svg
-  ├─ sw.js               ← Service Worker (CACHE_NAME = badcount-v34)
+  ├─ sw.js               ← Service Worker (CACHE_NAME = badcount-v35)
   ├─ qrcode.min.js       ← สร้าง PromptPay QR (local)
   ├─ package.json        ← dependency `firebase` สำหรับ serverless เท่านั้น
   ├─ api/                ← LINE Bot — Vercel Serverless Functions

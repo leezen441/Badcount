@@ -1624,10 +1624,18 @@ function updateSubRowPaymentButtons(unpaidCount) {
   }
 }
 
-// ---------- "ทวง" sub-row button → ส่งทวงเข้า LINE ทันที (server คำนวณยอด) ----------
+// ---------- "ทวง" sub-row button ----------
+// ไม่ส่งผ่านบอท LINE แล้ว (ประหยัดโควตา) → แชร์/คัดลอกข้อความทวงแทน ให้ผู้ใช้วางในแชตเอง
+$("btnRemindUnpaid").addEventListener("click", () => {
+  if ($("btnRemindUnpaid").disabled || !currentSessionId) return;
+  $("btnCopyDueList")?.click();
+});
+
+// ส่งทวงเข้า LINE ผ่านบอท (server คำนวณยอด) — เก็บไว้ ยังไม่ได้ผูกกับปุ่มไหน
+// ใช้ใหม่: เปลี่ยน listener ข้างบนให้เรียก remindUnpaidViaLine() แทน
 let remindInFlight = false;
-$("btnRemindUnpaid").addEventListener("click", async () => {
-  if ($("btnRemindUnpaid").disabled || remindInFlight || !currentSessionId) return;
+async function remindUnpaidViaLine() {
+  if (remindInFlight || !currentSessionId) return;
   remindInFlight = true;
   try {
     const r = await fetch("/api/line-notify", {
@@ -1645,7 +1653,7 @@ $("btnRemindUnpaid").addEventListener("click", async () => {
   } finally {
     remindInFlight = false;
   }
-});
+}
 
 // ---------- "Mark all paid" sub-row button — confirm แล้วเซ็ตทุกคน isPaid: true ----------
 $("btnMarkAllPaid").addEventListener("click", () => {
