@@ -3,7 +3,7 @@
 Web App (PWA) ธีม **Sporty Neon-Lime & Sleek Graphite-Black** สำหรับจดสมาชิก นับลูก คำนวณค่าใช้จ่าย และจัดคิวเกมแบดมินตัน
 Real-time sync ทุกคนเห็นพร้อมกัน — ใช้ฟรี 100%
 
-เวอร์ชันปัจจุบัน: **`3.16.0`** (cache `badcount-v33`)
+เวอร์ชันปัจจุบัน: **`3.17.0`** (cache `badcount-v34`)
 
 🌐 **Live**: [badcount.vercel.app](https://badcount.vercel.app)  
 📦 **GitHub**: [leezen441/Badcount](https://github.com/leezen441/Badcount)
@@ -78,7 +78,7 @@ Real-time sync ทุกคนเห็นพร้อมกัน — ใช้
 - ✅ **3-Tier Permission**: Admin / Manager / Member (ลิงก์ join สาธารณะ ไม่มีล็อกอิน)
 
 ### 🆕 ฟีเจอร์ล่าสุด (ตรงกับโค้ดปัจจุบัน)
-- ✅ **🤖 LINE Bot**: ปุ่มส่งรายชื่อ, ทวงเงิน, ประกาศคอร์ดเปิด, cron ทวงเช้า — **ไม่ส่งอัตโนมัติทุกครั้งที่มีคนลงชื่อ** (ตัดเพื่อประหยัดโควตา LINE)
+- ✅ **🤖 LINE Bot**: ส่งเฉพาะตอนกดปุ่มเอง (ปุ่ม LINE ส่งรายชื่อ, ปุ่มทวงเงิน) — **ไม่มีการส่งอัตโนมัติแล้ว** (ตัดเพื่อประหยัดโควตา LINE)
 - ✅ **ลงชื่อ = พักคิวอัตโนมัติ**: join ผ่านลิงก์ → `isPaused: true` จนแอดมินปลดเมื่อมาถึงสนาม
 - ✅ **จำระดับมือข้ามก๊วน**: ชื่อที่เคยตั้งมือไว้ ระบบใส่ระดับล่าสุดให้ตอนลงชื่อ/เพิ่มสมาชิก
 - ✅ **Personal Stats แบบ Chip + Suggest**: พิมพ์/กดชื่อหลายคน + แนะนำชื่อใกล้เคียง (ไทย↔อังกฤษ เช่น Ball↔บอล)
@@ -117,15 +117,12 @@ Hash router ใน `app.js` (`route()`):
 
 ### สิ่งที่บอททำจริง (ตรงกับโค้ด)
 - **ปุ่ม LINE** ในหน้าก๊วน: ส่งข้อมูลก๊วน + รายชื่อเข้ากลุ่มทันที
-- **ไม่ auto-invite ทุกครั้งที่มีคนลงชื่อ** — ตัดออกเพื่อประหยัดโควตา LINE ให้กดปุ่ม LINE รอบเดียวแทน
-- **ปิดรับสมาชิกค้าง 10 วินาที** (ยังปิดอยู่จริง) → โพสต์รายชื่อล่าสุดเข้ากลุ่ม (เปิดรับใหม่ภายใน 10 วิ → ยกเลิก)
-- **ปิด Court ค้าง 10 วินาที** (ยังปิดอยู่จริง) → โพสต์รายชื่อค้างชำระ (เปิดใหม่ภายใน 10 วิ → ยกเลิก)
-- **เกมแรกอยู่ครบ 10 วินาที** (ไม่ถูกลบ) → ประกาศ "คอร์ดเปิด" ครั้งเดียวต่อก๊วน (`lineOpenNotifiedAt`)
-- **Cron ทุกเช้า 08:00 เวลาไทย** (`0 1 * * *` UTC ใน `vercel.json`): ทวงก๊วนที่ปิดล่าสุดที่ยังมีคนค้างจ่าย — จ่ายครบแล้วไม่โพสต์
+- **ปุ่มทวง** ในหน้าก๊วน: ส่งรายชื่อคนค้างชำระ + ยอดเข้ากลุ่ม (จ่ายครบแล้วไม่ส่ง)
+- **ไม่มีการส่งอัตโนมัติ** — ตัดออกทั้งหมดเพื่อประหยัดโควตา LINE (push เข้ากลุ่มนับตามจำนวนสมาชิก): ไม่ส่งตอนมีคนลงชื่อ, ตอนปิดรับ, ตอนปิด Court, ตอนสร้างเกมแรก และไม่มี cron ทวงทุกเช้า
 
 ### การตั้งค่า (ครั้งเดียว)
 1. สร้าง **Messaging API channel** ที่ [LINE Developers Console](https://developers.line.biz) → ได้ Channel access token + Channel secret
-2. ใส่ใน **Vercel → Environment Variables**: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET` (ตัวเลือก `CRON_SECRET` กันคนนอกเรียก cron, `PUBLIC_BASE_URL` ถ้าต้องการบังคับโดเมน)
+2. ใส่ใน **Vercel → Environment Variables**: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET` (ตัวเลือก `PUBLIC_BASE_URL` ถ้าต้องการบังคับโดเมน)
 3. ตั้ง **Webhook URL** = `https://<โดเมน>/api/line-webhook` → เปิด Use webhook
 4. ที่ [OA Manager](https://manager.line.biz): ปิด Auto-reply · เปิด Webhooks · เปิด Allow bots to join group chats
 5. เชิญบอทเข้ากลุ่ม → พิมพ์ `startbadcount` (คนพิมพ์คนแรก = เจ้าของ)
@@ -150,14 +147,12 @@ Badcount/
   ├─ firebase-config.js  ← Firestore web config (โปรเจกต์ badcount-a1296)
   ├─ manifest.json       ← PWA manifest
   ├─ icon.svg / icon-maskable.svg
-  ├─ sw.js               ← Service Worker (CACHE_NAME = badcount-v33)
+  ├─ sw.js               ← Service Worker (CACHE_NAME = badcount-v34)
   ├─ qrcode.min.js       ← สร้าง PromptPay QR (local)
   ├─ package.json        ← dependency `firebase` สำหรับ serverless เท่านั้น
-  ├─ vercel.json         ← Cron ทวงเช้า 8 โมงไทย = 0 1 * * * UTC
   ├─ api/                ← LINE Bot — Vercel Serverless Functions
   │   ├─ line-webhook.js   ← startbadcount / stopbadcount
-  │   ├─ line-notify.js    ← push invite / ทวงเงิน / คอร์ดเปิด
-  │   ├─ line-cron.js      ← cron ทวงทุกเช้า
+  │   ├─ line-notify.js    ← push invite / ทวงเงิน (เรียกจากปุ่มเท่านั้น)
   │   ├─ _totals.js        ← สูตรเงิน (ต้องตรงกับ calcSessionTotals ใน app.js)
   │   └─ _firebase.js / _line.js / _sessions.js / _notify.js
   ├─ .gitignore
@@ -367,9 +362,9 @@ python -m http.server 8000
 
 | บริการ | Free tier ที่เกี่ยวข้อง | หมายเหตุของแอปนี้ |
 |---|---|---|
-| **Vercel Hosting** | bandwidth ตามแพลน Hobby | สแตติก + cron + serverless LINE |
+| **Vercel Hosting** | bandwidth ตามแพลน Hobby | สแตติก + serverless LINE |
 | **Firestore (Spark)** | reads / writes รายวัน | ฐานข้อมูลหลัก + สลิป base64 ใน subcollection `receipts` |
-| **LINE Messaging API** | ตามโควตาช่องทาง | เลยตัด auto-invite ต่อการลงชื่อ |
+| **LINE Messaging API** | ตามโควตาช่องทาง | เลยตัดการส่งอัตโนมัติทั้งหมด เหลือแค่กดปุ่มเอง |
 
 ไม่ใช้ Firebase Storage — รูปสลิปอยู่ใน Firestore document
 
@@ -381,7 +376,7 @@ python -m http.server 8000
 |---|---|
 | **Frontend** | HTML + `premium.css` + Tailwind CDN + Vanilla JS (ไม่มี build) |
 | **Database** | Firebase Firestore realtime (`onSnapshot`) |
-| **Hosting** | Vercel (push GitHub → deploy) + Cron |
+| **Hosting** | Vercel (push GitHub → deploy) |
 | **Auth** | Admin SHA-256 + Manager passcode + Temp PIN — ไม่ใช้ Firebase Auth |
 | **PWA** | Manifest + Service Worker + Notification API |
 | **QR** | `qrcode.min.js` (สร้าง PromptPay) + jsQR CDN (อ่านสลิป) |

@@ -1105,8 +1105,6 @@ $("btnCreateSession").addEventListener("click", async () => {
 $("btnLineNotify")?.addEventListener("click", async () => {
   if (!currentSessionId) return;
   if (!confirm("ส่งข้อมูลก๊วนนี้เข้ากลุ่ม LINE เลยไหม?")) return;
-  // กดส่งเอง → ยกเลิก auto-post ตอนปิดรับสมาชิกที่ค้างอยู่ (กันส่งซ้ำ)
-  if (regClosedAutoPostTimer) { clearTimeout(regClosedAutoPostTimer); regClosedAutoPostTimer = null; }
   const btn = $("btnLineNotify");
   const orig = btn.innerHTML;
   btn.disabled = true;
@@ -1132,42 +1130,6 @@ $("btnLineNotify")?.addEventListener("click", async () => {
     btn.innerHTML = orig;
   }
 });
-
-// ส่ง invite รายชื่อล่าสุดเข้า LINE — เรียกตอนมีคนลงชื่อเพิ่ม (fire & forget, เงียบถ้ายังไม่มีปลายทาง)
-function pushLineUpdate(sessionId) {
-  if (!sessionId) return;
-  try {
-    fetch("/api/line-notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId })
-    }).catch(() => {});
-  } catch (_) {}
-}
-
-// ทวงเงินเข้า LINE — server คำนวณยอดค้างเอง (fire & forget) ใช้กับ auto-post ตอนปิด Court
-function pushLineDue(sessionId) {
-  if (!sessionId) return;
-  try {
-    fetch("/api/line-notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, type: "due" })
-    }).catch(() => {});
-  } catch (_) {}
-}
-
-// ประกาศ "คอร์ดวันนี้เปิดแล้ว" เข้า LINE — server ส่งครั้งเดียวต่อก๊วน (fire & forget)
-function pushLineOpen(sessionId) {
-  if (!sessionId) return;
-  try {
-    fetch("/api/line-notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, type: "open" })
-    }).catch(() => {});
-  } catch (_) {}
-}
 
 // ---------- "ก๊วนอาทิตย์หน้า" — Clone จากก๊วนล่าสุด ----------
 
@@ -1408,25 +1370,11 @@ function updateInviteButtonState() {
 }
 
 // Toggle Registration handler
-let regClosedAutoPostTimer = null;
 $("btnToggleRegistration")?.addEventListener("click", () => {
   if (!currentSession || currentSession.status === "closed") return;
   const newValue = !currentSession.registrationClosed;
   saveSession({ registrationClosed: newValue });
   toast(newValue ? "🔒 ปิดรับสมาชิกแล้ว" : "✅ เปิดรับสมาชิกอีกครั้ง");
-
-  // ปิดรับสมาชิกครบ 1 นาที (ยังปิดอยู่จริง) → โพสต์ invite "ปิดรับแล้ว" + รายชื่อ เข้า LINE
-  // ถ้าเผลอเปิดรับใหม่ภายใน 1 นาที → ยกเลิก ไม่โพสต์
-  if (regClosedAutoPostTimer) { clearTimeout(regClosedAutoPostTimer); regClosedAutoPostTimer = null; }
-  if (newValue) {
-    const sid = currentSessionId;
-    regClosedAutoPostTimer = setTimeout(() => {
-      regClosedAutoPostTimer = null;
-      if (currentSessionId === sid && currentSession && currentSession.registrationClosed && currentSession.status !== "closed") {
-        pushLineUpdate(sid);
-      }
-    }, 10000);
-  }
 });
 
 // ---------- Courts ----------
@@ -1681,8 +1629,6 @@ let remindInFlight = false;
 $("btnRemindUnpaid").addEventListener("click", async () => {
   if ($("btnRemindUnpaid").disabled || remindInFlight || !currentSessionId) return;
   remindInFlight = true;
-  // กดทวงเอง → ยกเลิก auto-post ตอนปิดคอร์ดที่ค้างอยู่ (กันส่งซ้ำ)
-  if (closeCourtAutoPostTimer) { clearTimeout(closeCourtAutoPostTimer); closeCourtAutoPostTimer = null; }
   try {
     const r = await fetch("/api/line-notify", {
       method: "POST",
@@ -2563,43 +2509,11 @@ $("btnCloseQR").addEventListener("click", () => $("qrModal").classList.add("hidd
 $("qrModal").addEventListener("click", e => { if (e.target.id === "qrModal") $("qrModal").classList.add("hidden"); });
 
 // Close/reopen
-let closeCourtAutoPostTimer = null;
 $("btnCloseSession").addEventListener("click", () => {
   const newStatus = currentSession.status === "closed" ? "open" : "closed";
   saveSession({ status: newStatus });
   toast(newStatus === "closed" ? "ปิด Court แล้ว ✓" : "เปิด Court อีกครั้ง ✓");
-
-  // ปิด Court ครบ 30 วิ (ยังปิดอยู่จริง) → โพสข้อความค้างชำระเข้า LINE อัตโนมัติ
-  // ถ้าเผลอกดปิดแล้วเปิดใหม่ภายใน 30 วิ → ยกเลิก ไม่โพส
-  if (closeCourtAutoPostTimer) { clearTimeout(closeCourtAutoPostTimer); closeCourtAutoPostTimer = null; }
-  if (newStatus === "closed") {
-    const sid = currentSessionId;
-    closeCourtAutoPostTimer = setTimeout(() => {
-      closeCourtAutoPostTimer = null;
-      if (currentSessionId === sid && currentSession && currentSession.status === "closed") {
-        pushLineDue(sid);
-      }
-    }, 10000);
-  }
 });
-
-// เกมแรกของวันถูกสร้าง + อยู่ครบ 1 นาที (ไม่ถูกลบ) → ประกาศ "คอร์ดเปิด" เข้า LINE
-// ถ้าเกมแรกถูกลบภายใน 1 นาที → ยกเลิก ไม่ประกาศ / ประกาศครั้งเดียวต่อก๊วน
-let firstGameAutoPostTimer = null;
-function scheduleCourtsOpenPost(matchId) {
-  if (!currentSession || currentSession.status === "closed") return;
-  if (currentSession.lineOpenNotifiedAt) return; // ประกาศไปแล้ว
-  const sid = currentSessionId;
-  if (firstGameAutoPostTimer) { clearTimeout(firstGameAutoPostTimer); firstGameAutoPostTimer = null; }
-  firstGameAutoPostTimer = setTimeout(() => {
-    firstGameAutoPostTimer = null;
-    if (currentSessionId !== sid || !currentSession) return;
-    if (currentSession.status === "closed" || currentSession.lineOpenNotifiedAt) return;
-    const stillThere = (currentSession.matches || []).some(m => m.id === matchId);
-    if (!stillThere) return; // เกมแรกถูกลบไปแล้ว → ไม่ประกาศ
-    pushLineOpen(sid);
-  }, 10000);
-}
 
 // Delete
 $("btnDeleteSession").addEventListener("click", async () => {
@@ -3581,9 +3495,6 @@ $("btnSaveMatch").addEventListener("click", () => {
 
   saveSession({ matches });
   $("matchModal").classList.add("hidden");
-
-  // เกมแรกของวัน (เพิ่งสร้าง + เป็นเกมเดียวในก๊วน) → ตั้งเวลาประกาศ "คอร์ดเปิด" เข้า LINE
-  if (createdMatchId && matches.length === 1) scheduleCourtsOpenPost(createdMatchId);
 });
 
 $("btnViewStats").addEventListener("click", () => {

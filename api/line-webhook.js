@@ -82,7 +82,7 @@ async function startBot(event) {
 
   await setDoc(doc(db, "settings", "lineBot"), patch, { merge: true });
   await replyMessage(event.replyToken,
-    `✅ BadCount is now active in ${where}.\nNew sessions and sign-ups will be posted here automatically.`);
+    `✅ BadCount is now active in ${where}.`);
 }
 
 // หยุดทำงาน
