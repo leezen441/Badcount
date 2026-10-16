@@ -34,9 +34,13 @@ export async function getLatestOpenSession() {
   return (await getRecentSessions()).find((s) => s.status !== "closed") || null;
 }
 
-// ก๊วนใหม่สุด (ไม่สนสถานะ) — ถ้ายังไม่มีก๊วนเลย คืน null
+// วันนี้ตามเวลาไทย "YYYY-MM-DD" (Vercel รันเป็น UTC)
+export const todayBangkok = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+
+// ก๊วนใหม่สุดที่วันที่ไม่เกินวันนี้ (ไม่สนสถานะ) — ข้ามก๊วนล่วงหน้า เช่นก๊วนอาทิตย์หน้าที่สร้างไว้แล้ว
 export async function getLatestSession() {
-  return (await getRecentSessions())[0] || null;
+  const today = todayBangkok();
+  return (await getRecentSessions()).find((s) => String(s.date || "") <= today) || null;
 }
 
 // ---- ต่อไปนี้ยกมาจาก app.js ฝั่งเว็บ (formatDate / formatCourtsForShare / buildShareText) ----
