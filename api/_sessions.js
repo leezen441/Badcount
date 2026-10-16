@@ -20,16 +20,23 @@ export async function getSessionById(id) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
+// ก๊วนล่าสุด ~15 อัน เรียงใหม่→เก่า (ตามวันที่ แล้วตามเวลาที่สร้าง — วันเดียวกันมีได้หลายก๊วน เช่น 160626-2)
+async function getRecentSessions() {
+  const snap = await getDocs(query(collection(db, "sessions"), orderBy("date", "desc"), limit(15)));
+  const created = (s) => (s.createdAt && typeof s.createdAt.toMillis === "function") ? s.createdAt.toMillis() : 0;
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || created(b) - created(a));
+}
+
 // ก๊วนล่าสุดที่ยังเปิดอยู่ (ไม่ปิดยอด) — ถ้าไม่มีก๊วนเปิดเลย คืน null
 export async function getLatestOpenSession() {
-  const snap = await getDocs(query(collection(db, "sessions"), orderBy("date", "desc"), limit(15)));
-  let open = null;
-  snap.forEach((d) => {
-    if (open) return;
-    const s = { id: d.id, ...d.data() };
-    if (s.status !== "closed") open = s;
-  });
-  return open;
+  return (await getRecentSessions()).find((s) => s.status !== "closed") || null;
+}
+
+// ก๊วนใหม่สุด (ไม่สนสถานะ) — ถ้ายังไม่มีก๊วนเลย คืน null
+export async function getLatestSession() {
+  return (await getRecentSessions())[0] || null;
 }
 
 // ---- ต่อไปนี้ยกมาจาก app.js ฝั่งเว็บ (formatDate / formatCourtsForShare / buildShareText) ----

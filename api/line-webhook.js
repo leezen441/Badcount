@@ -1,13 +1,18 @@
 // ============================================================
 // LINE Webhook — /api/line-webhook
-// คำสั่งเดียวที่รับ:
-//   • startbadcount → จำแชต/กลุ่มนี้เป็นปลายทาง + เริ่มทำงาน (active)
-//   • stopbadcount  → หยุดทำงาน (ไม่ push อะไรอีก)
-// นอกนั้นเงียบหมด (ไม่มีเมนู/คำสั่งอื่น)
+// คำสั่งที่รับ:
+//   • startbadcount → จำแชต/กลุ่มนี้เป็นปลายทาง + เริ่มทำงาน (active)   [เจ้าของเท่านั้น]
+//   • stopbadcount  → หยุดทำงาน (ไม่ push อะไรอีก)                       [เจ้าของเท่านั้น]
+//   • invite → ตอบ list invite ของก๊วนที่เปิดอยู่ล่าสุด                    [ทุกคน, ตอนบอท active]
+//   • close  → ตอบ list จ่ายเงิน ของก๊วนใหม่สุด (เฉพาะถ้าก๊วนนั้นปิดแล้ว)    [ทุกคน, ตอนบอท active]
+// invite/close ใช้ reply (ตอบกลับ) → ไม่กินโควตา push ของ LINE
+// นอกนั้นเงียบหมด
 // ============================================================
 import { db } from "./_firebase.js";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { verifySignature, replyMessage } from "./_line.js";
+import { getConfig } from "./_notify.js";
+import { buildShareText, getLatestOpenSession, getLatestSession } from "./_sessions.js";
 
 // อ่าน raw body ก่อนแตะ req.body (จำเป็นสำหรับตรวจลายเซ็น)
 async function getRawBody(req) {
@@ -46,6 +51,13 @@ async function handleEvent(event) {
   if (event.type !== "message" || !event.message || event.message.type !== "text") return;
 
   const text = (event.message.text || "").trim();
+
+  const cmd = text.toLowerCase();
+  if (cmd === "invite" || cmd === "close") {
+    await replySessionList(event, cmd);
+    return;
+  }
+
   const isStart = /^start\s*badcount$/i.test(text);
   const isStop = /^stop\s*badcount$/i.test(text);
   if (!isStart && !isStop) return;   // ข้อความอื่น → เงียบ
@@ -56,6 +68,28 @@ async function handleEvent(event) {
 
   if (isStart) await startBot(event);
   else await stopBot(event);
+}
+
+// invite / close → ตอบรายชื่อก๊วนกลับในแชตที่พิมพ์ (ทำงานเฉพาะตอนบอท active — stopbadcount = เงียบ)
+async function replySessionList(event, cmd) {
+  const cfg = await getConfig();
+  if (!cfg.active) return;
+
+  if (cmd === "invite") {
+    const s = await getLatestOpenSession();
+    await replyMessage(event.replyToken, s ? buildShareText(s) : "🏸 No open court right now.");
+    return;
+  }
+
+  // close: ก๊วนใหม่สุดต้องปิดแล้วเท่านั้น
+  const s = await getLatestSession();
+  if (!s) {
+    await replyMessage(event.replyToken, "🏸 No court found.");
+  } else if (s.status !== "closed") {
+    await replyMessage(event.replyToken, "🟢 The latest court is still open. Close it in BadCount first, then type \"close\".");
+  } else {
+    await replyMessage(event.replyToken, buildShareText(s));
+  }
 }
 
 // Trust-On-First-Use: ยังไม่มีเจ้าของ → คนแรกที่สั่ง = เจ้าของ (ล็อกถาวร) · มีแล้ว → ต้องตรง userId
