@@ -5819,7 +5819,7 @@ async function loadPersonalStatsData(playerName, filterType) {
         shuttlesUsed += sShuttles;
         totalCost += sCost;
 
-        if (historyList.length < 10) {
+        {
           historyList.push({
             date: s.date,
             location: s.location,
@@ -5839,7 +5839,7 @@ async function loadPersonalStatsData(playerName, filterType) {
     if (historyList.length === 0) {
       histContainer.innerHTML = `<p class="text-slate-400 text-sm text-center py-2">ไม่พบประวัติการเล่นในช่วงเวลานี้</p>`;
     } else {
-      histContainer.innerHTML = historyList.map(h => {
+      const rowHtml = (h) => {
         const d = new Date(h.date);
         const dateStr = isNaN(d) ? h.date : d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
         return `
@@ -5852,8 +5852,22 @@ async function loadPersonalStatsData(playerName, filterType) {
             <div class="font-bold ${h.paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${fmt(h.cost)} ฿</div>
             <div class="text-[10px] ${h.paid ? 'text-emerald-500' : 'text-rose-500'}">${h.paid ? 'จ่ายแล้ว' : 'ค้างจ่าย'}</div>
           </div>
-        </div>
-      `}).join("");
+        </div>`;
+      };
+      // แสดง 10 ก๊วนล่าสุดก่อน ที่เหลือกด "ดูทั้งหมด"
+      const HIST_PREVIEW = 10;
+      const renderHist = (all) => {
+        const list = all ? historyList : historyList.slice(0, HIST_PREVIEW);
+        let html = list.map(rowHtml).join("");
+        if (historyList.length > HIST_PREVIEW) {
+          html += all
+            ? `<button id="psHistToggle" class="w-full py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:underline">ย่อรายการ ▲</button>`
+            : `<button id="psHistToggle" class="w-full py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">ดูทั้งหมด (${historyList.length} ก๊วน) ▼</button>`;
+        }
+        histContainer.innerHTML = html;
+        $("psHistToggle")?.addEventListener("click", () => renderHist(!all));
+      };
+      renderHist(false);
     }
 
     let periodLabel = "ทั้งหมด (All Time)";
