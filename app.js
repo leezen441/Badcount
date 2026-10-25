@@ -2116,10 +2116,13 @@ function renderMatches() {
 
   list.innerHTML = matches.map((m, idx) => {
     const finished = !!m.finished;
-    // เกมที่ "จบแล้ว" → จางลง + ขีดทับเล็กน้อย เพื่อให้รู้ว่าผ่านไปแล้ว
+    // เกมที่ "จบแล้ว" → การ์ดขอบ+พื้นเขียว neon (สีเดียวกับปุ่มหลัก --bc-primary) ให้เห็นชัดว่าติ๊กแล้ว
     const rowBgClass = finished
-      ? "bg-emerald-50/40 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/30 opacity-70"
+      ? ""
       : "bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800";
+    const rowStyle = finished
+      ? "background: rgba(181, 247, 20, 0.14); border: 2px solid var(--bc-primary, #b5f714); box-shadow: 0 0 12px rgba(181, 247, 20, 0.25);"
+      : "";
     const titleClass = finished
       ? "text-slate-400 dark:text-slate-500 line-through"
       : "text-slate-700 dark:text-slate-300";
@@ -2129,7 +2132,7 @@ function renderMatches() {
 
     // Checkbox สำหรับ "เกมนี้จบแล้ว"
     const finishedCheckbox = finished
-      ? `<button data-match-finish="${m.id}" class="w-6 h-6 shrink-0 rounded-md bg-emerald-500 border border-emerald-500 text-white flex items-center justify-center transition-colors" title="เกมนี้จบแล้ว — กดเพื่อยกเลิก">
+      ? `<button data-match-finish="${m.id}" class="w-6 h-6 shrink-0 rounded-md flex items-center justify-center transition-colors" style="background: var(--bc-primary, #b5f714); border: 1px solid var(--bc-primary, #b5f714); color: #121315;" title="เกมนี้จบแล้ว — กดเพื่อยกเลิก">
            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
            </svg>
@@ -2138,7 +2141,7 @@ function renderMatches() {
          </button>`;
 
     return `
-    <div class="${rowBgClass} p-3 rounded-xl border flex items-start justify-between gap-3 transition-colors">
+    <div class="${rowBgClass} p-3 rounded-xl border flex items-start justify-between gap-3 transition-colors" style="${rowStyle}">
       <div class="flex-1 text-sm min-w-0">
         <div class="flex justify-between items-center mb-1 gap-2">
           <div class="flex items-center gap-2 min-w-0">
