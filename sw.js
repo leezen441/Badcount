@@ -5,7 +5,7 @@
 // - Cache เบาๆ + network-first strategy
 // ============================================================
 
-const CACHE_NAME = "badcount-v41";
+const CACHE_NAME = "badcount-v42";
 const PRECACHE_URLS = [
   "/",
   "/index.html",

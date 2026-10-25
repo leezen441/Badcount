@@ -2160,15 +2160,18 @@ function renderMatches() {
             };
 
             if (pIds.length === 4 && useTeams()) {
-              const n1 = formatName(pIds[0]);
-              const n2 = formatName(pIds[1]);
-              const n3 = formatName(pIds[2]);
-              const n4 = formatName(pIds[3]);
-              // ทีมละบรรทัด คั่นด้วยเส้นเขียว neon (ชื่อยาวเกินบรรทัด → ตัดด้วย …)
+              // ในทีม: ชื่อสั้นขึ้นก่อน ชื่อยาวไว้คนที่สอง · ถ้ายาวรวมกันไม่พอบรรทัด → คนที่สองขึ้นบรรทัดใหม่ (flex-wrap)
+              // ชื่อเดียวที่ยาวเกินบรรทัดจริงๆ → ตัดด้วย …
+              const team = (a, b) => {
+                const len = (pid) => String(membersMap[pid] || "?").length;
+                const [x, y] = len(a) <= len(b) ? [a, b] : [b, a];
+                return `<span class="truncate max-w-full">${formatName(x)},</span><span class="truncate max-w-full">${formatName(y)}</span>`;
+              };
+              // ทีมละบรรทัด คั่นด้วยเส้นเขียว neon
               return `<div class="flex flex-col w-full min-w-0">
-                <span class="text-rose-600 dark:text-rose-400 font-bold truncate">${n1}, ${n2}</span>
+                <span class="text-rose-600 dark:text-rose-400 font-bold flex flex-wrap gap-x-1 min-w-0">${team(pIds[0], pIds[1])}</span>
                 <span class="block w-full my-1 rounded-full" style="height: 1.5px; background: var(--bc-primary, #b5f714); opacity: 0.85;"></span>
-                <span class="text-sky-600 dark:text-sky-400 font-bold truncate">${n3}, ${n4}</span>
+                <span class="text-sky-600 dark:text-sky-400 font-bold flex flex-wrap gap-x-1 min-w-0">${team(pIds[2], pIds[3])}</span>
               </div>`;
             }
             return pIds.map(formatName).join(", ");
