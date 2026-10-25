@@ -2130,15 +2130,10 @@ function renderMatches() {
       ? "text-emerald-700/60 dark:text-emerald-400/60"
       : "text-emerald-700 dark:text-emerald-400";
 
-    // Checkbox สำหรับ "เกมนี้จบแล้ว"
-    const finishedCheckbox = finished
-      ? `<button data-match-finish="${m.id}" class="w-6 h-6 shrink-0 rounded-md flex items-center justify-center transition-colors" style="background: var(--bc-primary, #b5f714); border: 1px solid var(--bc-primary, #b5f714); color: #121315;" title="เกมนี้จบแล้ว — กดเพื่อยกเลิก">
-           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-           </svg>
-         </button>`
-      : `<button data-match-finish="${m.id}" class="w-6 h-6 shrink-0 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:border-emerald-400 flex items-center justify-center transition-colors" title="กดเมื่อเกมนี้จบแล้ว">
-         </button>`;
+    // ปุ่ม "Done" (อยู่ใต้ตัวปรับลูก บรรทัดเดียวกับชื่อผู้เล่น) — จบแล้ว = พื้นเขียว neon, ยังไม่จบ = ขอบเขียว neon
+    const doneButton = finished
+      ? `<button data-match-finish="${m.id}" class="shrink-0 px-3 py-1 rounded-lg text-[11px] font-extrabold tracking-wide transition-transform active:scale-95" style="background: var(--bc-primary, #b5f714); border: 1.5px solid var(--bc-primary, #b5f714); color: #121315;" title="เกมนี้จบแล้ว — กดเพื่อยกเลิก">✓ Done</button>`
+      : `<button data-match-finish="${m.id}" class="shrink-0 px-3 py-1 rounded-lg text-[11px] font-extrabold tracking-wide transition-transform active:scale-95" style="background: transparent; border: 1.5px solid var(--bc-primary, #b5f714); color: var(--bc-primary, #b5f714);" title="กดเมื่อเกมนี้จบแล้ว">Done</button>`;
 
     return `
     <div class="${rowBgClass} p-3 rounded-xl border flex items-start justify-between gap-3 transition-colors" style="${rowStyle}">
@@ -2169,7 +2164,8 @@ function renderMatches() {
             `;
           })()}
         </div>
-        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
+        <div class="flex items-center justify-between gap-2">
+        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1 flex-1 min-w-0">
           ${(() => {
             const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
             const exempts = m.exemptPlayers || [];
@@ -2192,10 +2188,11 @@ function renderMatches() {
             return pIds.map(formatName).join(", ");
           })()}
         </div>
+        ${doneButton}
+        </div>
       </div>
       <div class="flex flex-col items-center gap-1.5">
         <button data-match-edit="${m.id}" class="text-slate-400 hover:text-emerald-600 px-1 text-sm" title="แก้ไขเกม">✏️</button>
-        ${finishedCheckbox}
       </div>
     </div>
   `}).join("");
