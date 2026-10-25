@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.17.10">
+  <link rel="stylesheet" href="./premium.css?v=3.18.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -734,6 +734,7 @@
     <section id="view-personal-stats" class="view">
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
         <h2 class="text-xl font-bold mb-4">📈 สถิติผู้เล่น (Personal Stats)</h2>
+        <button id="btnGotoRankings" class="w-full mb-4 py-3 rounded-xl font-bold text-sm border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">🏆 จัดอันดับผู้ใช้จ่ายสูงสุด</button>
         
         <div class="flex flex-col gap-3 mb-4">
           <div class="relative">
@@ -785,6 +786,30 @@
             <div id="psHistoryList" class="space-y-2 max-h-60 overflow-y-auto"></div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ===== RANKINGS LIST VIEW (อันดับผู้ใช้จ่ายสูงสุด) ===== -->
+    <section id="view-rankings" class="view">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <h2 class="text-xl font-bold">🏆 อันดับผู้ใช้จ่ายสูงสุด</h2>
+          <button id="btnNewRanking" class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm">+ สร้างใหม่</button>
+        </div>
+        <div id="rankingsList" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- ===== RANKING EDITOR VIEW ===== -->
+    <section id="view-ranking" class="view">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-4">
+        <h2 class="text-xl font-bold mb-3">🏆 อันดับผู้ใช้จ่ายสูงสุด</h2>
+        <div class="flex gap-2 mb-4">
+          <select id="fldRankYear" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none bg-white dark:bg-slate-900"></select>
+          <button id="btnSaveRanking" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold">💾 บันทึก</button>
+        </div>
+        <div id="rankTable"></div>
+        <p class="text-[11px] text-slate-400 mt-3">กด ✏️ ที่ชื่อเพื่อเลือกชื่อของผู้เล่นคนนั้น (รวมหลายชื่อได้ แสดงเฉพาะชื่อที่สั้นที่สุด) · ระบบเรียงอันดับให้อัตโนมัติจากยอดจ่ายมากไปน้อย</p>
       </div>
     </section>
 
@@ -1070,6 +1095,25 @@
   </div>
 
   <!-- ===== PLAYER SETTINGS MODAL ===== -->
+  <!-- Ranking: เลือกชื่อผู้เล่น -->
+  <div id="rankEditModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">👤 เลือกชื่อผู้เล่น</h3>
+        <button id="btnRankEditClose" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      <div id="rankChipsBox" class="w-full min-h-[3rem] px-2 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 flex flex-wrap items-center gap-1.5 focus-within:border-emerald-500 cursor-text">
+        <input type="text" id="fldRankName" autocomplete="off" placeholder="พิมพ์ชื่อผู้เล่น เช่น Ball / บอล…" class="flex-1 min-w-[120px] px-2 py-1 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none" />
+      </div>
+      <div id="rankSuggestBox" class="hidden w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto"></div>
+      <div id="rankEditPreview" class="text-xs text-slate-500 dark:text-slate-400 mt-2"></div>
+      <div class="flex gap-2 mt-4">
+        <button id="btnRankEditRemove" class="px-4 py-2.5 rounded-xl text-rose-600 border border-rose-200 dark:border-rose-800/50 font-semibold text-sm">ลบ</button>
+        <button id="btnRankEditApply" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
   <div id="playerSettingsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
       <div class="flex justify-between items-center mb-4">
@@ -1250,6 +1294,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.17.10"></script>
+  <script type="module" src="./app.js?v=3.18.0"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc,
   deleteDoc, onSnapshot, query, orderBy, limit, getDocs, serverTimestamp,
-  arrayUnion, runTransaction
+  arrayUnion, runTransaction, deleteField
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -747,7 +747,7 @@ function route() {
   if (joinUnsubscribe) { joinUnsubscribe(); joinUnsubscribe = null; }
   
   // Clean up list listener unless we are going to a list view
-  if (parts[0] !== "" && parts[0] !== "m-home" && parts[0] !== "history" && parts[0] !== "personal-stats" && parts[0] !== "admin-summary") {
+  if (parts[0] !== "" && parts[0] !== "m-home" && parts[0] !== "history" && parts[0] !== "personal-stats" && parts[0] !== "admin-summary" && parts[0] !== "rankings" && parts[0] !== "ranking") {
     if (unsubscribeList) { unsubscribeList(); unsubscribeList = null; }
   }
 
@@ -800,7 +800,7 @@ function route() {
       return;
     }
     // manager สามารถเข้า summary & stats ได้
-    if (isManagerAuthed() && (parts[0] === "admin-summary" || parts[0] === "personal-stats")) {
+    if (isManagerAuthed() && (parts[0] === "admin-summary" || parts[0] === "personal-stats" || parts[0] === "rankings" || parts[0] === "ranking")) {
       // allow
     } else {
       showView("login");
@@ -814,6 +814,12 @@ function route() {
   } else if (parts[0] === "personal-stats") {
     showView("personal-stats");
     populatePlayerDatalist();
+  } else if (parts[0] === "rankings") {
+    showView("rankings");
+    loadRankingsList();
+  } else if (parts[0] === "ranking") {
+    showView("ranking");
+    openRankingEditor(parts[1] && parts[1] !== "new" ? parts[1] : null);
   } else if (parts[0] === "admin-summary") {
     showView("admin-summary");
     renderAdminSummaryNav();
@@ -6409,6 +6415,318 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
 // ============================================================
 // Init
 // ============================================================
+// ============================================================
+// 🏆 อันดับผู้ใช้จ่ายสูงสุด (Spending Ranking)
+// เก็บที่ settings/rankings → { list: { <id>: { year, players:[{names:[...]}], updatedAt } } }
+// (Firestore rules ให้ client เขียนได้เฉพาะ sessions/settings — collection ใหม่ถูกบล็อก)
+// ============================================================
+const RANKINGS_DOC = doc(db, "settings", "rankings");
+const RANK_SLOTS = 10;
+let rankSessionsCache = null;   // session ทั้งหมด (โหลดใหม่ทุกครั้งที่เข้าหน้า)
+let rankState = null;           // { id, year, players: [{ names: [...] }] }
+let rankDirty = false;
+let rankEditIdx = null;         // index ใน rankState.players (-1 = เพิ่มใหม่)
+let rankChips = [];
+let rankSuggList = [];
+
+// คำนวณแบบเดียวกับ loadPersonalStatsData: จับชื่อตรงตัว (ไม่สนตัวพิมพ์) รวมทุกชื่อที่เลือก
+function rankCalcPlayer(names, year) {
+  const lc = (names || []).map(n => String(n).trim().toLowerCase()).filter(Boolean);
+  let sessions = 0, games = 0, shuttles = 0, cost = 0;
+  (rankSessionsCache || []).forEach(s => {
+    if (!s.date || !s.members || !String(s.date).startsWith(String(year))) return;
+    const matched = [];
+    s.members.forEach((m, idx) => {
+      if (lc.includes((m.name || "").trim().toLowerCase())) matched.push({ member: m, index: idx });
+    });
+    if (!matched.length) return;
+    sessions++;
+    const totals = calcTotals(s);
+    matched.forEach(({ member, index }) => {
+      (s.matches || []).forEach(mo => {
+        const p = mo.players || [mo.a1, mo.a2, mo.b1, mo.b2].filter(Boolean);
+        if (p.includes(member.id)) games++;
+      });
+      shuttles += (member.shuttlesUsed || 0) + (totals.matchShuttlesMap ? totals.matchShuttlesMap[member.id] || 0 : 0);
+      cost += totals.perMember[index] || 0;
+    });
+  });
+  return { sessions, games, shuttles, cost };
+}
+
+const rankShortestName = (names) => (names || []).slice().sort((a, b) => a.length - b.length)[0] || "";
+
+// คืนแถวที่คำนวณแล้ว เรียงจากจ่ายมาก → น้อย
+function rankRows(players, year) {
+  return (players || [])
+    .filter(p => p && (p.names || []).length)
+    .map(p => ({ names: p.names, display: rankShortestName(p.names), ...rankCalcPlayer(p.names, year) }))
+    .sort((a, b) => b.cost - a.cost || b.games - a.games);
+}
+
+async function rankLoadSessions() {
+  const snap = await getDocs(query(SESSIONS, orderBy("date", "desc")));
+  rankSessionsCache = [];
+  snap.forEach(d => rankSessionsCache.push(d.data()));
+}
+
+function rankYears() {
+  const set = new Set([String(new Date().getFullYear())]);
+  (rankSessionsCache || []).forEach(s => { if (s.date) set.add(String(s.date).slice(0, 4)); });
+  return [...set].filter(y => /^\d{4}$/.test(y)).sort().reverse();
+}
+
+const rankMedal = (i) => ["🥇", "🥈", "🥉"][i] || `${i + 1}`;
+
+// ---------- หน้า list (เหมือนรายการ Court) ----------
+async function loadRankingsList() {
+  const box = $("rankingsList");
+  if (!box) return;
+  box.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>`;
+  try {
+    const [snap] = await Promise.all([getDoc(RANKINGS_DOC), rankLoadSessions()]);
+    const list = snap.exists() ? (snap.data().list || {}) : {};
+    const items = Object.entries(list).map(([id, r]) => ({ id, ...r }))
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    if (!items.length) {
+      box.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีอันดับที่บันทึกไว้ กด "+ สร้างใหม่" ได้เลย</p>`;
+      return;
+    }
+    box.innerHTML = items.map(r => {
+      const rows = rankRows(r.players, r.year);
+      const top = rows[0];
+      const saved = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "-";
+      return `
+      <div class="relative">
+        <a href="#/ranking/${r.id}" class="block p-3 pr-10 rounded-xl border-2 border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 hover:border-emerald-400 transition">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold truncate text-emerald-900 dark:text-emerald-300">🏆 อันดับปี ${Number(r.year) + 543}</div>
+              <div class="text-xs text-emerald-700/70 dark:text-emerald-400/70 mt-0.5">${rows.length} คน · บันทึก ${saved}</div>
+            </div>
+            <div class="text-right shrink-0">
+              ${top ? `<div class="font-bold text-emerald-700 dark:text-emerald-400 truncate max-w-[9rem]">🥇 ${escapeHtml(top.display)}</div>
+              <div class="text-xs text-emerald-700/70 dark:text-emerald-400/70">${fmt(top.cost)} ฿</div>` : ""}
+            </div>
+          </div>
+        </a>
+        <button data-rank-del="${r.id}" class="absolute top-3 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors" title="ลบอันดับนี้">✕</button>
+      </div>`;
+    }).join("");
+    box.querySelectorAll("[data-rank-del]").forEach(btn => btn.addEventListener("click", async () => {
+      if (!confirm("ต้องการลบอันดับนี้ใช่หรือไม่?")) return;
+      try {
+        await updateDoc(RANKINGS_DOC, { [`list.${btn.dataset.rankDel}`]: deleteField() });
+        toast("ลบแล้ว");
+        loadRankingsList();
+      } catch (err) { toast("ลบไม่ได้: " + err.message); }
+    }));
+  } catch (err) {
+    console.error(err);
+    box.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">โหลดผิดพลาด: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+// ---------- หน้า editor ----------
+async function openRankingEditor(id) {
+  const table = $("rankTable");
+  table.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังคำนวณ...</p>`;
+  rankDirty = false;
+  updateRankSaveBtn();
+  try {
+    const tasks = [rankLoadSessions()];
+    try { tasks.push(loadPlayerProfiles()); } catch (_) {}
+    let saved = null;
+    if (id) tasks.push(getDoc(RANKINGS_DOC).then(snap => { saved = snap.exists() ? (snap.data().list || {})[id] : null; }));
+    await Promise.all(tasks);
+    if (id && !saved) {
+      table.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ไม่พบอันดับนี้ (อาจถูกลบไปแล้ว)</p>`;
+      return;
+    }
+    rankState = saved
+      ? { id, year: String(saved.year), players: (saved.players || []).map(p => ({ names: [...(p.names || [])] })) }
+      : { id: null, year: String(new Date().getFullYear()), players: [] };
+    const sel = $("fldRankYear");
+    const years = rankYears();
+    if (!years.includes(rankState.year)) years.unshift(rankState.year);
+    sel.innerHTML = years.map(y => `<option value="${y}">ปี ${Number(y) + 543}</option>`).join("");
+    sel.value = rankState.year;
+    renderRankTable();
+  } catch (err) {
+    console.error(err);
+    table.innerHTML = `<p class="text-red-500 text-center py-6 text-sm">โหลดผิดพลาด: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function updateRankSaveBtn() {
+  const b = $("btnSaveRanking");
+  if (!b) return;
+  b.textContent = rankDirty ? "💾 บันทึก •" : "💾 บันทึก";
+}
+
+function renderRankTable() {
+  const table = $("rankTable");
+  if (!rankState) return;
+  const rows = rankRows(rankState.players, rankState.year);
+  // เก็บลำดับใหม่กลับเข้า state (เรียงตามยอดจ่ายอัตโนมัติ)
+  rankState.players = rows.map(r => ({ names: r.names }));
+  const head = `
+    <div class="grid grid-cols-[1.75rem_1fr_2.25rem_2.25rem_4.75rem] gap-1 px-2 pb-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-700">
+      <div class="text-center">#</div><div>ผู้เล่น</div><div class="text-center">เกม</div><div class="text-center">ลูก</div><div class="text-right">จ่าย (฿)</div>
+    </div>`;
+  let body = rows.map((r, i) => `
+    <div class="grid grid-cols-[1.75rem_1fr_2.25rem_2.25rem_4.75rem] gap-1 items-center px-2 py-2.5 border-b border-slate-100 dark:border-slate-800 text-sm">
+      <div class="text-center font-bold">${rankMedal(i)}</div>
+      <button data-rank-edit="${i}" class="text-left min-w-0 flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-100 hover:text-emerald-600">
+        <span class="truncate">${escapeHtml(r.display)}</span><span class="shrink-0 text-xs">✏️</span>
+      </button>
+      <div class="text-center">${r.games}</div>
+      <div class="text-center">${r.shuttles}</div>
+      <div class="text-right font-bold text-emerald-600 dark:text-emerald-400">${fmt(r.cost)}</div>
+    </div>`).join("");
+  for (let i = rows.length; i < RANK_SLOTS; i++) {
+    body += `
+    <div class="grid grid-cols-[1.75rem_1fr] gap-1 items-center px-2 py-2.5 border-b border-slate-100 dark:border-slate-800 text-sm">
+      <div class="text-center text-slate-300 dark:text-slate-600 font-bold">${i + 1}</div>
+      <button data-rank-edit="-1" class="text-left text-slate-400 hover:text-emerald-600">+ เพิ่มผู้เล่น</button>
+    </div>`;
+  }
+  table.innerHTML = head + body;
+  table.querySelectorAll("[data-rank-edit]").forEach(b => b.addEventListener("click", () => openRankEdit(Number(b.dataset.rankEdit))));
+}
+
+// ---------- modal เลือกชื่อ (chip เหมือนหน้าสถิติ) ----------
+function openRankEdit(idx) {
+  rankEditIdx = idx;
+  rankChips = idx >= 0 ? [...rankState.players[idx].names] : [];
+  $("btnRankEditRemove").classList.toggle("hidden", idx < 0);
+  $("fldRankName").value = "";
+  renderRankChips();
+  $("rankEditModal").classList.remove("hidden");
+  setTimeout(() => $("fldRankName").focus(), 50);
+}
+
+function closeRankEdit() {
+  $("rankEditModal").classList.add("hidden");
+  $("rankSuggestBox").classList.add("hidden");
+}
+
+function renderRankChips() {
+  const box = $("rankChipsBox");
+  const input = $("fldRankName");
+  box.querySelectorAll("[data-chip]").forEach(n => n.remove());
+  rankChips.forEach((name, i) => {
+    const chip = document.createElement("span");
+    chip.setAttribute("data-chip", String(i));
+    chip.className = "inline-flex items-center gap-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-sm font-semibold pl-2 pr-1 py-1 rounded-lg";
+    chip.innerHTML = `${i > 0 ? '<span class="text-emerald-500 font-bold mr-1">+</span>' : ""}<span>${escapeHtml(name)}</span>`;
+    const x = document.createElement("button");
+    x.type = "button";
+    x.className = "ml-0.5 w-4 h-4 flex items-center justify-center rounded text-emerald-600 dark:text-emerald-300 leading-none";
+    x.textContent = "×";
+    x.addEventListener("click", (e) => { e.stopPropagation(); rankChips.splice(i, 1); renderRankChips(); });
+    chip.appendChild(x);
+    box.insertBefore(chip, input);
+  });
+  input.placeholder = rankChips.length ? "+ เพิ่มชื่อคนถัดไป…" : "พิมพ์ชื่อผู้เล่น เช่น Ball / บอล…";
+  const st = rankCalcPlayer(rankChips, rankState?.year);
+  $("rankEditPreview").textContent = rankChips.length
+    ? `แสดงชื่อ: ${rankShortestName(rankChips)} · ${st.sessions} ก๊วน · ${st.games} เกม · ${st.shuttles} ลูก · ${fmt(st.cost)} ฿`
+    : "";
+  renderRankSuggestions();
+}
+
+function addRankChip(name) {
+  const n = String(name || "").trim();
+  if (!n) return;
+  if (!rankChips.some(c => c.toLowerCase() === n.toLowerCase())) rankChips.push(n);
+  $("fldRankName").value = "";
+  renderRankChips();
+}
+
+function renderRankSuggestions() {
+  const box = $("rankSuggestBox");
+  const typed = $("fldRankName").value.trim();
+  const chosen = new Set(rankChips.map(c => c.toLowerCase()));
+  // ชื่อที่อยู่ในอันดับคนอื่นแล้ว ไม่ต้องแนะนำซ้ำ
+  (rankState?.players || []).forEach((p, i) => { if (i !== rankEditIdx) (p.names || []).forEach(n => chosen.add(n.toLowerCase())); });
+  const all = getAllKnownNames().filter(n => !chosen.has(n.toLowerCase()));
+  let ranked;
+  if (typed) {
+    const tl = typed.toLowerCase();
+    ranked = all.map(n => {
+      const nl = n.toLowerCase();
+      return { n, s: nl.startsWith(tl) ? 1 : nl.includes(tl) ? 0.85 : nameSimilarity(typed, n) };
+    }).filter(x => x.s >= 0.45).sort((a, b) => b.s - a.s).slice(0, 8);
+  } else if (rankChips.length) {
+    ranked = all.map(n => ({ n, s: Math.max(...rankChips.map(c => nameSimilarity(c, n))) }))
+      .filter(x => x.s >= 0.55).sort((a, b) => b.s - a.s).slice(0, 8);
+  } else {
+    ranked = [];
+  }
+  rankSuggList = ranked.map(r => r.n);
+  if (!rankSuggList.length) { box.classList.add("hidden"); return; }
+  box.innerHTML = rankSuggList.map((n, i) => `
+    <button type="button" data-rsugg="${i}" class="w-full text-left px-4 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-sm border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-center gap-2">
+      <span class="text-emerald-500 shrink-0">${typed ? "🔍" : "+"}</span><span class="truncate">${escapeHtml(n)}</span>
+    </button>`).join("");
+  box.querySelectorAll("[data-rsugg]").forEach(b => b.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    addRankChip(rankSuggList[Number(b.dataset.rsugg)]);
+  }));
+  box.classList.remove("hidden");
+}
+
+(function setupRanking() {
+  $("btnGotoRankings")?.addEventListener("click", () => { location.hash = "#/rankings"; });
+  $("btnNewRanking")?.addEventListener("click", () => { location.hash = "#/ranking/new"; });
+  $("fldRankYear")?.addEventListener("change", (e) => {
+    if (!rankState) return;
+    rankState.year = e.target.value;
+    rankDirty = true; updateRankSaveBtn();
+    renderRankTable();
+  });
+  $("btnSaveRanking")?.addEventListener("click", async () => {
+    if (!rankState) return;
+    const players = rankState.players.filter(p => p.names.length).map(p => ({ names: p.names }));
+    if (!players.length) { toast("ยังไม่มีผู้เล่นในอันดับ"); return; }
+    const id = rankState.id || ("r" + Date.now());
+    try {
+      await setDoc(RANKINGS_DOC, { list: { [id]: { year: rankState.year, players, updatedAt: Date.now() } } }, { merge: true });
+      rankDirty = false; updateRankSaveBtn();
+      toast("บันทึกแล้ว ✓");
+      if (!rankState.id) { rankState.id = id; history.replaceState(null, "", `#/ranking/${id}`); }
+    } catch (err) { toast("บันทึกไม่ได้: " + err.message); }
+  });
+  const input = $("fldRankName");
+  input?.addEventListener("input", renderRankSuggestions);
+  input?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); addRankChip(input.value); }
+    else if (e.key === "Backspace" && !input.value && rankChips.length) { rankChips.pop(); renderRankChips(); }
+  });
+  $("rankChipsBox")?.addEventListener("click", () => input?.focus());
+  $("btnRankEditClose")?.addEventListener("click", closeRankEdit);
+  $("btnRankEditApply")?.addEventListener("click", () => {
+    if (input.value.trim()) addRankChip(input.value);
+    if (rankEditIdx >= 0) {
+      if (rankChips.length) rankState.players[rankEditIdx] = { names: [...rankChips] };
+      else rankState.players.splice(rankEditIdx, 1);
+    } else if (rankChips.length) {
+      if (rankState.players.length >= RANK_SLOTS) { toast(`ใส่ได้สูงสุด ${RANK_SLOTS} คน`); return; }
+      rankState.players.push({ names: [...rankChips] });
+    }
+    rankDirty = true; updateRankSaveBtn();
+    closeRankEdit();
+    renderRankTable();
+  });
+  $("btnRankEditRemove")?.addEventListener("click", () => {
+    if (rankEditIdx >= 0) rankState.players.splice(rankEditIdx, 1);
+    rankDirty = true; updateRankSaveBtn();
+    closeRankEdit();
+    renderRankTable();
+  });
+})();
+
 route();
 
 // ---------- Register Service Worker (PWA support) ----------
@@ -6815,3 +7133,4 @@ document.addEventListener("DOMContentLoaded", () => {
     initModalObserver();
   }
 })();
+
