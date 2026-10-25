@@ -3,7 +3,7 @@
 Web App (PWA) ธีม **Sporty Neon-Lime & Sleek Graphite-Black** สำหรับจดสมาชิก นับลูก คำนวณค่าใช้จ่าย และจัดคิวเกมแบดมินตัน
 Real-time sync ทุกคนเห็นพร้อมกัน — ใช้ฟรี 100%
 
-เวอร์ชันปัจจุบัน: **`3.17.5`** (cache `badcount-v39`)
+เวอร์ชันปัจจุบัน: **`3.18.1`** (cache `badcount-v46`)
 
 🌐 **Live**: [badcount.vercel.app](https://badcount.vercel.app)  
 📦 **GitHub**: [leezen441/Badcount](https://github.com/leezen441/Badcount)
@@ -155,7 +155,7 @@ Badcount/
   ├─ firebase-config.js  ← Firestore web config (โปรเจกต์ badcount-a1296)
   ├─ manifest.json       ← PWA manifest
   ├─ icon.svg / icon-maskable.svg
-  ├─ sw.js               ← Service Worker (CACHE_NAME = badcount-v39)
+  ├─ sw.js               ← Service Worker (CACHE_NAME = badcount-v46)
   ├─ qrcode.min.js       ← สร้าง PromptPay QR (local)
   ├─ package.json        ← dependency `firebase` สำหรับ serverless เท่านั้น
   ├─ api/                ← LINE Bot — Vercel Serverless Functions

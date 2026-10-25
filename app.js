@@ -2173,11 +2173,15 @@ function renderMatches() {
                 const [x, y] = len(a) <= len(b) ? [a, b] : [b, a];
                 return `<span class="truncate max-w-full">${formatName(x)},</span><span class="truncate max-w-full">${formatName(y)}</span>`;
               };
-              // ทีมละบรรทัด คั่นด้วยเส้นเขียว neon
-              return `<div class="flex flex-col w-full min-w-0">
-                <span class="text-rose-600 dark:text-rose-400 font-bold flex flex-wrap gap-x-1 min-w-0">${team(pIds[0], pIds[1])}</span>
-                <span class="block w-full my-1 rounded-full" style="height: 1.5px; background: var(--bc-primary, #b5f714); opacity: 0.85;"></span>
-                <span class="text-sky-600 dark:text-sky-400 font-bold flex flex-wrap gap-x-1 min-w-0">${team(pIds[2], pIds[3])}</span>
+              // ทีมละบรรทัด — กล่องสีเล็กๆ (แดง/ฟ้า) นำหน้าชื่อแต่ละทีม
+              const teamRow = (color, textColor, a, b) => `
+                <div class="flex items-start gap-1.5 min-w-0">
+                  <span class="shrink-0 w-3 h-3 mt-1 rounded-[3px]" style="background: ${color};"></span>
+                  <span class="font-bold flex flex-wrap gap-x-1 min-w-0" style="color: ${textColor};">${team(a, b)}</span>
+                </div>`;
+              return `<div class="flex flex-col gap-1 w-full min-w-0">
+                ${teamRow("#fb7185", "#fda4af", pIds[0], pIds[1])}
+                ${teamRow("#38bdf8", "#7dd3fc", pIds[2], pIds[3])}
               </div>`;
             }
             return pIds.map(formatName).join(", ");
