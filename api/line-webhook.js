@@ -5,8 +5,8 @@
 //   • stopbadcount  → หยุดทำงาน (คำสั่งอื่นเงียบหมด)                           [เจ้าของ]
 //   • invite        → ตอบ list invite ของก๊วนที่เปิดอยู่ล่าสุด                   [ทุกคน]
 //   • close         → ก๊วนล่าสุด (วันที่ ≤ วันนี้):
-//                       ปิดแล้ว → ตอบ list จ่ายเงิน                              [ทุกคน]
-//                       ยังเปิด → ปิด Court ให้ + ตอบ list จ่ายเงิน                [เจ้าของ + คนที่อนุญาต]
+//                       ปิดแล้ว → ตอบรายชื่อค้างชำระ+ยอด (ทวงเงิน)                             [ทุกคน]
+//                       ยังเปิด → ปิด Court ให้ + ตอบรายชื่อค้างชำระ+ยอด               [เจ้าของ + คนที่อนุญาต]
 //                                 คนที่ยังไม่อนุญาต → ได้รหัส 4 หลักให้เจ้าของอนุมัติ
 //   • allow <code>  → อนุญาตคนที่ขอรหัสนั้น ให้สั่ง close ปิด Court ได้          [เจ้าของ]
 //   • closers       → ดูรายชื่อคนที่ปิด Court ได้                                [เจ้าของ]
@@ -17,7 +17,7 @@ import { db } from "./_firebase.js";
 import { doc, getDoc, setDoc, updateDoc, deleteField, serverTimestamp } from "firebase/firestore";
 import { verifySignature, replyMessage, getProfile } from "./_line.js";
 import { getConfig } from "./_notify.js";
-import { buildShareText, getLatestOpenSession, getLatestSession } from "./_sessions.js";
+import { buildShareText, buildDueListText, getLatestOpenSession, getLatestSession } from "./_sessions.js";
 
 const CFG_REF = () => doc(db, "settings", "lineBot");
 const CODE_TTL_MS = 30 * 60 * 1000;   // รหัสขออนุญาตหมดอายุใน 30 นาที
@@ -95,6 +95,11 @@ async function replyInvite(event) {
 }
 
 // ---------- close ----------
+// close = ทวงเงิน: รายชื่อที่ยังค้างชำระ + ยอดเงิน (ข้อความเดียวกับปุ่ม "ทวง" ในแอป)
+function dueText(s) {
+  return buildDueListText(s) || "✅ Everyone has paid. Thank you! 🏸";
+}
+
 async function handleClose(event, userId) {
   const cfg = await getConfig();
   if (!cfg.active) return;
@@ -105,7 +110,7 @@ async function handleClose(event, userId) {
     return;
   }
   if (s.status === "closed") {
-    await replyMessage(event.replyToken, buildShareText(s));
+    await replyMessage(event.replyToken, dueText(s));
     return;
   }
 
@@ -129,7 +134,7 @@ async function handleClose(event, userId) {
   await updateDoc(doc(db, "sessions", s.id), { status: "closed", updatedAt: serverTimestamp() });
   await replyMessage(event.replyToken, [
     `🔴 Court closed by ${name}.`,
-    buildShareText({ ...s, status: "closed" })
+    dueText({ ...s, status: "closed" })
   ]);
 }
 

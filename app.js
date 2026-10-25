@@ -1337,13 +1337,16 @@ function updateInviteButtonState() {
 
   // ===== Invite Button Color =====
   if (courtClosed) {
-    // 🔴 แดง
-    inviteBtn.className = "bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-700 dark:text-rose-400 py-2.5 rounded-lg font-medium border border-rose-300 dark:border-rose-700 flex flex-col items-center justify-center gap-1 transition-colors";
+    // ⚪ เทา + กดไม่ได้ (ปิด Court แล้ว ไม่ต้อง invite อีก)
+    inviteBtn.disabled = true;
+    inviteBtn.className = "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-2.5 rounded-lg font-medium border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1 cursor-not-allowed opacity-60";
   } else if (regClosed) {
     // 🟡 เหลือง
+    inviteBtn.disabled = false;
     inviteBtn.className = "bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-800 dark:text-amber-400 py-2.5 rounded-lg font-medium border border-amber-300 dark:border-amber-700 flex flex-col items-center justify-center gap-1 transition-colors";
   } else {
     // 🟢 เขียว (default)
+    inviteBtn.disabled = false;
     inviteBtn.className = "bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-lg font-medium border border-emerald-200 dark:border-emerald-800/50 flex flex-col items-center justify-center gap-1 transition-colors";
   }
 
@@ -2161,7 +2164,12 @@ function renderMatches() {
               const n2 = formatName(pIds[1]);
               const n3 = formatName(pIds[2]);
               const n4 = formatName(pIds[3]);
-              return `<span class="text-rose-600 dark:text-rose-400 font-bold">${n1}, ${n2}</span> <span class="text-slate-400 font-black mx-1">VS</span> <span class="text-sky-600 dark:text-sky-400 font-bold">${n3}, ${n4}</span>`;
+              // ทีมละบรรทัด คั่นด้วยเส้นเขียว neon (ชื่อยาวเกินบรรทัด → ตัดด้วย …)
+              return `<div class="flex flex-col w-full min-w-0">
+                <span class="text-rose-600 dark:text-rose-400 font-bold truncate">${n1}, ${n2}</span>
+                <span class="block w-full my-1 rounded-full" style="height: 1.5px; background: var(--bc-primary, #b5f714); opacity: 0.85;"></span>
+                <span class="text-sky-600 dark:text-sky-400 font-bold truncate">${n3}, ${n4}</span>
+              </div>`;
             }
             return pIds.map(formatName).join(", ");
           })()}
@@ -4574,6 +4582,7 @@ function buildShareText(session, joinUrl) {
 
 $("btnShareJoin").addEventListener("click", async () => {
   if (!currentSessionId || !currentSession) return;
+  if (currentSession.status === "closed") return;  // ปิด Court แล้ว → Invite ใช้ไม่ได้
   const joinUrl = location.origin + location.pathname + `?openExternalBrowser=1#/join/${currentSessionId}`;
   const shareText = buildShareText(currentSession, joinUrl);
 
