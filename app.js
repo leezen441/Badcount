@@ -6254,11 +6254,40 @@ function openPlayerSettingsModal(idx, isAdminView) {
     fldManualFee.value = (m.manualFee !== undefined && m.manualFee !== null) ? m.manualFee : "";
   }
 
+  // Pause toggle — เฉพาะฝั่งแอดมิน (หน้าลงชื่อของสมาชิกไม่ให้ปลดพักคิวเอง)
+  $("playerModalPauseSection")?.classList.toggle("hidden", !isAdminView);
+  updatePlayerPauseUI(!!m.isPaused);
+
   // Render current values
   updateModalSkillUI();
   
   $("playerSettingsModal").classList.remove("hidden");
 }
+
+// ปุ่มพักคิวใน pop-up ผู้เล่น — สีเหลืองอำพันเหมือนแถวสมาชิกที่พักคิว
+const PAUSE_ON_CLASSES = ["bg-amber-50", "dark:bg-amber-950/40", "border-amber-300", "dark:border-amber-800/60", "text-amber-700", "dark:text-amber-300"];
+const PAUSE_OFF_CLASSES = ["bg-white", "dark:bg-slate-900", "border-slate-200", "dark:border-slate-700", "text-slate-700", "dark:text-slate-300"];
+function updatePlayerPauseUI(paused) {
+  const btn = $("btnPlayerPauseToggle");
+  if (!btn) return;
+  btn.classList.remove(...PAUSE_ON_CLASSES, ...PAUSE_OFF_CLASSES);
+  btn.classList.add(...(paused ? PAUSE_ON_CLASSES : PAUSE_OFF_CLASSES));
+  $("playerPauseIcon").textContent = paused ? "▶️" : "⏸️";
+  $("playerPauseLabel").textContent = paused ? "พักคิวอยู่ — กดเพื่อกลับเข้าคิว" : "พักคิว";
+  $("playerPauseHint").textContent = paused ? "" : "ไม่ดึงไปจัดเกมชั่วคราว";
+}
+
+$("btnPlayerPauseToggle")?.addEventListener("click", () => {
+  if (editingPlayerIdx === null || !editingPlayerIsAdmin) return;
+  const members = [...(currentSession?.members || [])];
+  const m = members[editingPlayerIdx];
+  if (!m) return;
+  const paused = !m.isPaused;
+  members[editingPlayerIdx] = { ...m, isPaused: paused };
+  saveSession({ members });
+  updatePlayerPauseUI(paused);
+  toast(paused ? `⏸️ พักคิว ${m.name} แล้ว` : `พาคุณ ${m.name} กลับเข้าคิวเรียบร้อย 🏸`);
+});
 
 $("btnSavePlayerSettings")?.addEventListener("click", async () => {
   if (editingPlayerIdx === null) return;
