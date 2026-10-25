@@ -2137,35 +2137,13 @@ function renderMatches() {
 
     return `
     <div class="${rowBgClass} p-3 rounded-xl border flex items-start justify-between gap-3 transition-colors" style="${rowStyle}">
-      <div class="flex-1 text-sm min-w-0">
-        <div class="flex justify-between items-center mb-1 gap-2">
-          <div class="flex items-center gap-2 min-w-0">
+      <div class="flex-1 text-sm min-w-0 flex items-center gap-2">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 min-w-0 mb-1">
             <button data-match-del="${m.id}" class="text-slate-300 dark:text-slate-600 hover:text-red-500 px-1 text-lg leading-none shrink-0" title="ลบเกมนี้">&times;</button>
             <div class="font-bold ${titleClass}">เกมที่ ${idx + 1}</div>
           </div>
-          ${(() => {
-            if (currentSession?.simpleShuttleCount) {
-              const qty = escapeHtml(m.shuttleNumbers || "0");
-              return `
-                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 shrink-0 select-none">
-                  <button data-match-shuttle-dec="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 flex items-center justify-center font-black text-slate-600 dark:text-slate-350 text-[10px] transition-transform active:scale-90" title="ลดจำนวนลูก">−</button>
-                  <div class="px-1.5 text-center font-bold text-[11px] text-slate-700 dark:text-slate-200 tabular-nums">${qty} ลูก</div>
-                  <button data-match-shuttle-inc="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 flex items-center justify-center font-black text-slate-600 dark:text-slate-350 text-[10px] transition-transform active:scale-90" title="เพิ่มจำนวนลูก">+</button>
-                </div>
-              `;
-            }
-            const displayVal = m.shuttleNumbers || "—";
-            return `
-              <div class="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 rounded-lg p-0.5 shrink-0 select-none">
-                <button data-match-shuttle-dec="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-emerald-800 hover:bg-slate-100 dark:hover:bg-emerald-700 flex items-center justify-center font-black text-emerald-800 dark:text-emerald-300 text-[10px] transition-transform active:scale-90" title="ลดจำนวนลูก">−</button>
-                <div class="px-1.5 text-center font-bold text-[10px] tabular-nums">ลูกที่ ${escapeHtml(displayVal)}</div>
-                <button data-match-shuttle-inc="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-emerald-800 hover:bg-slate-100 dark:hover:bg-emerald-700 flex items-center justify-center font-black text-emerald-800 dark:text-emerald-300 text-[10px] transition-transform active:scale-90" title="เพิ่มจำนวนลูก">+</button>
-              </div>
-            `;
-          })()}
-        </div>
-        <div class="flex items-center justify-between gap-2">
-        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1 flex-1 min-w-0">
+        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
           ${(() => {
             const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
             const exempts = m.exemptPlayers || [];
@@ -2188,7 +2166,30 @@ function renderMatches() {
             return pIds.map(formatName).join(", ");
           })()}
         </div>
-        ${doneButton}
+        </div>
+        <!-- ตัวปรับลูก + ปุ่ม Done อยู่คอลัมน์เดียวกัน กึ่งกลางตรงกัน -->
+        <div class="flex flex-col items-center gap-1.5 shrink-0 min-w-[7.5rem]">
+          ${(() => {
+            if (currentSession?.simpleShuttleCount) {
+              const qty = escapeHtml(m.shuttleNumbers || "0");
+              return `
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 shrink-0 select-none">
+                  <button data-match-shuttle-dec="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 flex items-center justify-center font-black text-slate-600 dark:text-slate-350 text-[10px] transition-transform active:scale-90" title="ลดจำนวนลูก">−</button>
+                  <div class="px-1.5 text-center font-bold text-[11px] text-slate-700 dark:text-slate-200 tabular-nums">${qty} ลูก</div>
+                  <button data-match-shuttle-inc="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 flex items-center justify-center font-black text-slate-600 dark:text-slate-350 text-[10px] transition-transform active:scale-90" title="เพิ่มจำนวนลูก">+</button>
+                </div>
+              `;
+            }
+            const displayVal = m.shuttleNumbers || "—";
+            return `
+              <div class="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 rounded-lg p-0.5 shrink-0 select-none">
+                <button data-match-shuttle-dec="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-emerald-800 hover:bg-slate-100 dark:hover:bg-emerald-700 flex items-center justify-center font-black text-emerald-800 dark:text-emerald-300 text-[10px] transition-transform active:scale-90" title="ลดจำนวนลูก">−</button>
+                <div class="px-1.5 text-center font-bold text-[10px] tabular-nums">ลูกที่ ${escapeHtml(displayVal)}</div>
+                <button data-match-shuttle-inc="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-emerald-800 hover:bg-slate-100 dark:hover:bg-emerald-700 flex items-center justify-center font-black text-emerald-800 dark:text-emerald-300 text-[10px] transition-transform active:scale-90" title="เพิ่มจำนวนลูก">+</button>
+              </div>
+            `;
+          })()}
+          ${doneButton}
         </div>
       </div>
       <div class="flex flex-col items-center gap-1.5">
