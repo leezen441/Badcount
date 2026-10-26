@@ -2122,9 +2122,16 @@ function renderMatches() {
 
   const membersMap = {};
   (currentSession.members || []).forEach(m => membersMap[m.id] = m.name);
+  const courtsMap = {};
+  (currentSession.courts || []).forEach(c => courtsMap[c.id] = c);
 
   list.innerHTML = matches.map((m, idx) => {
     const finished = !!m.finished;
+    // ป้ายสนามเล็กๆ (เฉพาะเกมที่เลือกสนามไว้ และสนามนั้นยังอยู่)
+    const court = m.courtId ? courtsMap[m.courtId] : null;
+    const courtBadge = (court && court.number)
+      ? `<span class="shrink-0 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md whitespace-nowrap" style="background: rgba(148, 163, 184, 0.18); color: #cbd5e1;" title="สนาม ${escapeHtml(court.number)}">🏟️ ${escapeHtml(court.number)}</span>`
+      : "";
     // เกมที่ "จบแล้ว" → การ์ดขอบ+พื้นเขียว neon (สีเดียวกับปุ่มหลัก --bc-primary) ให้เห็นชัดว่าติ๊กแล้ว
     const rowBgClass = finished
       ? ""
@@ -2214,6 +2221,7 @@ function renderMatches() {
         </div>
       </div>
       <div class="flex flex-col items-center gap-1.5">
+        ${courtBadge}
         <button data-match-edit="${m.id}" class="text-slate-400 hover:text-emerald-600 px-1 text-sm" title="แก้ไขเกม">✏️</button>
       </div>
     </div>
@@ -5363,10 +5371,10 @@ function renderSessionList(container, snap, isHome, isManager = false) {
       ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded">✓ ปิดแล้ว</span>`
       : `<span class="text-xs text-emerald-600 dark:text-emerald-500">เปิดอยู่</span>`;
 
-    // Courts compact summary
+    // Courts compact summary — บรรทัดที่ 3 ของการ์ด (ไม่ต่อท้ายบรรทัดวันที่ จะได้ไม่ตกบรรทัด)
     const courtNums = (s.courts || []).map(c => c.number).filter(Boolean);
-    const courtSummary = courtNums.length > 0
-      ? ` · 🏟️ ${escapeHtml(courtNums.join(","))}`
+    const courtLine = courtNums.length > 0
+      ? `<div class="text-xs ${isClosed ? "text-emerald-700/70 dark:text-emerald-400/70" : "text-slate-500 dark:text-slate-400"} mt-0.5 truncate">🏟️ ${escapeHtml(courtNums.join(", "))}</div>`
       : "";
 
 // 1. ตรวจสอบรายชื่อคนที่ยังไม่ได้จ่ายเงิน
@@ -5405,7 +5413,8 @@ function renderSessionList(container, snap, isHome, isManager = false) {
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
               <div class="font-semibold truncate ${isClosed ? "text-emerald-900 dark:text-emerald-300" : "text-slate-800 dark:text-slate-200"}">${escapeHtml(s.location || "ก๊วน")}</div>
-              <div class="text-xs ${isClosed ? "text-emerald-700/70 dark:text-emerald-400/70" : "text-slate-500 dark:text-slate-400"} mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก${courtSummary}</div>
+              <div class="text-xs ${isClosed ? "text-emerald-700/70 dark:text-emerald-400/70" : "text-slate-500 dark:text-slate-400"} mt-0.5">${formatDate(s.date)} · ${members.length} คน · ${totals.totalShuttles} ลูก</div>
+              ${courtLine}
             </div>
             <div class="text-right flex flex-col items-end shrink-0">
               <div class="${priceClass}">${fmt(totals.totalAll)} ฿</div>
