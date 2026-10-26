@@ -2124,13 +2124,16 @@ function renderMatches() {
   (currentSession.members || []).forEach(m => membersMap[m.id] = m.name);
   const courtsMap = {};
   (currentSession.courts || []).forEach(c => courtsMap[c.id] = c);
+  const courtList = (currentSession.courts || []).filter(c => c.number);
 
   list.innerHTML = matches.map((m, idx) => {
     const finished = !!m.finished;
-    // ป้ายสนามเล็กๆ (เฉพาะเกมที่เลือกสนามไว้ และสนามนั้นยังอยู่)
-    const court = m.courtId ? courtsMap[m.courtId] : null;
-    const courtBadge = (court && court.number)
-      ? `<span class="shrink-0 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md whitespace-nowrap" style="background: rgba(148, 163, 184, 0.18); color: #cbd5e1;" title="สนาม ${escapeHtml(court.number)}">🏟️ ${escapeHtml(court.number)}</span>`
+    // ช่องเลือกสนามบนการ์ด — ข้างปุ่ม Done, สูงเท่ากันแต่แคบกว่า, เปลี่ยนแล้วบันทึกทันที
+    const courtSelect = courtList.length > 0
+      ? `<select data-match-court="${m.id}" class="shrink-0 appearance-none text-center px-1 rounded-lg text-[11px] font-extrabold tracking-wide cursor-pointer focus:outline-none" style="width: 3.4rem; background: rgba(148, 163, 184, 0.18); border: 1.5px solid rgba(148, 163, 184, 0.35); color: #cbd5e1;" title="เลือกสนามของเกมนี้ (แตะเพื่อเปลี่ยน)">
+           <option value="" ${!m.courtId || !courtsMap[m.courtId] ? "selected" : ""}>🏟️ —</option>
+           ${courtList.map(c => `<option value="${escapeHtml(c.id)}" ${m.courtId === c.id ? "selected" : ""}>🏟️ ${escapeHtml(c.number)}</option>`).join("")}
+         </select>`
       : "";
     // เกมที่ "จบแล้ว" → การ์ดขอบ+พื้นเขียว neon (สีเดียวกับปุ่มหลัก --bc-primary) ให้เห็นชัดว่าติ๊กแล้ว
     const rowBgClass = finished
@@ -2173,18 +2176,18 @@ function renderMatches() {
             };
 
             if (pIds.length === 4 && useTeams()) {
-              // ในทีม: ชื่อสั้นขึ้นก่อน ชื่อยาวไว้คนที่สอง · ถ้ายาวรวมกันไม่พอบรรทัด → คนที่สองขึ้นบรรทัดใหม่ (flex-wrap)
-              // ชื่อเดียวที่ยาวเกินบรรทัดจริงๆ → ตัดด้วย …
+              // ในทีม: ชื่อสั้นขึ้นก่อน ชื่อยาวไว้คนที่สอง · บังคับบรรทัดเดียว ใช้ความยาวได้มากที่สุด
+              // ถ้าจะล้นบรรทัด → ตัดชื่อคนที่สองด้วย … (คนแรกกันที่ไว้ไม่เกิน 60% ของบรรทัด)
               const team = (a, b) => {
                 const len = (pid) => String(membersMap[pid] || "?").length;
                 const [x, y] = len(a) <= len(b) ? [a, b] : [b, a];
-                return `<span class="truncate max-w-full">${formatName(x)},</span><span class="truncate max-w-full">${formatName(y)}</span>`;
+                return `<span class="shrink-0 truncate" style="max-width: 70%;">${formatName(x)},</span><span class="truncate min-w-0">${formatName(y)}</span>`;
               };
               // ทีมละบรรทัด — กล่องสีเล็กๆ (แดง/ฟ้า) นำหน้าชื่อแต่ละทีม
               const teamRow = (color, textColor, a, b) => `
                 <div class="flex items-start gap-1.5 min-w-0">
                   <span class="shrink-0 w-3 h-3 mt-1 rounded-[3px]" style="background: ${color};"></span>
-                  <span class="font-bold flex flex-wrap gap-x-1 min-w-0" style="color: ${textColor};">${team(a, b)}</span>
+                  <span class="font-bold flex gap-x-1 min-w-0" style="color: ${textColor};">${team(a, b)}</span>
                 </div>`;
               return `<div class="flex flex-col gap-1 w-full min-w-0">
                 ${teamRow("#fb7185", "#fda4af", pIds[0], pIds[1])}
@@ -2195,9 +2198,9 @@ function renderMatches() {
           })()}
         </div>
         </div>
-        <!-- ตัวปรับลูก + ปุ่ม Done อยู่คอลัมน์เดียวกัน กึ่งกลางตรงกัน -->
-        <div class="flex flex-col items-center gap-1.5 shrink-0 min-w-[7.5rem]">
-          ${(() => {
+        <!-- ซ้าย: ตัวปรับลูก / ปุ่ม Done · ขวา: ✏️ / ช่องเลือกสนาม (สนามอยู่ใต้ ✏️ พอดี) -->
+        <div class="grid items-center gap-1.5 shrink-0" style="grid-template-columns: auto 3.4rem;">
+          <div class="flex justify-center">${(() => {
             if (currentSession?.simpleShuttleCount) {
               const qty = escapeHtml(m.shuttleNumbers || "0");
               return `
@@ -2216,13 +2219,11 @@ function renderMatches() {
                 <button data-match-shuttle-inc="${m.id}" class="w-5 h-5 rounded bg-white dark:bg-emerald-800 hover:bg-slate-100 dark:hover:bg-emerald-700 flex items-center justify-center font-black text-emerald-800 dark:text-emerald-300 text-[10px] transition-transform active:scale-90" title="เพิ่มจำนวนลูก">+</button>
               </div>
             `;
-          })()}
-          ${doneButton}
+          })()}</div>
+          <div class="flex justify-center"><button data-match-edit="${m.id}" class="text-slate-400 hover:text-emerald-600 px-1 text-sm" title="แก้ไขเกม">✏️</button></div>
+          <div class="flex justify-center">${doneButton}</div>
+          <div class="flex justify-center">${courtSelect}</div>
         </div>
-      </div>
-      <div class="flex flex-col items-center gap-1.5">
-        <button data-match-edit="${m.id}" class="text-slate-400 hover:text-emerald-600 px-1 text-sm" title="แก้ไขเกม">✏️</button>
-        ${courtBadge}
       </div>
     </div>
   `}).join("");
@@ -2259,6 +2260,17 @@ function renderMatches() {
       const matchId = btn.dataset.matchFinish;
       const newMatches = (currentSession.matches || []).map(m =>
         m.id === matchId ? { ...m, finished: !m.finished } : m
+      );
+      saveSession({ matches: newMatches });
+    });
+  });
+
+  // เปลี่ยนสนามของเกมจากการ์ดโดยตรง
+  list.querySelectorAll("select[data-match-court]").forEach(sel => {
+    sel.addEventListener("change", () => {
+      const matchId = sel.dataset.matchCourt;
+      const newMatches = (currentSession.matches || []).map(m =>
+        m.id === matchId ? { ...m, courtId: sel.value || null } : m
       );
       saveSession({ matches: newMatches });
     });
