@@ -2229,6 +2229,7 @@ function renderMatches() {
       matchDraftPlayers = [...(match.players || [match.a1, match.a2, match.b1, match.b2].filter(Boolean))];
       matchDraftExempts = [...(match.exemptPlayers || [])];
       $("fldMatchShuttles").value = match.shuttleNumbers || "";
+      populateMatchCourtSelect(match.courtId || "");
       $("matchModalTitle").textContent = "✏️ แก้ไขเกม";
 
       renderMatchDraft();
@@ -2634,6 +2635,22 @@ function getNextUnusedShuttle(currentNums, excludeMatchId = editingMatchId) {
   return maxShuttle + 1;
 }
 
+// ช่องเลือกสนามในป๊อปอัปจัดเกม (ไม่บังคับ) — ตัวเลือก = สนามที่เพิ่มไว้ในก๊วน
+function populateMatchCourtSelect(selectedId) {
+  const sel = $("fldMatchCourt");
+  if (!sel) return;
+  const courts = (currentSession?.courts || []).filter(c => c.number || c.startTime || c.endTime);
+  const label = (c) => {
+    const name = c.number ? `สนาม ${c.number}` : "สนาม —";
+    const time = c.startTime && c.endTime ? `${c.startTime}-${c.endTime}` : (c.startTime || c.endTime || "");
+    return time ? `${name} · ${time}` : name;
+  };
+  sel.innerHTML = `<option value="">🏟️ เลือกสนาม</option>` +
+    courts.map(c => `<option value="${escapeHtml(c.id)}">🏟️ ${escapeHtml(label(c))}</option>`).join("");
+  sel.value = courts.some(c => c.id === selectedId) ? selectedId : "";
+  sel.classList.toggle("hidden", courts.length === 0);
+}
+
 $("btnAddMatch").addEventListener("click", () => {
   const members = currentSession.members || [];
   if (members.length < 4) return alert("ต้องมีสมาชิกอย่างน้อย 4 คน ถึงจะจัดเกมได้ครับ");
@@ -2645,6 +2662,7 @@ $("btnAddMatch").addEventListener("click", () => {
   const isSimple = !!currentSession?.simpleShuttleCount;
   $("fldMatchShuttles").value = isSimple ? "" : String(getNextShuttleNumber());
   
+  populateMatchCourtSelect("");
   $("matchModalTitle").textContent = "🏸 จัดเกมใหม่";
   renderMatchDraft();
   $("matchModal").classList.remove("hidden");
@@ -3511,16 +3529,17 @@ $("btnSaveMatch").addEventListener("click", () => {
   const finalDraftPlayers = [...matchDraftPlayers];
   const finalDraftExempts = [...matchDraftExempts];
 
+  const courtId = $("fldMatchCourt")?.value || null;   // ไม่เลือก = null
   let createdMatchId = null;
   if (editingMatchId) {
     const idx = matches.findIndex(x => x.id === editingMatchId);
     if (idx !== -1) {
-      matches[idx] = { ...matches[idx], players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts };
+      matches[idx] = { ...matches[idx], players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts, courtId };
       delete matches[idx].a1; delete matches[idx].a2; delete matches[idx].b1; delete matches[idx].b2;
     }
   } else {
     createdMatchId = uid();
-    matches.push({ id: createdMatchId, players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts });
+    matches.push({ id: createdMatchId, players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts, courtId });
   }
 
   saveSession({ matches });

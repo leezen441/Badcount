@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.18.1">
+  <link rel="stylesheet" href="./premium.css?v=3.18.2">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -923,13 +923,19 @@
             </span>
           </div>
         </div>
-        <div class="flex items-center gap-1.5 shrink-0">
+        <div class="flex flex-col items-end gap-1.5 shrink-0">
+        <div class="flex items-center gap-1.5">
           <button id="btnAutoDraft" class="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800/50 shadow-sm flex items-center gap-1 transition-transform active:scale-95 shrink-0" title="สุ่มผู้เล่นลงสนาม">
             ✨ สุ่มจัดคิว
           </button>
           <button id="btnSaveMatch" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-bold shadow-sm flex items-center gap-1 transition-transform active:scale-95 shrink-0 disabled:opacity-50" title="บันทึกเกมปัจจุบัน">
             💾 บันทึกเกม
           </button>
+        </div>
+        <!-- เลือกสนาม (ไม่บังคับ) — ตัวเลือกมาจากสนามที่เพิ่มไว้ในก๊วน, ไม่มีสนาม = ซ่อน -->
+        <select id="fldMatchCourt" class="hidden max-w-[11rem] text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500" title="เลือกสนามของเกมนี้ (ไม่บังคับ)">
+          <option value="">🏟️ เลือกสนาม</option>
+        </select>
         </div>
       </div>
       
@@ -1294,6 +1300,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.18.1"></script>
+  <script type="module" src="./app.js?v=3.18.2"></script>
 </body>
 </html>
