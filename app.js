@@ -2162,7 +2162,7 @@ function renderMatches() {
             <button data-match-del="${m.id}" class="text-slate-300 dark:text-slate-600 hover:text-red-500 px-1 text-lg leading-none shrink-0" title="ลบเกมนี้">&times;</button>
             <div class="font-bold ${titleClass}">เกมที่ ${idx + 1}</div>
           </div>
-        <div class="${playersClass} font-medium text-xs leading-relaxed pl-7 flex items-center flex-wrap gap-1">
+        <div class="${playersClass} font-medium text-xs leading-relaxed pl-1 flex items-center flex-wrap gap-1">
           ${(() => {
             const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
             const exempts = m.exemptPlayers || [];
@@ -2655,6 +2655,17 @@ function getNextUnusedShuttle(currentNums, excludeMatchId = editingMatchId) {
   return maxShuttle + 1;
 }
 
+// สนามที่เลือกไว้ล่าสุด — ใช้เป็นค่าเริ่มต้นของเกมถัดไป (ข้ามเกมที่ไม่ได้ระบุสนาม, สนามต้องยังอยู่ในก๊วน)
+function getLastUsedCourtId() {
+  const matches = currentSession?.matches || [];
+  const courts = currentSession?.courts || [];
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const id = matches[i].courtId;
+    if (id && courts.some(c => c.id === id)) return id;
+  }
+  return "";
+}
+
 // ช่องเลือกสนามในป๊อปอัปจัดเกม (ไม่บังคับ) — ตัวเลือก = สนามที่เพิ่มไว้ในก๊วน
 function populateMatchCourtSelect(selectedId) {
   const sel = $("fldMatchCourt");
@@ -2682,7 +2693,7 @@ $("btnAddMatch").addEventListener("click", () => {
   const isSimple = !!currentSession?.simpleShuttleCount;
   $("fldMatchShuttles").value = isSimple ? "" : String(getNextShuttleNumber());
   
-  populateMatchCourtSelect("");
+  populateMatchCourtSelect(getLastUsedCourtId());
   $("matchModalTitle").textContent = "🏸 จัดเกมใหม่";
   renderMatchDraft();
   $("matchModal").classList.remove("hidden");
