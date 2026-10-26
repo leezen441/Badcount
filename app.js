@@ -2221,8 +2221,8 @@ function renderMatches() {
         </div>
       </div>
       <div class="flex flex-col items-center gap-1.5">
-        ${courtBadge}
         <button data-match-edit="${m.id}" class="text-slate-400 hover:text-emerald-600 px-1 text-sm" title="แก้ไขเกม">✏️</button>
+        ${courtBadge}
       </div>
     </div>
   `}).join("");
