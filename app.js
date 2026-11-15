@@ -1516,16 +1516,15 @@ function renderMemberSuggestions() {
 
     // คลิก = เพิ่มลงก๊วน
     btn.addEventListener("click", () => {
-      const members = [...(currentSession.members || [])];
-      if (members.some(m => (m.name || "").toLowerCase() === name.toLowerCase())) {
+      if ((currentSession.members || []).some(m => (m.name || "").toLowerCase() === name.toLowerCase())) {
         toast(`มีชื่อ "${name}" ในก๊วนแล้ว`);
         return;
       }
       const newId = uid();
       trackOwnSubmit(newId);
-      members.push({ id: newId, name, shuttlesUsed: 0 });
       addKnownMember(name); // bump ขึ้นต้นใหม่
-      saveSession({ members });
+      const newMember = { id: newId, name, shuttlesUsed: 0 };
+      saveMembers(arr => addMemberOnce(arr, newMember));
     });
 
     // แตะค้าง / คลิกขวา = ลบจากประวัติ
@@ -1675,8 +1674,9 @@ $("btnMarkAllPaid").addEventListener("click", () => {
   const msg = `ยืนยันว่าทุกคนจ่ายเงินครบแล้ว?\n\nจะทำเครื่องหมาย ${unpaidNames.length} คนเป็น "จ่ายแล้ว":\n${unpaidNames.map(n => `• ${n}`).join("\n")}`;
   if (!confirm(msg)) return;
 
-  const newMembers = members.map(m => ({ ...m, isPaid: true }));
-  saveSession({ members: newMembers });
+  // เฉพาะคนที่เห็นอยู่บนจอตอนกดยืนยัน (คนที่เพิ่ง join ระหว่างนั้นไม่ถูกติ๊กไปด้วย)
+  const seen = new Set(members.map(m => m.id));
+  saveMembers(arr => arr.map(m => seen.has(m.id) ? { ...m, isPaid: true } : m));
   toast(`✓ ทำเครื่องหมายจ่ายแล้ว ${unpaidNames.length} คน`);
 });
 
@@ -1903,39 +1903,42 @@ function renderMembers() {
 
       // toggle-pause-row = ยกเลิกสถานะ pause
       if (act === "toggle-pause-row") {
-        const members = [...(currentSession.members || [])];
-        if (members[idx]) {
-          members[idx].isPaused = false;
-        }
-        saveSession({ members });
-        toast(`พาคุณ ${members[idx].name} กลับเข้าคิวเรียบร้อย 🏸`);
+        const target = (currentSession.members || [])[idx];
+        if (!target) return;
+        saveMembers(arr => arr.map(m => m.id === target.id ? { ...m, isPaused: false } : m));
+        toast(`พาคุณ ${target.name} กลับเข้าคิวเรียบร้อย 🏸`);
         return;
       }
 
-      const members = [...(currentSession.members || [])];
+      // อ้างสมาชิกด้วย id (ลำดับในเครื่องอาจไม่ตรงกับ server ถ้าข้อมูลค้าง)
+      const target = (currentSession.members || [])[idx];
+      if (!target) return;
+      const id = target.id;
+      const patchOne = (fn) => saveMembers(arr => arr.map(m => m.id === id ? { ...m, ...fn(m) } : m));
 
       if (act === "inc") {
-        if (!confirm(`ยืนยันการเพิ่มจำนวนลูกเบิกส่วนตัวของ "${members[idx].name}" อีก 1 ลูก?`)) return;
-        members[idx].shuttlesUsed = (members[idx].shuttlesUsed || 0) + 1;
+        if (!confirm(`ยืนยันการเพิ่มจำนวนลูกเบิกส่วนตัวของ "${target.name}" อีก 1 ลูก?`)) return;
+        patchOne(m => ({ shuttlesUsed: (m.shuttlesUsed || 0) + 1 }));
       }
       else if (act === "dec") {
-        if ((members[idx].shuttlesUsed || 0) === 0) {
+        if ((target.shuttlesUsed || 0) === 0) {
           toast("จำนวนลูกเบิกส่วนตัวเป็น 0 อยู่แล้ว ไม่สามารถลดลงอีกได้");
           return;
         }
-        if (!confirm(`ยืนยันการลดจำนวนลูกเบิกส่วนตัวของ "${members[idx].name}" ลง 1 ลูก?`)) return;
-        members[idx].shuttlesUsed = Math.max(0, (members[idx].shuttlesUsed || 0) - 1);
+        if (!confirm(`ยืนยันการลดจำนวนลูกเบิกส่วนตัวของ "${target.name}" ลง 1 ลูก?`)) return;
+        patchOne(m => ({ shuttlesUsed: Math.max(0, (m.shuttlesUsed || 0) - 1) }));
       }
-      else if (act === "toggle-paid") members[idx].isPaid = !members[idx].isPaid;
+      else if (act === "toggle-paid") {
+        // ตั้งค่าตามที่เห็นบนจอ (ไม่ใช่สลับ) — กดพร้อมกัน 2 เครื่องจะได้ไม่หักล้างกัน
+        const paid = !target.isPaid;
+        patchOne(() => ({ isPaid: paid }));
+      }
       else if (act === "del") {
-        if (!confirm(`ลบ "${members[idx].name}" ออกจากก๊วน?`)) return;
-        const removed = members[idx];
-        members.splice(idx, 1);
+        if (!confirm(`ลบ "${target.name}" ออกจากก๊วน?`)) return;
+        saveMembers(arr => arr.filter(m => m.id !== id));
         // ลบ receipt subcollection doc (best-effort)
-        if (removed?.id && currentSessionId) deleteReceipt(currentSessionId, removed.id);
+        if (id && currentSessionId) deleteReceipt(currentSessionId, id);
       }
-
-      saveSession({ members });
     });
   });
 }
@@ -2249,8 +2252,8 @@ function renderMatches() {
   list.querySelectorAll("button[data-match-del]").forEach(btn => {
     btn.addEventListener("click", () => {
       if (!confirm("ลบเกมนี้?")) return;
-      const newMatches = (currentSession.matches || []).filter(x => x.id !== btn.dataset.matchDel);
-      saveSession({ matches: newMatches });
+      const matchId = btn.dataset.matchDel;
+      saveMatches(arr => arr.filter(x => x.id !== matchId));
     });
   });
 
@@ -2258,10 +2261,9 @@ function renderMatches() {
   list.querySelectorAll("button[data-match-finish]").forEach(btn => {
     btn.addEventListener("click", () => {
       const matchId = btn.dataset.matchFinish;
-      const newMatches = (currentSession.matches || []).map(m =>
-        m.id === matchId ? { ...m, finished: !m.finished } : m
-      );
-      saveSession({ matches: newMatches });
+      // ตั้งค่าตามที่เห็นบนจอ (ไม่ใช่สลับ) — กดพร้อมกัน 2 เครื่องจะได้ไม่หักล้างกัน
+      const target = !(currentSession.matches || []).find(m => m.id === matchId)?.finished;
+      saveMatches(arr => arr.map(m => m.id === matchId ? { ...m, finished: target } : m));
     });
   });
 
@@ -2269,10 +2271,8 @@ function renderMatches() {
   list.querySelectorAll("select[data-match-court]").forEach(sel => {
     sel.addEventListener("change", () => {
       const matchId = sel.dataset.matchCourt;
-      const newMatches = (currentSession.matches || []).map(m =>
-        m.id === matchId ? { ...m, courtId: sel.value || null } : m
-      );
-      saveSession({ matches: newMatches });
+      const courtId = sel.value || null;
+      saveMatches(arr => arr.map(m => m.id === matchId ? { ...m, courtId } : m));
     });
   });
 
@@ -2285,26 +2285,20 @@ function renderMatches() {
       const match = (currentSession.matches || []).find(x => x.id === matchId);
       if (!match) return;
 
-      let newShuttles = "";
+      // คิดจากค่าล่าสุดบน server ตอนบันทึก (เผื่ออีกเครื่องเพิ่งกด +/− ไป)
+      let change;
       if (isSimple) {
-        const currentCount = parseInt(match.shuttleNumbers, 10) || 0;
-        const newCount = Math.max(0, currentCount - 1);
         if (!confirm("ลดจำนวนลูก 1 ลูก?")) return;
-        newShuttles = String(newCount);
+        change = (cur) => String(Math.max(0, (parseInt(cur, 10) || 0) - 1));
       } else {
         const nums = listShuttleNumbers(match.shuttleNumbers || "");
         if (nums.length === 0) return toast("ไม่มีลูกให้ลดแล้วครับ");
-        nums.sort((a, b) => a - b);
-        const lastNum = nums[nums.length - 1];
+        const lastNum = Math.max(...nums);
         if (!confirm(`ลดลูกเบอร์ ${lastNum}?`)) return;
-        nums.pop();
-        newShuttles = formatShuttleNumbers(nums);
+        change = (cur) => formatShuttleNumbers(listShuttleNumbers(cur || "").filter(n => n !== lastNum));
       }
 
-      const newMatches = (currentSession.matches || []).map(m =>
-        m.id === matchId ? { ...m, shuttleNumbers: newShuttles } : m
-      );
-      saveSession({ matches: newMatches });
+      saveMatches(arr => arr.map(m => m.id === matchId ? { ...m, shuttleNumbers: change(m.shuttleNumbers) } : m));
       const idx = (currentSession.matches || []).findIndex(x => x.id === matchId);
       toast(`ลดจำนวนลูกเกมที่ ${idx + 1} เรียบร้อย 🏸`);
     });
@@ -2318,28 +2312,81 @@ function renderMatches() {
       const match = (currentSession.matches || []).find(x => x.id === matchId);
       if (!match) return;
 
-      let newShuttles = "";
+      let change;
       if (isSimple) {
-        const currentCount = parseInt(match.shuttleNumbers, 10) || 0;
-        const newCount = currentCount + 1;
         if (!confirm("เพิ่มจำนวนลูก 1 ลูก?")) return;
-        newShuttles = String(newCount);
+        change = (cur) => String((parseInt(cur, 10) || 0) + 1);
       } else {
         const nums = listShuttleNumbers(match.shuttleNumbers || "");
         const nextFree = getNextUnusedShuttle(nums, matchId);
         if (!confirm(`เพิ่มลูกเบอร์ ${nextFree}?`)) return;
-        nums.push(nextFree);
-        newShuttles = formatShuttleNumbers(nums);
+        // เบอร์ที่ยืนยันไว้ถูกเกมอื่นใช้ไปแล้ว (เครื่องนี้ข้อมูลค้าง) → ใช้เบอร์ถัดไปที่ว่างจริงแทน
+        change = (cur, arr) => {
+          const used = arr.flatMap(m => listShuttleNumbers(m.shuttleNumbers || ""));
+          const n = used.includes(nextFree) ? Math.max(...used) + 1 : nextFree;
+          return formatShuttleNumbers([...listShuttleNumbers(cur || ""), n]);
+        };
       }
 
-      const newMatches = (currentSession.matches || []).map(m =>
-        m.id === matchId ? { ...m, shuttleNumbers: newShuttles } : m
-      );
-      saveSession({ matches: newMatches });
+      saveMatches(arr => arr.map(m => m.id === matchId ? { ...m, shuttleNumbers: change(m.shuttleNumbers, arr) } : m));
       const idx = (currentSession.matches || []).findIndex(x => x.id === matchId);
       toast(`เพิ่มจำนวนลูกเกมที่ ${idx + 1} เรียบร้อย 🏸`);
     });
   });
+}
+
+// ---------- Save matches / members (transaction) ----------
+// ทุกปุ่มที่แก้ "เกม" หรือ "สมาชิก" ส่ง "สิ่งที่จะเปลี่ยน" (mutate) มา แทนการส่งรายการทั้งก้อน
+// → อ่านรายการล่าสุดจาก server ก่อน แล้วแก้เฉพาะรายการที่กด (อ้างด้วย id ไม่ใช่ลำดับ)
+// กันเครื่องที่ข้อมูลค้าง (ยังเห็น 4 เกม) เขียนทับของที่คนอื่นเพิ่มไว้ (11 เกม → เหลือ 4, 2026-11-15)
+// mutate ต้องเป็น pure function (Firestore อาจเรียกซ้ำถ้ามีคนเขียนชนกัน)
+async function txUpdateList(ref, field, mutate) {
+  let before = null, written = null;
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("ไม่พบก๊วนนี้");
+    before = snap.data()[field] || [];
+    written = mutate([...before]);
+    tx.update(ref, { [field]: written, updatedAt: serverTimestamp() });
+  });
+  return { before, written };
+}
+
+// คืนค่า true = บันทึกสำเร็จ
+async function saveListField(field, mutate) {
+  const sessionId = currentSessionId;
+  if (!sessionId || !currentSession) return false;
+  const ids = (arr) => arr.map(x => x.id).join(",");
+  const localIds = ids(currentSession[field] || []);
+
+  // Optimistic local update so UI feels snappy
+  currentSession[field] = mutate([...(currentSession[field] || [])]);
+  renderSession();
+
+  try {
+    const { before, written } = await txUpdateList(doc(db, "sessions", sessionId), field, mutate);
+    if (currentSessionId === sessionId && currentSession) {
+      currentSession[field] = written;
+      renderSession();
+      // รายการในเครื่องไม่ตรงกับ server = listener หลุด → ต่อใหม่ให้ข้อมูลช่องอื่นสดด้วย
+      if (ids(before) !== localIds) forceResyncFirestore(`${field} ในเครื่องค้าง`);
+    }
+    return true;
+  } catch (err) {
+    console.error(err);
+    toast("บันทึกไม่สำเร็จ (เน็ตหลุด?) — กดใหม่อีกครั้ง", 4000);
+    forceResyncFirestore("บันทึกไม่สำเร็จ");
+    return false;
+  }
+}
+
+function saveMatches(mutate) { return saveListField("matches", mutate); }
+function saveMembers(mutate) { return saveListField("members", mutate); }
+
+// เพิ่มสมาชิกใหม่ — ข้ามถ้ามี id นี้หรือชื่อซ้ำอยู่แล้ว (เช่นอีกเครื่องเพิ่งเพิ่มชื่อเดียวกันไป)
+function addMemberOnce(arr, member) {
+  const lower = (member.name || "").toLowerCase();
+  return arr.some(m => m.id === member.id || (m.name || "").toLowerCase() === lower) ? arr : [...arr, member];
 }
 
 // ---------- Save (debounced) ----------
@@ -2532,10 +2579,9 @@ async function addMember() {
   trackOwnSubmit(newId);
   input.value = "";
   await loadPlayerProfiles();
-  const members = [...(currentSession.members || [])];   // อ่านหลัง await ให้สดที่สุด
-  members.push({ id: newId, name, shuttlesUsed: 0, skill: rememberedSkill(name) });
+  const newMember = { id: newId, name, shuttlesUsed: 0, skill: rememberedSkill(name) };
   addKnownMember(name); // จดจำไว้สำหรับครั้งหน้า
-  saveSession({ members });
+  saveMembers(arr => addMemberOnce(arr, newMember));
   input.focus();
 }
 $("btnAddMember").addEventListener("click", addMember);
@@ -3561,19 +3607,17 @@ $("btnSaveMatch").addEventListener("click", () => {
   const finalDraftExempts = [...matchDraftExempts];
 
   const courtId = $("fldMatchCourt")?.value || null;   // ไม่เลือก = null
-  let createdMatchId = null;
   if (editingMatchId) {
-    const idx = matches.findIndex(x => x.id === editingMatchId);
-    if (idx !== -1) {
-      matches[idx] = { ...matches[idx], players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts, courtId };
-      delete matches[idx].a1; delete matches[idx].a2; delete matches[idx].b1; delete matches[idx].b2;
-    }
+    const editId = editingMatchId;
+    saveMatches(arr => arr.map(m => {
+      if (m.id !== editId) return m;
+      const { a1, a2, b1, b2, ...rest } = m;   // ทิ้ง field รูปแบบเก่า
+      return { ...rest, players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts, courtId };
+    }));
   } else {
-    createdMatchId = uid();
-    matches.push({ id: createdMatchId, players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts, courtId });
+    const newMatch = { id: uid(), players: finalDraftPlayers, shuttleNumbers: shuttles, exemptPlayers: finalDraftExempts, courtId };
+    saveMatches(arr => arr.some(m => m.id === newMatch.id) ? arr : [...arr, newMatch]);
   }
-
-  saveSession({ matches });
   $("matchModal").classList.add("hidden");
 });
 
@@ -3981,7 +4025,8 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
     }
 
     // 5) Auto-tick: อัปเดต member status (ไม่เก็บรูปใน main doc)
-    const newMembers = (currentSession.members || []).map(m =>
+    // แก้เฉพาะคนนี้บนรายการล่าสุดจาก server (มือถือที่เปิดหน้าจ่ายเงินค้างไว้นานอาจข้อมูลเก่า)
+    await txUpdateList(doc(db, "sessions", currentSessionId), "members", arr => arr.map(m =>
       m.id === targetId
         ? {
             ...m,
@@ -3991,11 +4036,7 @@ $("paymentSlipInput")?.addEventListener("change", async (e) => {
             slipQRAmount: qrAmount !== null ? qrAmount : null
           }
         : m
-    );
-    await updateDoc(doc(db, "sessions", currentSessionId), {
-      members: newMembers,
-      updatedAt: serverTimestamp()
-    });
+    ));
 
     if (qrAmount !== null) {
       toast(`✓ จ่ายเงินเรียบร้อย (ยอดตรง ${qrAmount.toFixed(2)} ฿ ✓)`);
@@ -4198,15 +4239,11 @@ async function handleCameraQRDetected(qrData) {
 
 async function saveCameraScanResult(member, qrData, qrAmount) {
   try {
-    const newMembers = (currentSession.members || []).map(m =>
+    await txUpdateList(doc(db, "sessions", currentSessionId), "members", arr => arr.map(m =>
       m.id === member.id
         ? { ...m, isPaid: true, slipQR: qrData, slipQRAmount: qrAmount !== null ? qrAmount : null }
         : m
-    );
-    await updateDoc(doc(db, "sessions", currentSessionId), {
-      members: newMembers,
-      updatedAt: serverTimestamp()
-    });
+    ));
     const amountMsg = qrAmount !== null ? ` · ยอด ${qrAmount.toFixed(2)} ฿ ✓` : "";
     toast(`✓ ${member.name} จ่ายแล้ว${amountMsg}`);
     closeCameraScan();
@@ -6368,8 +6405,7 @@ $("btnPlayerPauseToggle")?.addEventListener("click", () => {
   const m = members[editingPlayerIdx];
   if (!m) return;
   const paused = !m.isPaused;
-  members[editingPlayerIdx] = { ...m, isPaused: paused };
-  saveSession({ members });
+  saveMembers(arr => arr.map(x => x.id === m.id ? { ...x, isPaused: paused } : x));
   updatePlayerPauseUI(paused);
   toast(paused ? `⏸️ พักคิว ${m.name} แล้ว` : `พาคุณ ${m.name} กลับเข้าคิวเรียบร้อย 🏸`);
 });
@@ -6407,53 +6443,30 @@ $("btnSavePlayerSettings")?.addEventListener("click", async () => {
       finalManualFee = parseFloat(manualFeeVal);
     }
     
+    // อ้างผู้เล่นด้วย id แล้วแก้บนรายการล่าสุดจาก server (ลำดับในเครื่องอาจค้าง)
+    const playerId = (currentSession?.members || [])[editingPlayerIdx]?.id;
+    if (!playerId) throw new Error("ไม่พบผู้เล่นคนนี้");
+    const applySettings = (arr) => arr.map(y => {
+      if (y.id === playerId) {
+        return {
+          ...y,
+          name: chosenName, // Save edited name
+          skill: editingPlayerSkill || null,
+          buddyId: chosenBuddyId,
+          excludeAllShuttles: finalExcludeAllShuttles,
+          shuttlesExcluded: finalShuttlesExcluded,
+          manualFee: finalManualFee
+        };
+      }
+      // คนที่เคยจับคู่กับผู้เล่นนี้ แต่ตอนนี้ไม่ได้เลือกแล้ว → ปลดคู่
+      if (y.buddyId === playerId && chosenBuddyId !== y.id) return { ...y, buddyId: null };
+      return y;
+    });
+
     if (editingPlayerIsAdmin) {
-      // Admin View - modify in currentSession.members directly
-      const members = [...(currentSession.members || [])];
-      if (members[editingPlayerIdx]) {
-        const currentPlayer = members[editingPlayerIdx];
-        members.forEach(y => {
-          if (y.id !== currentPlayer.id && y.buddyId === currentPlayer.id) {
-            if (chosenBuddyId !== y.id) y.buddyId = null;
-          }
-        });
-        members[editingPlayerIdx] = {
-          ...currentPlayer,
-          name: chosenName, // Save edited name
-          skill: editingPlayerSkill || null,
-          buddyId: chosenBuddyId,
-          excludeAllShuttles: finalExcludeAllShuttles,
-          shuttlesExcluded: finalShuttlesExcluded,
-          manualFee: finalManualFee
-        };
-      }
-      await saveSession({ members });
-      toast("บันทึกการตั้งค่าผู้เล่นสำเร็จ ✨");
+      if (await saveMembers(applySettings)) toast("บันทึกการตั้งค่าผู้เล่นสำเร็จ ✨");
     } else {
-      // User View - fetch snapshot to avoid race conditions, then save
-      const snap = await getDoc(ref);
-      if (!snap.exists()) throw new Error("ไม่พบข้อมูลก๊วน");
-      
-      const s = snap.data();
-      const members = [...(s.members || [])];
-      if (members[editingPlayerIdx]) {
-        const currentPlayer = members[editingPlayerIdx];
-        members.forEach(y => {
-          if (y.id !== currentPlayer.id && y.buddyId === currentPlayer.id) {
-            if (chosenBuddyId !== y.id) y.buddyId = null;
-          }
-        });
-        members[editingPlayerIdx] = {
-          ...currentPlayer,
-          name: chosenName, // Save edited name
-          skill: editingPlayerSkill || null,
-          buddyId: chosenBuddyId,
-          excludeAllShuttles: finalExcludeAllShuttles,
-          shuttlesExcluded: finalShuttlesExcluded,
-          manualFee: finalManualFee
-        };
-      }
-      await updateDoc(ref, { members });
+      await txUpdateList(ref, "members", applySettings);
       toast("ตั้งค่าผู้เล่นเรียบร้อยครับ ✨");
     }
     
@@ -6832,17 +6845,16 @@ async function savePauseMembers() {
   saveBtn.textContent = "กำลังบันทึก...";
 
   try {
-    const members = [...(currentSession.members || [])];
-    const checkboxes = container.querySelectorAll("input[data-pause-idx]");
-    checkboxes.forEach(cb => {
-      const idx = parseInt(cb.dataset.pauseIdx, 10);
-      if (members[idx]) {
-        members[idx].isPaused = cb.checked;
-      }
+    const members = currentSession.members || [];
+    const pausedById = new Map();   // id → พัก/ไม่พัก (อ้างด้วย id ไม่ใช่ลำดับ)
+    container.querySelectorAll("input[data-pause-idx]").forEach(cb => {
+      const m = members[parseInt(cb.dataset.pauseIdx, 10)];
+      if (m) pausedById.set(m.id, cb.checked);
     });
 
-    await saveSession({ members });
-    toast("✓ บันทึกสถานะการพักคิวแล้ว ⏸️");
+    if (await saveMembers(arr => arr.map(m => pausedById.has(m.id) ? { ...m, isPaused: pausedById.get(m.id) } : m))) {
+      toast("✓ บันทึกสถานะการพักคิวแล้ว ⏸️");
+    }
     $("pauseMembersModal").classList.add("hidden");
   } catch (err) {
     console.error(err);
@@ -6866,14 +6878,13 @@ async function clearAllPlayerSkills() {
   }
   const ok = confirm("ยืนยันล้างระดับมือของสมาชิกทั้งหมด " + haveSkillCount + " คน?\nการกระทำนี้ย้อนกลับไม่ได้");
   if (!ok) return;
-  const members = currentSession.members.map(m => {
+  const clearSkill = (arr) => arr.map(m => {
     const copy = Object.assign({}, m || {});
     delete copy.skill;
     return copy;
   });
   try {
-    await saveSession({ members });
-    toast("ล้างระดับมือทั้งหมดเรียบร้อย");
+    if (await saveMembers(clearSkill)) toast("ล้างระดับมือทั้งหมดเรียบร้อย");
   } catch (e) {
     console.error("[clearAllPlayerSkills] save failed:", e);
     toast("บันทึกไม่สำเร็จ ลองอีกครั้ง");
