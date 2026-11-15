@@ -293,6 +293,18 @@ async function deleteAllReceiptsForSession(sessionId) {
   }
 }
 
+// ---------- สำเนาสำรองเกม/สมาชิก (กู้คืนได้) ----------
+// เก็บใน settings/bk_<sessionId>_<0..29> (rules ให้ client เขียนได้แค่ sessions/* กับ settings/*)
+// วนใช้ 30 ช่องต่อก๊วน, เก็บอย่างมาก 1 ชุดต่อ 5 นาที (ดู txUpdateList)
+const BACKUP_SLOTS = 30;
+const BACKUP_EVERY_MS = 5 * 60 * 1000;
+const backupRef = (sessionId, slot) => doc(db, "settings", `bk_${sessionId}_${slot}`);
+
+async function deleteSessionBackups(sessionId) {
+  if (!sessionId) return;
+  await Promise.all(Array.from({ length: BACKUP_SLOTS }, (_, i) => deleteDoc(backupRef(sessionId, i)).catch(() => {})));
+}
+
 // ---------- App State ----------
 let currentSessionId = null;
 let currentSession = null;
@@ -2345,9 +2357,27 @@ async function txUpdateList(ref, field, mutate) {
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) throw new Error("ไม่พบก๊วนนี้");
-    before = snap.data()[field] || [];
+    const data = snap.data();
+    before = data[field] || [];
     written = mutate([...before]);
-    tx.update(ref, { [field]: written, updatedAt: serverTimestamp() });
+
+    // ด่านกันหายก้อนใหญ่: กดครั้งเดียวลบได้ไม่เกิน 1 รายการ — มากกว่านั้น = บั๊กหรือข้อมูลค้าง → ไม่บันทึก
+    const kept = new Set(written.map(x => x.id));
+    if (before.filter(x => !kept.has(x.id)).length > 1) {
+      throw Object.assign(new Error("การบันทึกนี้จะลบหลายรายการพร้อมกัน — ยกเลิกไว้ก่อน"), { guard: true });
+    }
+
+    const patch = { [field]: written, updatedAt: serverTimestamp() };
+    // สำรองข้อมูลบน server (ก่อนแก้) อย่างมาก 1 ชุดต่อ 5 นาที ไม่ว่ากี่เครื่องจะกดพร้อมกัน
+    // abs() = เผื่อนาฬิกาเครื่องอื่นเดินเร็วจน backupAt อยู่ในอนาคต
+    const now = Date.now();
+    if (Math.abs(now - (data.backupAt || 0)) >= BACKUP_EVERY_MS) {
+      const slot = ((data.backupSlot ?? -1) + 1) % BACKUP_SLOTS;
+      tx.set(backupRef(ref.id, slot), { sessionId: ref.id, at: now, matches: data.matches || [], members: data.members || [] });
+      patch.backupAt = now;
+      patch.backupSlot = slot;
+    }
+    tx.update(ref, patch);
   });
   return { before, written };
 }
@@ -2374,7 +2404,7 @@ async function saveListField(field, mutate) {
     return true;
   } catch (err) {
     console.error(err);
-    toast("บันทึกไม่สำเร็จ (เน็ตหลุด?) — กดใหม่อีกครั้ง", 4000);
+    toast(err.guard ? `⛔ ${err.message}` : "บันทึกไม่สำเร็จ (เน็ตหลุด?) — กดใหม่อีกครั้ง", 4000);
     forceResyncFirestore("บันทึกไม่สำเร็จ");
     return false;
   }
@@ -2388,6 +2418,87 @@ function addMemberOnce(arr, member) {
   const lower = (member.name || "").toLowerCase();
   return arr.some(m => m.id === member.id || (m.name || "").toLowerCase() === lower) ? arr : [...arr, member];
 }
+
+// ---------- กู้คืนจากสำเนาสำรอง ----------
+function fmtBackupTime(at) {
+  const d = new Date(at);
+  const time = d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  return d.toDateString() === new Date().toDateString()
+    ? time
+    : `${d.toLocaleDateString("th-TH", { day: "numeric", month: "short" })} ${time}`;
+}
+
+let backupList = [];
+
+async function openBackupsModal() {
+  if (!currentSessionId) return;
+  const sessionId = currentSessionId;
+  $("backupsList").innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">กำลังโหลด...</p>`;
+  $("backupsModal").classList.remove("hidden");
+  const snaps = await Promise.all(
+    Array.from({ length: BACKUP_SLOTS }, (_, i) => getDoc(backupRef(sessionId, i)).catch(() => null))
+  );
+  backupList = snaps
+    .filter(s => s?.exists() && s.data().sessionId === sessionId)
+    .map(s => s.data())
+    .sort((a, b) => b.at - a.at);
+  renderBackupsList();
+}
+
+function renderBackupsList() {
+  const box = $("backupsList");
+  if (backupList.length === 0) {
+    box.innerHTML = `<p class="text-slate-400 text-center py-6 text-sm">ยังไม่มีสำเนา — ระบบจะเริ่มเก็บเมื่อมีการจัดเกมหรือแก้รายชื่อ</p>`;
+    return;
+  }
+  const btnClass = "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-transform active:scale-95";
+  box.innerHTML = backupList.map((b, i) => `
+    <div class="flex items-center gap-2 py-2.5">
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-bold text-slate-800 dark:text-slate-100 tabular-nums">${fmtBackupTime(b.at)}${b.reason ? ` <span class="text-[10px] font-semibold text-amber-600 dark:text-amber-400">· ${escapeHtml(b.reason)}</span>` : ""}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400 tabular-nums">${(b.matches || []).length} เกม · ${(b.members || []).length} คน</div>
+      </div>
+      <button data-restore="${i}" data-field="matches" class="${btnClass}">↩ เกม</button>
+      <button data-restore="${i}" data-field="members" class="${btnClass}">↩ สมาชิก</button>
+    </div>`).join("");
+  box.querySelectorAll("button[data-restore]").forEach(btn => btn.addEventListener("click", () =>
+    restoreBackup(backupList[+btn.dataset.restore], btn.dataset.field)
+  ));
+}
+
+// กู้ทีละอย่าง (เกม หรือ สมาชิก) — เกมหายก็ไม่ต้องย้อนสถานะจ่ายเงินที่เพิ่งติ๊กไป
+async function restoreBackup(b, field) {
+  if (!b || !currentSessionId) return;
+  const label = field === "matches" ? "เกม" : "สมาชิก";
+  const nowCount = (currentSession?.[field] || []).length;
+  const thenCount = (b[field] || []).length;
+  if (!confirm(`กู้คืน${label}จากสำเนาเวลา ${fmtBackupTime(b.at)}?\n\n${label}: ${nowCount} → ${thenCount}\n\nสิ่งที่แก้หลังเวลานั้นจะหายไป — ข้อมูลตอนนี้จะถูกเก็บสำเนาไว้ก่อน กู้กลับได้`)) return;
+
+  const sessionId = currentSessionId;
+  const ref = doc(db, "sessions", sessionId);
+  try {
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error("ไม่พบก๊วนนี้");
+      const data = snap.data();
+      // เก็บสำเนาของตอนนี้ไว้ก่อนเสมอ (ไม่สนรอบ 5 นาที)
+      const slot = ((data.backupSlot ?? -1) + 1) % BACKUP_SLOTS;
+      const at = Date.now();
+      tx.set(backupRef(sessionId, slot), { sessionId, at, reason: "ก่อนกู้คืน", matches: data.matches || [], members: data.members || [] });
+      tx.update(ref, { [field]: b[field] || [], backupAt: at, backupSlot: slot, updatedAt: serverTimestamp() });
+    });
+    $("backupsModal").classList.add("hidden");
+    toast(`↩ กู้คืน${label}แล้ว (${thenCount} รายการ)`);
+    forceResyncFirestore("กู้คืนจากสำเนา");
+  } catch (err) {
+    console.error(err);
+    toast("กู้คืนไม่สำเร็จ: " + err.message, 4000);
+  }
+}
+
+$("btnOpenBackups")?.addEventListener("click", openBackupsModal);
+$("btnCloseBackups")?.addEventListener("click", () => $("backupsModal").classList.add("hidden"));
+$("backupsModal")?.addEventListener("click", e => { if (e.target.id === "backupsModal") $("backupsModal").classList.add("hidden"); });
 
 // ---------- Save (debounced) ----------
 async function saveSession(patch) {
@@ -2629,6 +2740,7 @@ $("btnDeleteSession").addEventListener("click", async () => {
 
     // ลบ receipts subcollection ก่อน (best-effort) — กัน orphan
     await deleteAllReceiptsForSession(deletingId);
+    await deleteSessionBackups(deletingId);
     await deleteDoc(doc(db, "sessions", deletingId));
     // Cleanup listener ทันที (snapshot fire "ไม่มี" จะไม่ trigger logic)
     if (unsubscribeSession) { unsubscribeSession(); unsubscribeSession = null; }
@@ -5490,6 +5602,7 @@ function renderSessionList(container, snap, isHome, isManager = false) {
       try {
         const delId = btn.dataset.quickDel;
         await deleteAllReceiptsForSession(delId);
+        await deleteSessionBackups(delId);
         await deleteDoc(doc(db, "sessions", delId));
         toast("ลบก๊วนแล้ว");
         if (isHome) loadRecentSessions();
@@ -6797,6 +6910,44 @@ if ("serviceWorker" in navigator) {
       .catch((err) => console.warn("[PWA] SW registration failed:", err));
   });
 }
+
+// ---------- บังคับอัปเดตเมื่อมีเวอร์ชันใหม่ ----------
+// เทียบเลข ?v= ของ app.js ที่เครื่องนี้รันอยู่ กับเลขใน index.html ล่าสุดบน server
+// ไม่ตรง = เด้งหน้าต่างขวางกลางจอ (ปิดไม่ได้) ให้กดอัปเดต — กันเครื่องที่ค้างเวอร์ชันเก่าเขียนข้อมูลทับ (2026-11-15)
+const RUNNING_VERSION = new URL(import.meta.url).searchParams.get("v");
+
+async function checkForUpdate() {
+  if (!RUNNING_VERSION || !navigator.onLine || !$("updateOverlay")?.classList.contains("hidden")) return;
+  try {
+    const res = await fetch(`index.html?check=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return;
+    const latest = (await res.text()).match(/app\.js\?v=([\w.-]+)/)?.[1];
+    if (latest && latest !== RUNNING_VERSION) {
+      $("updateVersions").textContent = `${RUNNING_VERSION} → ${latest}`;
+      $("updateOverlay").classList.remove("hidden");
+    }
+  } catch { /* offline ชั่วคราว — ไว้เช็ครอบหน้า */ }
+}
+
+$("btnDoUpdate")?.addEventListener("click", async () => {
+  const btn = $("btnDoUpdate");
+  btn.disabled = true;
+  btn.textContent = "กำลังอัปเดต...";
+  try {
+    // ถอด service worker + ล้าง cache เก่า แล้วโหลดใหม่จาก server
+    const regs = (await navigator.serviceWorker?.getRegistrations?.()) || [];
+    await Promise.all(regs.map(r => r.unregister()));
+    const keys = (await window.caches?.keys()) || [];
+    await Promise.all(keys.map(k => caches.delete(k)));
+  } catch { /* ไม่เป็นไร — reload ต่อได้เลย */ }
+  location.reload();
+});
+
+setTimeout(checkForUpdate, 3000);
+setInterval(checkForUpdate, 10 * 60 * 1000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkForUpdate();
+});
 
 
 // ---------- พักคิวสมาชิก (Pause Queue Management) ----------

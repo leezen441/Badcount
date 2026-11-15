@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.19.2">
+  <link rel="stylesheet" href="./premium.css?v=3.19.3">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -438,6 +438,7 @@
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">ตารางจัดเกม (<span id="matchCount">0</span>)</h3>
           <div class="flex items-center gap-3 shrink-0">
+            <button id="btnOpenBackups" class="text-xs text-amber-600 dark:text-amber-400 font-medium hover:underline flex items-center gap-1" title="กู้คืนเกม/สมาชิกจากสำเนาสำรอง"><span>🕘</span><span class="max-[389px]:hidden">กู้คืน</span></button>
             <button id="btnViewAuditLog" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1"><span>🔍</span> Audit Log</button>
             <button id="btnViewStats" class="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-1"><span>📊</span> สถิติ</button>
           </div>
@@ -1283,6 +1284,33 @@
     </div>
   </div>
 
+  <!-- ===== BACKUPS MODAL (กู้คืนเกม/สมาชิกจากสำเนาสำรอง) ===== -->
+  <div id="backupsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative border border-slate-100 dark:border-slate-700/50">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">🕘 กู้คืนจากสำเนา</h3>
+        <button id="btnCloseBackups" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+        ระบบเก็บสำเนาเกมและรายชื่อทุก 5 นาทีระหว่างที่มีคนแก้ไข (30 ชุดล่าสุด) — เลือกกู้เฉพาะเกม หรือเฉพาะสมาชิก
+      </p>
+      <div id="backupsList" class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/50 pr-1"></div>
+    </div>
+  </div>
+
+  <!-- ===== UPDATE REQUIRED (เด้งขวางกลางจอเมื่อมีเวอร์ชันใหม่ — ปิดไม่ได้) ===== -->
+  <div id="updateOverlay" class="hidden fixed inset-0 bg-black/75 z-[100] flex items-center justify-center p-6">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-xs p-6 text-center border border-slate-100 dark:border-slate-700/50">
+      <div class="text-4xl mb-2">🆕</div>
+      <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">มีเวอร์ชันใหม่</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
+        อัปเดตก่อนใช้งานต่อ เพื่อให้ข้อมูลตรงกับเครื่องอื่น<br>
+        <span id="updateVersions" class="tabular-nums"></span>
+      </p>
+      <button id="btnDoUpdate" class="w-full bg-emerald-600 hover:bg-emerald-700 text-slate-950 py-3 rounded-xl font-bold shadow-md transition-transform active:scale-95">อัปเดตเลย</button>
+    </div>
+  </div>
+
   <!-- ===== STATS MODAL ===== -->
   <div id="statsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 max-w-sm w-full max-h-[90vh] overflow-y-auto flex flex-col">
@@ -1300,6 +1328,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.19.2"></script>
+  <script type="module" src="./app.js?v=3.19.3"></script>
 </body>
 </html>
