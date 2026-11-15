@@ -8,7 +8,7 @@ import {
 import {
   initializeFirestore, collection, addDoc, doc, getDoc, setDoc, updateDoc,
   deleteDoc, onSnapshot, query, orderBy, limit, getDocs, serverTimestamp,
-  arrayUnion, runTransaction, deleteField
+  arrayUnion, runTransaction, deleteField, getDocFromServer
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { firebaseConfig } from "./firebase-config.js";
@@ -948,6 +948,37 @@ window.addEventListener("online", () => {
   toast("🌐 เชื่อมต่ออินเทอร์เน็ตได้แล้ว — กำลังโหลดข้อมูลใหม่");
 });
 
+// iPhone (Safari / แอปบนหน้าจอ) ชอบทำ listener หลุดเงียบๆ โดยไม่มี event ให้รู้เลย
+// (ล็อกจอแป๊บเดียวไม่ถึง 10 วิ, สลับ Wi-Fi ↔ 4G ในสนาม, กลับมาจาก back-forward cache) → ข้อมูลค้างโดยไม่รู้ตัว
+// → ทุก 30 วิตอนเปิดหน้าก๊วนอยู่ ถาม server ว่าแก้ล่าสุดเมื่อไหร่ ถ้าใหม่กว่าที่ listener ส่งมา = หลุด → ต่อใหม่
+let lastSnapshotUpdatedAt = 0;   // updatedAt (ms) ล่าสุดที่ listener ของหน้าก๊วนส่งมา — ตั้งใน subscribeSession
+const STALE_CHECK_MS = 30 * 1000;
+
+async function checkSessionStale(reason) {
+  if (document.hidden || !currentSessionId || !unsubscribeSession || !navigator.onLine) return;
+  const sessionId = currentSessionId;
+  try {
+    const snap = await getDocFromServer(doc(db, "sessions", sessionId));
+    const serverAt = snap.exists() ? (snap.data().updatedAt?.toMillis?.() || 0) : 0;
+    if (!serverAt || serverAt <= lastSnapshotUpdatedAt) return;
+    // เผื่อ listener กำลังจะส่งมาพอดี — รอ 3 วิแล้วดูซ้ำก่อนสรุปว่าหลุด
+    await new Promise(r => setTimeout(r, 3000));
+    if (currentSessionId === sessionId && serverAt > lastSnapshotUpdatedAt) {
+      forceResyncFirestore(`ข้อมูลค้าง — ${reason}`);
+    }
+  } catch { /* เน็ตไม่ดี — รอบหน้าค่อยเช็คใหม่ */ }
+}
+
+setInterval(() => checkSessionStale("ตรวจทุก 30 วิ"), STALE_CHECK_MS);
+window.addEventListener("focus", () => checkSessionStale("กลับมาที่แอป"));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkSessionStale("เปิดจอกลับมา");
+});
+// iOS คืนหน้าเดิมจาก back-forward cache โดยไม่ยิง visibilitychange → ต่อ listener ใหม่เลย
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) forceResyncFirestore("กลับมาจาก back-forward cache");
+});
+
 // แจ้งเตือนเมื่อ offline
 window.addEventListener("offline", () => {
   toast("⚠️ ไม่มีอินเทอร์เน็ต — ข้อมูลอาจไม่อัปเดต", 4000);
@@ -1235,6 +1266,7 @@ let previousSessionMembers = null;
 function subscribeSession(id) {
   // Reset เมื่อสลับ session
   previousSessionMembers = null;
+  lastSnapshotUpdatedAt = 0;
 
   // ขอ permission แจ้งเตือน (admin/manager เท่านั้น) — ถามครั้งเดียวต่อ page load
   ensureNotificationPermission();
@@ -1253,6 +1285,9 @@ function subscribeSession(id) {
       return;
     }
     const newSession = { id: snap.id, ...snap.data() };
+    // จดเวลาแก้ล่าสุดที่ listener ส่งมา ให้ checkSessionStale เทียบกับ server (ระหว่างรอบันทึก = null → ข้าม)
+    const snapAt = newSession.updatedAt?.toMillis?.();
+    if (snapAt) lastSnapshotUpdatedAt = snapAt;
 
     // 🔔 ตรวจคนที่เพิ่งเข้าร่วม (เปรียบเทียบกับ snapshot ก่อนหน้า)
     // admin/manager → ใช้ native OS notification ด้วย (option { nativeNotify: true })
@@ -1967,7 +2002,8 @@ function __makeTotalsKey(s) {
     const pIds = m.players || [m.a1, m.a2, m.b1, m.b2].filter(Boolean);
     return `${m.id}:${m.shuttleNumbers || ""}:${(m.exemptPlayers || []).join("-")}:${pIds.join("-")}`;
   }).join(",");
-  return `${s.courtFee}|${s.courtFeeType}|${s.shuttlePrice}|${s.otherCost}|${s.otherCostType}|${mKey}|${matchKey}`;
+  // simpleShuttleCount ต้องอยู่ใน key — โหมดนับลูกเปลี่ยนวิธีอ่าน shuttleNumbers (เดิมไม่มี → สลับโหมดแล้วราคาค้าง, 2026-11-16)
+  return `${s.simpleShuttleCount ? 1 : 0}|${s.courtFee}|${s.courtFeeType}|${s.shuttlePrice}|${s.otherCost}|${s.otherCostType}|${mKey}|${matchKey}`;
 }
 
 function calcTotals(sessionObj) {
@@ -4640,7 +4676,7 @@ $("btnSubmitJoin").addEventListener("click", async () => {
         isPaused: true
       });
 
-      transaction.update(ref, { members });
+      transaction.update(ref, { members, updatedAt: serverTimestamp() });
     });
 
     if (errorMsg) {
