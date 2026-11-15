@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./premium.css?v=3.19.3">
+  <link rel="stylesheet" href="./premium.css?v=3.19.4">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -437,8 +437,8 @@
       <!-- Matches card -->
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">ตารางจัดเกม (<span id="matchCount">0</span>)</h3>
-          <div class="flex items-center gap-3 shrink-0">
-            <button id="btnOpenBackups" class="text-xs text-amber-600 dark:text-amber-400 font-medium hover:underline flex items-center gap-1" title="กู้คืนเกม/สมาชิกจากสำเนาสำรอง"><span>🕘</span><span class="max-[389px]:hidden">กู้คืน</span></button>
+          <div class="flex items-center gap-3 max-[383px]:gap-2 shrink-0">
+            <button id="btnOpenBackups" class="text-xs text-amber-600 dark:text-amber-400 font-medium hover:underline flex items-center gap-1" title="กู้คืนเกม/สมาชิกจากสำเนาสำรอง"><span class="max-[383px]:hidden">🕘</span>Restore</button>
             <button id="btnViewAuditLog" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1"><span>🔍</span> Audit Log</button>
             <button id="btnViewStats" class="text-xs text-emerald-600 font-medium hover:underline flex items-center gap-1"><span>📊</span> สถิติ</button>
           </div>
@@ -1328,6 +1328,6 @@
   <!-- QR Code DECODE library (สำหรับอ่าน QR จากภาพสลิป + จากกล้อง) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script type="module" src="./firebase-config.js"></script>
-  <script type="module" src="./app.js?v=3.19.3"></script>
+  <script type="module" src="./app.js?v=3.19.4"></script>
 </body>
 </html>
