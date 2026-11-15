@@ -3087,12 +3087,12 @@ function renderMatchDraft() {
         teamAPlayers.push(id);
         const m = allMembers.find(x => x.id === id);
         if (m) {
-          const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-rose-700 hover:bg-rose-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`;
+          const skillBadge = `<span class="bg-rose-700 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] shrink-0" title="ระดับมือ">${m.skill || '?'}</span>`;
           const isExempt = matchDraftExempts.includes(id);
           teamAHtml += `
             <div class="inline-flex items-center bg-rose-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-rose-300 dark:ring-rose-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
               <span class="truncate max-w-[65px] ${isExempt ? 'text-amber-200 line-through font-normal' : ''}">${escapeHtml(m.name)}</span>
-              ${editSkillBadge}
+              ${skillBadge}
               <button data-draft-id="${id}" class="hover:bg-rose-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออกจากทีม A">✕</button>
             </div>
           `;
@@ -3116,12 +3116,12 @@ function renderMatchDraft() {
         teamBPlayers.push(id);
         const m = allMembers.find(x => x.id === id);
         if (m) {
-          const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-sky-700 hover:bg-sky-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`;
+          const skillBadge = `<span class="bg-sky-700 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] shrink-0" title="ระดับมือ">${m.skill || '?'}</span>`;
           const isExempt = matchDraftExempts.includes(id);
           teamBHtml += `
             <div class="inline-flex items-center bg-sky-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-sky-300 dark:ring-sky-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
               <span class="truncate max-w-[65px] ${isExempt ? 'text-amber-200 line-through font-normal' : ''}">${escapeHtml(m.name)}</span>
-              ${editSkillBadge}
+              ${skillBadge}
               <button data-draft-id="${id}" class="hover:bg-sky-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออกจากทีม B">✕</button>
             </div>
           `;
@@ -3178,7 +3178,7 @@ function renderMatchDraft() {
       if (!id) return;
       const m = allMembers.find(x => x.id === id);
       if (!m) return;
-      const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${id}" class="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] transition-transform active:scale-95 shrink-0" title="คลิกเพื่อตั้งระดับมือ">${m.skill || '?'}</button>`;
+      const skillBadge = `<span class="bg-emerald-700 text-white font-extrabold rounded px-1.5 py-0.5 text-[9px] shrink-0" title="ระดับมือ">${m.skill || '?'}</span>`;
       const isExempt = matchDraftExempts.includes(id);
       const exemptBtn = `
         <button data-act="toggle-exempt" data-player-id="${id}" class="w-4 h-4 flex items-center justify-center rounded-full text-[10px] transition-transform active:scale-95 shrink-0 ${isExempt ? 'bg-amber-400 text-slate-900 font-extrabold' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}" title="${isExempt ? 'จ่ายปกติ' : 'ยกเว้นค่าลูกเกมนี้'}">
@@ -3188,7 +3188,7 @@ function renderMatchDraft() {
       selHtml += `
         <div class="inline-flex items-center bg-emerald-500 text-white text-xs font-semibold rounded-full shadow-sm ring-2 ${isExempt ? 'ring-amber-400 ring-offset-2' : 'ring-emerald-300 dark:ring-emerald-900/50 ring-offset-1'} pr-1.5 pl-3 py-0.5 gap-1.5 shrink-0">
           <span class="truncate max-w-[65px] ${isExempt ? 'text-amber-200 line-through font-normal' : ''}">${escapeHtml(m.name)}</span>
-          ${editSkillBadge}
+          ${skillBadge}
           ${exemptBtn}
           <button data-draft-id="${id}" class="hover:bg-emerald-600 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0" title="เอาออก">✕</button>
         </div>
@@ -3327,9 +3327,11 @@ function renderMatchDraft() {
             ? "font-medium text-slate-500 dark:text-slate-400"
             : "font-medium text-slate-700 dark:text-slate-300");
 
-      const editSkillBadge = `<button data-act="edit-player-skill" data-player-id="${m.id}" class="text-[9px] px-1.5 py-0.5 rounded transition-all active:scale-95 shrink-0 ${m.skill ? 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold' : 'border border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400 font-bold bg-white dark:bg-slate-900 hover:border-indigo-500 hover:text-indigo-600'}" title="คลิกเพื่อตั้งระดับมือ">
-            ${m.skill ? m.skill : '+ ระดับมือ'}
-          </button>`;
+      // ระดับมือในหน้าจัดเกม = ดูอย่างเดียว (ตั้งได้จากรายชื่อสมาชิก) — แตะแล้วเพิ่ม/เอาออกเหมือนแตะชื่อ
+      // กันกดเพิ่มคนลงเกมแล้วเด้งไปหน้าปรับระดับมือ (2026-11-15)
+      const skillBadge = m.skill
+        ? `<button data-draft-id="${m.id}" class="text-[9px] px-1.5 py-0.5 rounded shrink-0 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold" title="ระดับมือ">${m.skill}</button>`
+        : "";
 
       return `
         <div class="w-full px-3 py-2 flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${rowClass}">
@@ -3351,7 +3353,7 @@ function renderMatchDraft() {
             </button>
             
             <div class="flex items-center gap-1.5 shrink-0">
-              ${editSkillBadge}
+              ${skillBadge}
               
               <span class="flex items-center gap-0.5 text-xs text-slate-400">
                 <span>🏸</span>
@@ -3447,17 +3449,6 @@ function renderMatchDraft() {
     });
   });
 
-  // Wire up "edit-player-skill" buttons inside Match Modal
-  $("matchModal").querySelectorAll("button[data-act='edit-player-skill']").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation(); // Prevent bubbling up to drafting event handlers
-      const pid = btn.dataset.playerId;
-      const idx = allMembers.findIndex(x => x.id === pid);
-      if (idx !== -1) {
-        openPlayerSettingsModal(idx, true);
-      }
-    });
-  });
 }
 
 $("btnCancelMatch").addEventListener("click", () => $("matchModal").classList.add("hidden"));
